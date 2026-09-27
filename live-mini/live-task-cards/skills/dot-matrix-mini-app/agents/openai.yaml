@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dot Matrix Mini App"
+  short_description: "Turn photos and video into physical-dot Canvas visuals"
+  default_prompt: "Use $dot-matrix-mini-app to turn my photo or video reference into a recognizable monochrome dot-matrix prototype."

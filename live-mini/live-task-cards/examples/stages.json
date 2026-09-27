@@ -1,0 +1,21 @@
+{
+  "requestId": "demo-stages-create-v1",
+  "taskId": "order-2026-001",
+  "conversationRef": "replace-with-authorized-space-id",
+  "content": {
+    "template": "stages",
+    "eyebrow": "TASK",
+    "title": "Place order",
+    "subtitle": "Finding · preparing · ordering",
+    "status": "running",
+    "header": "none",
+    "stages": [
+      { "id": "find", "label": "Find", "state": "done" },
+      { "id": "prepare", "label": "Prepare", "state": "done" },
+      { "id": "order", "label": "Order", "state": "active" },
+      { "id": "receive", "label": "Receive", "state": "pending" }
+    ],
+    "detail": { "title": "Placing", "subtitle": "Previously approved order" },
+    "progress": null
+  }
+}

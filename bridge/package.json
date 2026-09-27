@@ -1,0 +1,15 @@
+{
+  "name": "{{DEPLOY_ID_PREFIX}}",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "read-batch": "bun run src/read-batch.ts",
+    "enqueue": "bun run src/enqueue.ts"
+  },
+  "dependencies": {
+    "heif2jpeg": "^0.1.6",
+    "spectrum-ts": "^12.8.0"
+  }
+}

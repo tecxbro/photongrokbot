@@ -1,0 +1,21 @@
+{
+  "requestId": "demo-checks-create-v1",
+  "taskId": "repository-checks-2026-001",
+  "conversationRef": "replace-with-authorized-space-id",
+  "content": {
+    "template": "segments",
+    "eyebrow": "TASK",
+    "title": "Fix repository",
+    "subtitle": "Reproducing · patching · verifying",
+    "status": "running",
+    "header": "none",
+    "stages": [
+      { "id": "repro", "label": "Repro", "state": "done" },
+      { "id": "diagnose", "label": "Diagnose", "state": "done" },
+      { "id": "patch", "label": "Patch", "state": "done" },
+      { "id": "verify", "label": "Verify", "state": "active" }
+    ],
+    "detail": { "title": "Running checks", "subtitle": "Integration test suite" },
+    "progress": { "completed": 37, "total": 50, "unit": "checks complete" }
+  }
+}

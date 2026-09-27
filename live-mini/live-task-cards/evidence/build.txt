@@ -1,0 +1,5 @@
+
+> grokbot-live-task-cards@1.0.0 build
+> node scripts/build.mjs
+
+Built .vercel/output (one Node function, no credentials or live sends).

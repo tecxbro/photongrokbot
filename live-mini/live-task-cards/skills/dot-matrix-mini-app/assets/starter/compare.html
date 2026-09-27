@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>Grokbot · A / B</title><link rel="stylesheet" href="mini-card.css"></head>
+<body class="comparison">
+<main class="comparison-layout">
+  <header class="comparison-header"><h1>Two transitions. Same dots.</h1><p>Tap either card to switch. Both start at 41 / 100.</p></header>
+  <div class="comparison-cards">
+    <figure class="variant"><figcaption><b>A</b> Coordinated dot morph</figcaption>
+      <article class="mini-card" data-transition-style="morph" role="button" tabindex="0" aria-pressed="false" aria-label="Show Grokbot, version A">
+        <canvas class="matrix-display" aria-hidden="true"></canvas><footer class="activity-strip"><div class="activity-window" aria-hidden="true"></div><p class="count" aria-hidden="true">41 / 100</p></footer><span class="task-status sr-only" role="status" aria-live="polite"></span>
+      </article><a class="variant-link" href="index.html?transition=morph">Open A on its own ↗</a>
+    </figure>
+    <figure class="variant"><figcaption><b>B</b> Fluid dissolve</figcaption>
+      <article class="mini-card" data-transition-style="dissolve" role="button" tabindex="0" aria-pressed="false" aria-label="Show Grokbot, version B">
+        <canvas class="matrix-display" aria-hidden="true"></canvas><footer class="activity-strip"><div class="activity-window" aria-hidden="true"></div><p class="count" aria-hidden="true">41 / 100</p></footer><span class="task-status sr-only" role="status" aria-live="polite"></span>
+      </article><a class="variant-link" href="index.html?transition=dissolve">Open B on its own ↗</a>
+    </figure>
+  </div>
+  <section class="comparison-controls">
+    <div class="controls"><button data-action="toggle">Switch both</button><button data-action="reset">Reset views</button><button data-action="advance">Confirm one more</button><button data-action="activity">Next activity</button></div>
+    <p class="quiet">Each card is exactly 300×240. A forms the character center-out; B blends all dots together. Both reverse smoothly when tapped again.</p>
+  </section>
+</main>
+<script src="square-animation.js"></script><script src="dot-matrix.js"></script><script src="mini-core.js"></script><script src="mini-card.js"></script><script src="mini-demo.js"></script>
+</body></html>

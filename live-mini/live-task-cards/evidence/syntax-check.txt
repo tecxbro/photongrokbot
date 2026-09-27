@@ -1,0 +1,5 @@
+
+> grokbot-live-task-cards@1.0.0 check
+> node scripts/check.mjs
+
+Checked 64 JavaScript modules, four task examples, and two loader assets.

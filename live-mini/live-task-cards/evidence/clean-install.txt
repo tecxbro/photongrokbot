@@ -1,0 +1,186 @@
+Personal loader handoff clean extraction verification — 2026-09-26
+Archive SHA-256 sidecar: PASS
+Archive matches current source: 106 files. No secrets/state/repositories/build output included.
+
+$ node --version
+v23.11.0
+
+
+$ npm run verify:handoff
+
+> grokbot-live-task-cards@1.0.0 verify:handoff
+> node scripts/verify-handoff.mjs
+
+Verified 106 handoff source files.
+
+
+$ npm test
+
+> grokbot-live-task-cards@1.0.0 test
+> node --test tests/*.test.mjs
+
+✔ small and large batches always settle within 620ms (0.395875ms)
+✔ initial snapshot renders the confirmed meter immediately, including fractional batches (3.711958ms)
+✔ HTTP create, read page and update round trip uses actual file store (71.52825ms)
+✔ matrix page serves live component assets and saved activity, not demo fixture (40.96025ms)
+✔ public health does not imply iMessage verification (6.04175ms)
+✔ publisher API rejects absent or view-only credentials (31.876958ms)
+✔ no button action or callback endpoint exists (24.985541ms)
+✔ private pages have no-store, no-referrer and restricted CSP (22.956125ms)
+✔ bad view token and wrong slot cannot read another card (27.980375ms)
+✔ private JSON view omits task/conversation and publisher credentials (28.149167ms)
+✔ text injection is escaped in both HTML and JSON bootstrap (19.023334ms)
+✔ reading a card cannot change revision or slot state (26.413792ms)
+✔ malformed JSON and oversized requests rejected (6.275375ms)
+✔ Build Output API rewritten path is dispatched to the same router (4.630708ms)
+✔ examples are optional and have no task side effects (7.936708ms)
+✔ requested theme changes saved content at the exact same URL (55.202209ms)
+✔ loader validation accepts separate still/loop formats and rejects scripts, dimensions and invalid loops (1.048083ms)
+✔ loader replacement is owner-scoped, keeps URLs/task clocks, persists and applies to future cards (89.384125ms)
+✔ reset restores Grokbot for active/future cards but preserves terminal and archived loader history (186.823416ms)
+✔ loader writes are idempotent, reject stale revisions and cannot overwrite a newer milestone (67.880042ms)
+✔ unreferenced assets are collected; preferences and retained final cards keep theirs (54.367208ms)
+✔ old registries and cards without owners retain Grokbot; owner identity is absent from public data (54.994292ms)
+✔ loader HTTP API rejects unauthenticated/view-only writes and exposes only the selected asset (84.82175ms)
+✔ loader upload accepts bounded larger assets without increasing the ordinary card body limit (26.885375ms)
+✔ runtime requires explicit replace/reset authorization; attachments and wrong actions cause no write (38.935042ms)
+✔ runtime derives owner from trusted context, applies loader and blocks cross-owner task access (72.060167ms)
+✔ personalization stays disabled when runtime authorization hooks are absent (6.675625ms)
+✔ variable lattices preserve transition position/velocity and agree across 30/60/120fps (68.21325ms)
+✔ concurrent personalization cannot silently overwrite another request for the same owner (25.932708ms)
+✔ custom static and authored loop samples remain bounded through four cycles at 30/60/120fps (35.201709ms)
+✔ queue promotes the same planned step only after saved stage advancement (3.431625ms)
+✔ waiting preserves the upcoming plan; terminal states remove it (1.161417ms)
+✔ queued work labels future intent instead of claiming it has started (1.436583ms)
+✔ valid research example (3.4845ms)
+✔ valid checks example (0.522833ms)
+✔ valid stages example (2.018791ms)
+✔ valid matrix example (0.995875ms)
+✔ matrix validates the planned steps against stage identity and supported icons (1.1535ms)
+✔ legacy matrix history is readable but is never reinterpreted as a plan (0.604209ms)
+✔ reject HTML/action/style contract extensions (3.258167ms)
+✔ unknown totals produce no invented fraction (0.329334ms)
+✔ reject invalid counters and percentages (1.261084ms)
+✔ four named stages do not imply 25 percent increments (0.426333ms)
+✔ reject two active stages (0.410458ms)
+✔ reject contradictory complete-but-unsent stage state (0.260792ms)
+✔ waiting uses a blocked marker rather than active working animation (0.858625ms)
+✔ stage IDs unique; label length bounded (0.2855ms)
+✔ allow two to four stages with arbitrary valid labels (0.288333ms)
+✔ title length and control characters bounded (0.381542ms)
+✔ header assets are allowlisted, never arbitrary remote URLs (0.2045ms)
+✔ create retains opaque original conversation ID (0.193084ms)
+✔ update requires exact integer revision (0.282375ms)
+✔ empty slot registry has exactly ten names (0.136208ms)
+✔ corrupt state does not reset silently (0.050792ms)
+✔ production configuration refuses file persistence (0.121708ms)
+✔ configuration requires distinct strong secrets (0.055125ms)
+✔ no HTTP public production origin (0.0325ms)
+✔ theme defaults to dark and accepts only the two approved palettes (0.502459ms)
+✔ start sends once; milestone writes never edit or resend (188.89125ms)
+✔ update does not require a provider edit return (82.483084ms)
+✔ repeat sync does not resend already presented revision (59.79475ms)
+✔ confirmed terminal update releases slot and leaves original final page (91.333625ms)
+✔ missing original session after restart still permits saved updates without replacement send (79.590875ms)
+✔ wrong conversation rejects before a provider send or record creation (3.824084ms)
+✔ provider failure becomes unknown and is not auto retried (47.334667ms)
+✔ lost acknowledgment returns reconciliation data, not another SDK send (54.637542ms)
+✔ terminal release clears optional uptime-only target mapping (83.2615ms)
+✔ requested light palette updates the same card without a Spectrum operation (53.146583ms)
+✔ Redis REST adapter uses one atomic EVAL rather than plain SET (7.974ms)
+✔ CAS retry resolves concurrent updates without lost slots (27.939833ms)
+✔ storage/network failure remains an error, not a fresh empty pool (0.320334ms)
+✔ upstream error body cannot be mistaken for success (0.120541ms)
+✔ conflicts exhaust a bounded retry budget (19.727125ms)
+✔ 27 of 50 is exactly 27 filled dots and 23 pending dots (0.681792ms)
+✔ large batch uses bounded proportional dot display (0.129417ms)
+✔ 74 percent is seven full segments, one 40 percent segment, two empty (0.167167ms)
+✔ stage tracker does not show an invented percent (6.595917ms)
+✔ unknown progress falls back to stages instead of 0 or fake 60 percent (1.058125ms)
+✔ completed and waiting states have no working activity ring (2.179542ms)
+✔ layout contains no controls or external assets (2.696375ms)
+✔ code palette contains only approved flat navy, white and gray tokens (1.10475ms)
+✔ header disabled produces no blank image strip (1.449666ms)
+✔ text stays text, not script or HTML (0.93325ms)
+✔ concurrent creates claim at most ten distinct slots (277.84425ms)
+✔ identical create retries return one identity (70.826083ms)
+✔ conflicting create idempotency key is rejected (23.479291ms)
+✔ same task cannot get another retained card (20.929875ms)
+✔ update changes data and revision, not identity or slot (32.231458ms)
+✔ a complete record snapshot can be reused as the next update payload (32.809708ms)
+✔ stale updates cannot overwrite new progress (42.495916ms)
+✔ updates keep the original template so mounted assets remain valid (21.974834ms)
+✔ retry after an update response is lost is idempotent (35.036916ms)
+✔ presentation claims serialize same-card provider operations (49.3335ms)
+✔ confirmed milestone can be saved during an unresolved initial send (51.096959ms)
+✔ unknown outcomes retain occupancy and cannot be resent (39.661625ms)
+✔ unknown can be explicitly reconciled with actual message reference (39.7365ms)
+✔ accepted settlement retries do not create new references (29.675541ms)
+✔ wrong initial attempt is rejected and accepted send cannot be repeated (30.706083ms)
+✔ pre-migration edit claim can be reconciled without replacing original message (29.635666ms)
+✔ release requires terminal state and reconciled initial send (35.606709ms)
+✔ terminal milestone can precede reconciliation, then release without final edit (32.9545ms)
+✔ old URL remains bound to old card after slot reuse (35.800708ms)
+✔ archived and terminal cards reject late worker changes (27.796583ms)
+✔ restart preserves slots, progress and unresolved claims (10.258875ms)
+✔ only unsent, unambiguous draft can be discarded (12.003917ms)
+✔ read token is scoped to exact card and slot (5.74ms)
+✔ public view omits internal identities and delivery/session state (7.258834ms)
+✔ archive read expiry does not release active tasks by elapsed time (46.375458ms)
+✔ corrupt file rejected without overwrite (1.261459ms)
+✔ stale local lock fails closed instead of stealing ownership (18.535708ms)
+✔ whole-workflow estimates stay within weighted caps and never advance stages (3.64825ms)
+✔ only confirmed completion reaches 100, including last-stage and failed cases (2.2275ms)
+✔ workflow weights require a complete ordered positive 100-point budget (1.242ms)
+✔ saved clock survives theme updates, pauses and reopening; estimate causes no writes (110.811833ms)
+✔ workflow budgets and confirmed stages cannot be rewritten backward (40.679916ms)
+ℹ tests 115
+ℹ suites 0
+ℹ pass 115
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1159.467875
+
+
+$ npm run test:skill
+
+> grokbot-live-task-cards@1.0.0 test:skill
+> node --test skills/dot-matrix-mini-app/assets/starter/dev/tap-core.test.mjs
+
+✔ physical progress brightness matches the measured fraction (0.708042ms)
+✔ analytic springs agree across 30, 60 and 120fps (8.292333ms)
+✔ A staggers center-out and reverses order; B starts simultaneously (0.713583ms)
+✔ repeated retargeting preserves position and velocity and remains bounded (5.186166ms)
+✔ confirmed progress fills monotonically without the former three pulses (2.624375ms)
+✔ zero-motion updates settle immediately for reduced motion (0.163125ms)
+✔ loops the measured source cycle without an added fade or endpoint hold (61.013666ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 124.323667
+
+
+$ npm run check
+
+> grokbot-live-task-cards@1.0.0 check
+> node scripts/check.mjs
+
+Checked 57 JavaScript modules, four task examples, and two loader assets.
+
+
+$ npm run build
+
+> grokbot-live-task-cards@1.0.0 build
+> node scripts/build.mjs
+
+Built .vercel/output (one Node function, no credentials or live sends).
+
+
+Extracted scaffold and prepare-loader commands: PASS.
+No infrastructure or messaging calls.

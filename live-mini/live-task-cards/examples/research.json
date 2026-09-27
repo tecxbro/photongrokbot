@@ -1,0 +1,21 @@
+{
+  "requestId": "demo-research-create-v1",
+  "taskId": "research-2026-001",
+  "conversationRef": "replace-with-authorized-space-id",
+  "content": {
+    "template": "dots",
+    "eyebrow": "TASK",
+    "title": "Research market",
+    "subtitle": "Sourcing · verifying · analysis",
+    "status": "running",
+    "header": "none",
+    "stages": [
+      { "id": "source", "label": "Source", "state": "done" },
+      { "id": "verify", "label": "Verify", "state": "active" },
+      { "id": "analyze", "label": "Analyze", "state": "pending" },
+      { "id": "report", "label": "Report", "state": "pending" }
+    ],
+    "detail": { "title": "Verifying", "subtitle": "Company profiles" },
+    "progress": { "completed": 27, "total": 50, "unit": "profiles verified" }
+  }
+}

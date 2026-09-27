@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+data/*
+!data/.gitkeep
+dist/
+*.log
+.DS_Store
+*.tsbuildinfo
+.venv-moonshine/
+tools/moonshine-venv/
+data/models/moonshine-hf-tmp/

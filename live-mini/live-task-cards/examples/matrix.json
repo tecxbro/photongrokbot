@@ -1,0 +1,101 @@
+{
+  "requestId": "matrix-demo-create",
+  "taskId": "matrix-demo-task",
+  "conversationRef": "replace-with-authorized-space-id",
+  "content": {
+    "template": "matrix",
+    "eyebrow": "TASK",
+    "title": "Research market",
+    "subtitle": "Estimated workflow progress",
+    "status": "running",
+    "header": "none",
+    "stages": [
+      {
+        "id": "source",
+        "label": "Source",
+        "state": "done"
+      },
+      {
+        "id": "verify",
+        "label": "Verify",
+        "state": "active"
+      },
+      {
+        "id": "analyze",
+        "label": "Analyze",
+        "state": "pending"
+      },
+      {
+        "id": "report",
+        "label": "Report",
+        "state": "pending"
+      },
+      {
+        "id": "deliver",
+        "label": "Deliver",
+        "state": "pending"
+      }
+    ],
+    "detail": {
+      "title": "Verifying",
+      "subtitle": "Company profiles"
+    },
+    "progress": null,
+    "activityPlan": [
+      {
+        "stageId": "source",
+        "icon": "researching",
+        "label": "Collect company sources"
+      },
+      {
+        "stageId": "verify",
+        "icon": "verifying",
+        "label": "Verify company profiles"
+      },
+      {
+        "stageId": "analyze",
+        "icon": "analyzing",
+        "label": "Analyze market findings"
+      },
+      {
+        "stageId": "report",
+        "icon": "report",
+        "label": "Prepare research report"
+      },
+      {
+        "stageId": "deliver",
+        "icon": "report",
+        "label": "Deliver finished report"
+      }
+    ],
+    "workflow": {
+      "weights": [
+        {
+          "stageId": "source",
+          "weight": 20,
+          "paceSeconds": 60
+        },
+        {
+          "stageId": "verify",
+          "weight": 30,
+          "paceSeconds": 60
+        },
+        {
+          "stageId": "analyze",
+          "weight": 25,
+          "paceSeconds": 60
+        },
+        {
+          "stageId": "report",
+          "weight": 15,
+          "paceSeconds": 60
+        },
+        {
+          "stageId": "deliver",
+          "weight": 10,
+          "paceSeconds": 60
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,94 @@
+/* Both approved final palettes, shared by task details and their character view. */
+:root[data-card-theme="light"] {
+  color-scheme: light;
+  --navy: #ffffff; --white: #191919; --muted: #696969;
+  --pending: #e2e2e2; --rule: #e9e9e9;
+  --character-background: #ffffff; --character-text: #171717; --character-muted: #5d584e;
+}
+:root, :root[data-card-theme="dark"] {
+  color-scheme: dark;
+  --navy: #000000; --white: #ffffff; --muted: #a2a7b1;
+  --pending: #323232; --rule: #292929;
+  --character-background: #000000; --character-text: #e8e8e8; --character-muted: #a2a7b1;
+}
+.task-matrix-shell {
+  --character-reveal: 0;
+  width: 100%; max-width: 420px; height: min(100dvh, 420px); min-height: 240px;
+  position: relative; margin: 0 auto; overflow: hidden; isolation: isolate;
+  background: var(--character-background);
+}
+.task-matrix-shell > #card-root {
+  height: 100%; width: 100%; opacity: calc(1 - var(--character-reveal));
+  transform: translateY(calc(-6px * var(--character-reveal)));
+}
+.task-matrix-shell .task-card { height: 100%; }
+.task-matrix-shell[data-view="grokbot"] > #card-root { visibility: hidden; }
+.task-character {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  opacity: var(--character-reveal); pointer-events: none;
+}
+.task-character-inner { width: 300px; height: 240px; position: relative; }
+.task-character-canvas { position: absolute; width: 168px; height: 168px; left: 66px; top: 5px; }
+.task-character-footer { position: absolute; left: 20px; right: 20px; top: 180px; }
+.task-character-title { margin: 0 0 7px; font-size: 10px; line-height: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-character-line { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.task-character-activity { font-size: 12px; line-height: 16px; font-weight: 500; color: var(--character-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-character-count { flex: none; max-width: 125px; font: 10px/16px ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--character-muted); white-space: nowrap; }
+.task-character-status { margin: 4px 0 0; font-size: 9px; line-height: 11px; color: var(--muted); }
+.task-matrix-toggle {
+  position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0;
+  border: 0; border-radius: 0; background: transparent; cursor: pointer;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.task-matrix-toggle:focus-visible { outline: 2px solid var(--white); outline-offset: -3px; }
+.playback-page .task-matrix-shell { height: min(420px, calc(100dvh - 82px)); }
+.playback-page .task-matrix-shell #card-root { height: 100%; }
+.matrix-page, .matrix-page .mini-card { background: var(--character-background); }
+.matrix-page .activity-row { color: var(--character-text); }
+.matrix-page .mini-card .count { color: var(--character-muted); }
+@media (prefers-reduced-motion: reduce) {
+  .task-matrix-shell > #card-root { transform: none; }
+}
+
+/* Card controls use ordinary single taps; no multi-tap theme gesture. */
+body { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+/* Task activity typography/motion; character animation data remains unchanged. */
+.matrix-page .activity-row { transition: transform 560ms cubic-bezier(.22,1,.36,1), opacity 420ms ease; }
+.matrix-page .planned-activities .activity-row { font-size: 12px; transform: translate3d(0,var(--y),0); }
+.matrix-page .planned-activities .activity-row svg { width: 14px; height: 14px; }
+.matrix-page .planned-activities .activity-content { --row-scale: 1; transform-origin: left center; transform: scale(var(--row-scale)); transition: transform 560ms cubic-bezier(.22,1,.36,1), opacity 420ms ease; }
+.matrix-page .planned-activities .activity-row[data-depth="1"] .activity-content { --row-scale: .916667; }
+.matrix-page .planned-activities .activity-row[data-depth="2"] .activity-content { --row-scale: .833333; }
+.matrix-page .planned-activities .activity-row:not([data-depth="0"]) .activity-content { transform: translateY(calc((1 - var(--details)) * 5px)) scale(var(--row-scale)); }
+.matrix-page .activity-row.exiting { transition: transform 240ms ease-in, opacity 180ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .matrix-page .activity-row, .matrix-page .activity-content { transition: none; }
+}
+.matrix-page .reduce-motion .activity-row, .matrix-page .reduce-motion .activity-content { transition: none; }
+.matrix-page .count { font-variant-numeric: tabular-nums; min-width: 7ch; }
+.matrix-page .activity-label { font-weight: 500; }
+
+/* A monochrome thinking sheen on current work only, never a progress signal. */
+@supports (-webkit-mask-image: linear-gradient(black, black)) or (mask-image: linear-gradient(black, black)) {
+  .matrix-page .mini-card[data-status="running"][data-target-view="progress"]:not(.motion-paused):not(.reduce-motion) .activity-row[data-depth="0"]:not(.exiting) .activity-label {
+    -webkit-mask-image: linear-gradient(100deg, rgba(0,0,0,.72) 35%, #000 50%, rgba(0,0,0,.72) 65%);
+    mask-image: linear-gradient(100deg, rgba(0,0,0,.72) 35%, #000 50%, rgba(0,0,0,.72) 65%);
+    -webkit-mask-size: 250% 100%; mask-size: 250% 100%;
+    animation: thinking-sheen 2.8s linear infinite;
+  }
+}
+@keyframes thinking-sheen {
+  from { -webkit-mask-position: 150% 0; mask-position: 150% 0; }
+  to { -webkit-mask-position: -50% 0; mask-position: -50% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .matrix-page .activity-label { animation: none !important; -webkit-mask-image: none !important; mask-image: none !important; }
+}
+
+/* Standalone demo controls sit outside the unchanged 300 × 240 card. */
+.matrix-demo-page { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 22px; }
+.matrix-demo-page #card-root { width: 300px; height: 240px; flex: none; }
+.matrix-demo-controls { width: 300px; text-align: center; }
+.matrix-demo-controls button { padding: 10px 14px; border: 1px solid var(--rule); border-radius: 8px; color: var(--white); background: transparent; font: 500 12px var(--font); cursor: pointer; }
+.matrix-demo-controls button:disabled { opacity: .5; cursor: default; }
+.matrix-demo-controls p { margin: 10px 0 0; font: 10px/14px var(--font); color: var(--muted); }

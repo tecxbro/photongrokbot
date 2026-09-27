@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><title>Grokbot · Tap to switch</title><link rel="stylesheet" href="mini-card.css"></head>
+<body>
+<article class="mini-card" id="mini-card" role="button" tabindex="0" aria-pressed="false" aria-label="Show Grokbot">
+  <canvas class="matrix-display" aria-hidden="true"></canvas>
+  <footer class="activity-strip"><div class="activity-window" aria-hidden="true"></div><p class="count" aria-hidden="true">41 / 100</p></footer>
+  <span class="task-status sr-only" role="status" aria-live="polite"></span>
+</article>
+<section class="workbench" id="workbench" hidden>
+  <h1>Tap to switch / 300 × 240</h1>
+  <p>Start with progress. Tap the card to show Grokbot; tap again to return. Task data stays independent of the view.</p>
+  <div class="controls"><button data-action="toggle">Switch view</button><label>Transition <select id="transition-style"><option value="morph">A · Coordinated dot morph</option><option value="dissolve">B · Fluid dissolve</option></select></label></div>
+  <div class="controls"><label for="confirmed">Confirmed</label><input id="confirmed" type="range" min="0" max="100" value="41"><output id="confirmed-value">41 / 100</output><button data-action="advance">Confirm one more</button></div>
+  <div class="controls"><label>Activity <select id="activity-select"><option value="verifying">Verifying company profiles</option><option value="analyzing">Analyzing findings</option><option value="report">Preparing report</option><option value="researching">Collecting sources</option></select></label></div>
+  <p class="quiet">Development inputs only. The card never infers task progress from elapsed time. D hides this bench. Enter or Space on the card switches views.</p>
+  <p><a href="compare.html">Compare A and B</a></p>
+</section>
+<script src="square-animation.js"></script><script src="dot-matrix.js"></script><script src="mini-core.js"></script><script src="mini-card.js"></script><script src="mini-demo.js"></script>
+</body></html>

@@ -1,0 +1,22 @@
+{
+  "name": "grokbot-live-task-cards",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "init": "node scripts/init.mjs",
+    "dev": "node --env-file=.env server.mjs",
+    "start": "node --env-file=.env server.mjs",
+    "preview": "node scripts/preview.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:skill": "node --test skills/dot-matrix-mini-app/assets/starter/dev/tap-core.test.mjs",
+    "check": "node scripts/check.mjs",
+    "build": "node scripts/build.mjs",
+    "card": "node --env-file=.env bin/live-card.mjs",
+    "package:handoff": "node scripts/package-handoff.mjs",
+    "verify:handoff": "node scripts/verify-handoff.mjs"
+  }
+}
