@@ -30,7 +30,7 @@ export interface BridgeStore {
   assertClaim(token: ClaimToken): void;
   bindTask(token: ClaimToken, binding: TaskBinding): void;
   getTask(taskId: string): TaskBinding | undefined;
-  enqueue(input: EnqueueOutboundInput, context: { actionKey: string; destination: Destination; purpose: string; claim?: ClaimToken; taskId?: string }): OutboundItem[];
+  enqueue(input: EnqueueOutboundInput, context: { actionKey: string; destination: Destination; purpose: string; claim?: ClaimToken; taskId?: string; presentation?: Submission["presentation"] }): OutboundItem[];
   claimOutbound(now?: number): OutboundClaim | undefined;
   settleOutbound(id: string, attemptId: string, outcome: ProviderOutcome): void;
   recoverSending(): number;
