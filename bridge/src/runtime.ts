@@ -63,7 +63,7 @@ export class GpProofRuntime {
     try {
       if (this.testPorts) this.testPorts.assertLock();
       else assertInstanceLock(this.paths);
-      const store = this.testPorts?.store ?? openStore({ paths: this.paths });
+      const store = this.testPorts?.store ?? openStore({ paths: this.paths, verifyIntegrity: true });
       this.store = store;
       const readiness = assertRuntimeReady(this.paths, store);
       store.recoverSending();

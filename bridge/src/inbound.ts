@@ -20,6 +20,7 @@ export type ContentLike = {
   size?: number;
   duration?: number;
   read?: () => Promise<Buffer | Uint8Array>;
+  stream?: () => Promise<ReadableStream<Uint8Array>> | ReadableStream<Uint8Array>;
 };
 
 export type ShapedInbound = {
@@ -35,7 +36,7 @@ export type ShapedInbound = {
   attachmentName?: string;
   attachmentMimeType?: string;
   attachmentBytes?: number;
-  /** True when content has a .read() we can download. */
+  /** True when the locked SDK exposes a stream or buffered reader. */
   hasReadableBytes?: boolean;
   attachmentDuration?: number;
 };
@@ -138,7 +139,7 @@ export function shapeInboundContent(
         : {}),
       ...(size !== undefined ? { attachmentBytes: size } : {}),
       ...(duration !== undefined ? { attachmentDuration: duration } : {}),
-      hasReadableBytes: typeof content.read === "function",
+      hasReadableBytes: typeof content.stream === "function" || typeof content.read === "function",
     };
   }
   // Echo of a poll we (or someone) created — not a user reply; ignore for wake.
@@ -237,6 +238,10 @@ export function snapshotInboundContent(value: unknown, depth = 0): ContentLike |
   if (raw.read !== undefined) {
     if (typeof raw.read !== 'function') return;
     content.read = raw.read.bind(value) as () => Promise<Buffer | Uint8Array>;
+  }
+  if (raw.stream !== undefined) {
+    if (typeof raw.stream !== 'function') return;
+    content.stream = raw.stream.bind(value) as NonNullable<ContentLike['stream']>;
   }
   if (raw.target !== undefined) {
     if (!raw.target || typeof raw.target !== 'object') return;
