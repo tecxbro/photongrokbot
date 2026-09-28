@@ -10,7 +10,7 @@ VM filesystem, or physical-device behavior.
    Record the exact old and new source commits and dependency lock digests.
 2. Inventory the actual supervisor, bridge process tree, native routines, enabled
    six-role registry, original sender and hosted line, filesystem and SQLite
-   version/source ID. Follow VM_CHECK.md only for facts unavailable from source.
+   version/source ID. Follow packet/VM_CHECK.md only for facts unavailable from source.
    Do not print credentials, full private URLs, message bodies or transcripts.
 3. Confirm the instance root is outside the checkout on a supported local
    filesystem, directories are private, and secrets are mode 0600. Preserve
@@ -20,9 +20,11 @@ VM filesystem, or physical-device behavior.
    the actual VM CPU/RAM limits. Later STT failure must leave text routing usable.
    Verify process-group cancellation and any configured cgroup without creating
    resources implicitly.
-5. Record unknown sends, native handoffs and presentation claims for explicit
+5. Record unknown sends, native handoffs, expired accepted task claims and presentation claims for explicit
    reconciliation. Neither a webhook HTTP acknowledgment nor a queued outbox row
    proves completion. An accepted provider reference does not prove device display.
+   An expired accepted task requires exact native receipt/status reconciliation
+   under the offline lock; do not create a replacement task or reuse its stale token.
 
 ## Cutover
 
