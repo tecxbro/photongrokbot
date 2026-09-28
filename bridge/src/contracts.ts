@@ -22,7 +22,7 @@ export interface BridgeStore {
   readonly installationId: string;
   close(): void;
   accept(input: AcceptInput): AcceptResult;
-  formBatches(now?: number): UnreadBatch[];
+  formBatches(now?: number, destinations?: Destination[]): UnreadBatch[];
   readBatch(batchId: string): UnreadBatch;
   claimBatch(batchId: string, leaseMs?: number): ClaimResult;
   renewClaim(token: ClaimToken, leaseMs?: number): void;
