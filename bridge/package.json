@@ -15,7 +15,8 @@
     "setup-state": "bun run src/setup-state.ts",
     "preflight": "bun run src/preflight.ts",
     "prune-instance": "bun run src/prune-instance.ts",
-    "export-instance": "bun run src/export-instance.ts"
+    "export-instance": "bun run src/export-instance.ts",
+    "presentation-control": "bun run src/presentation-control.ts"
   },
   "dependencies": {
     "heif2jpeg": "0.1.6",
