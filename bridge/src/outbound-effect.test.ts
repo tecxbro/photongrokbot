@@ -2,7 +2,7 @@ import { OutboundEffectError, prepareOutboundEffect, MESSAGE_EFFECT_NAMES } from
 import { enqueueOutbound, updateOutbound } from "./storage.ts";
 import { ensureDataDir } from "./storage.ts";
 
-function assert(cond: unknown, msg: string): void {
+function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
 }
 

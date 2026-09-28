@@ -1,16 +1,15 @@
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { resolveInstancePaths } from "../../shared/instance-paths.mjs";
 
-export const PREFIX = "{{DEPLOY_ID_PREFIX}}";
+export const PREFIX = "photon";
 export const DEBOUNCE_MS = 2000;
 /** Best-effort typing indicator timeout after unread flush. */
 /** Keep showing typing until first text/reply, refreshing periodically. */
 export const TYPING_TIMEOUT_MS = 120_000;
 /** Re-send startTyping so iMessage indicator does not die mid-wait. */
 export const TYPING_HEARTBEAT_MS = 20_000;
-const ROOT = dirname(fileURLToPath(import.meta.url));
-export const DATA_DIR = join(ROOT, "../data");
-export const ENV_PATH = join(ROOT, "../.env");
+// Pure resolution only. Tests must inject a guarded temporary instance.
+export const DATA_DIR = resolveInstancePaths().dataDir;
+export const ENV_PATH = resolveInstancePaths().bridgeEnv;
 
 /** One card / option in an image stack (parallel to attachmentPaths). */
 export type CardOptionMeta = {
@@ -18,6 +17,9 @@ export type CardOptionMeta = {
   title?: string;
   url?: string;
   caption?: string;
+  details?: string;
+  price?: string;
+  priceQualifier?: string;
 };
 
 /** Part→option row persisted on attachment_group send (Spectrum child id). */
@@ -30,12 +32,21 @@ export type AttachmentGroupPart = {
   title?: string;
   url?: string;
   caption?: string;
+  details?: string;
+  price?: string;
+  priceQualifier?: string;
 };
 
 export type InboundRecord = {
   id: string;
   spaceId: string;
   senderId: string;
+  lineId?: string;
+  replyToMessageId?: string;
+  reactionSelected?: boolean;
+  mediaState?: "pending" | "processing" | "ready" | "failed" | "unavailable";
+  mediaJobId?: string;
+  mediaError?: string;
   /** Display text; for reactions a short summary like `reacted ❤️`. */
   text: string;
   timestamp: string;
@@ -76,6 +87,9 @@ export type InboundRecord = {
   optionTitle?: string;
   optionUrl?: string;
   optionCaption?: string;
+  optionDetails?: string;
+  optionPrice?: string;
+  optionPriceQualifier?: string;
   optionBatchId?: string;
   /** true when part→option map missing / batch-only / incomplete. */
   optionAmbiguous?: boolean;
@@ -91,6 +105,7 @@ export const INBOUND_ATTACHMENT_MAX_BYTES = 100 * 1024 * 1024;
 export type UnreadBatch = {
   batchId: string;
   flushedAt: string;
+  destination?: import("./contracts.ts").Destination;
   messages: InboundRecord[];
   /** Set when runtime already answered (skip Front Door / Chatty). */
   handledBy?: "runtime-greeting";
@@ -100,7 +115,13 @@ type OutboundBase = {
   id: string;
   spaceId: string;
   createdAt: string;
-  status: "queued" | "sent" | "failed";
+  status: import("./contracts.ts").DeliveryState | "sent";
+  lineId?: string;
+  messageId?: string;
+  actionKey?: string;
+  purpose?: string;
+  operationId?: string;
+  partIndex?: number;
   attempts: number;
   sentAt?: string;
   failedAt?: string;
