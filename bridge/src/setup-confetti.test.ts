@@ -1,50 +1,32 @@
-import { copyFile, unlink } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import {
-  hasSetupConfettiBeenSent,
-  markSetupConfettiSent,
-  SETUP_CONFETTI_MARKER_PATH,
-} from "./setup-confetti.ts";
+import { afterEach, expect, test } from 'bun:test';
+import { fixture, record } from './tests/storage/fixture.ts';
+import { hasSetupConfettiBeenSent, markSetupConfettiSent } from './setup-confetti.ts';
+import { readOnboarding } from './onboarding.ts';
+import { openStore } from './storage.ts';
+const cleanups: (() => void)[] = [];
+afterEach(() => { for (const clean of cleanups.splice(0)) clean(); });
+function setup() { const f = fixture(); cleanups.push(f.cleanup); return f; }
 
-function assert(cond: unknown, msg: string): void {
-  if (!cond) throw new Error(msg);
-}
-
-const backup = `${SETUP_CONFETTI_MARKER_PATH}.test-bak`;
-const hadMarker = existsSync(SETUP_CONFETTI_MARKER_PATH);
-if (hadMarker) {
-  await copyFile(SETUP_CONFETTI_MARKER_PATH, backup);
-  await unlink(SETUP_CONFETTI_MARKER_PATH);
-}
-
-try {
-  assert(
-    (await hasSetupConfettiBeenSent()) === false,
-    "fresh marker should be false",
-  );
-
-  await markSetupConfettiSent("2026-09-23T12:00:00.000Z");
-  assert(
-    (await hasSetupConfettiBeenSent()) === true,
-    "after mark should be true",
-  );
-
-  // idempotent — second mark must not throw / flip false
-  await markSetupConfettiSent("2026-09-23T13:00:00.000Z");
-  assert(
-    (await hasSetupConfettiBeenSent()) === true,
-    "still true after second mark",
-  );
-
-  console.log("ALL_SETUP_CONFETTI_TESTS_PASSED");
-} finally {
-  if (existsSync(SETUP_CONFETTI_MARKER_PATH)) {
-    await unlink(SETUP_CONFETTI_MARKER_PATH);
-  }
-  if (hadMarker && existsSync(backup)) {
-    await copyFile(backup, SETUP_CONFETTI_MARKER_PATH);
-    await unlink(backup);
-  } else if (existsSync(backup)) {
-    await unlink(backup);
-  }
-}
+test('U05 onboarding is the store operation; queued/unknown are not accepted and no marker writer exists', async () => {
+  const { store } = setup();
+  expect(await hasSetupConfettiBeenSent(store)).toBe(false);
+  store.accept({ eventKey: 'hello', record: record('hello'), destination: { spaceId: 'space-1', lineId: 'line-1' }, onboarding: true, greetingOnly: true });
+  expect(readOnboarding(store).reserved).toBe(true); expect(await hasSetupConfettiBeenSent(store)).toBe(false);
+  await expect(markSetupConfettiSent()).rejects.toThrow('ONBOARDING_REQUIRES_DURABLE_PROVIDER_SETTLEMENT');
+  const attempt = store.claimOutbound()!; store.settleOutbound(attempt.item.id, attempt.attemptId, { state: 'unknown', code: 'SYNTHETIC_TIMEOUT' });
+  expect(readOnboarding(store).state).toBe('unknown'); expect(await hasSetupConfettiBeenSent(store)).toBe(false);
+});
+test('U05 compatibility read reports provider acceptance separately from physical device observation', async () => {
+  const { store, paths } = setup();
+  store.accept({ eventKey: 'hello', record: record('hello'), destination: { spaceId: 'space-1', lineId: 'line-1' }, onboarding: true });
+  const attempt = store.claimOutbound()!; store.settleOutbound(attempt.item.id, attempt.attemptId, { state: 'accepted', evidence: 'synthetic test provider', reference: { messageId: 'provider-hello' } });
+  const readonly = openStore({ paths, readOnly: true });
+  try { expect(await hasSetupConfettiBeenSent(readonly)).toBe(true); expect(readOnboarding(readonly).deviceObserved).toBe(false); } finally { readonly.close(); }
+});
+test('U05 legacy marker preserves no-repeat behavior without a fabricated new provider/device receipt', async () => {
+  const { store } = setup();
+  store.setMetadata('onboarding', 'reservation', { state: 'legacy-recorded', provenance: 'legacy-marker-not-device-observation', outboundIds: [] });
+  expect(await hasSetupConfettiBeenSent(store)).toBe(true); expect(readOnboarding(store).deviceObserved).toBe(false);
+  const accepted = store.accept({ eventKey: 'new', record: record('new'), destination: { spaceId: 'space-1', lineId: 'line-1' }, onboarding: true, greetingOnly: true });
+  expect(accepted.onboardingCreated).toBe(false); expect(store.listOutbound()).toHaveLength(0); expect(store.formBatches()).toHaveLength(1);
+});

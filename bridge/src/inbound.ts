@@ -8,7 +8,7 @@ export type ContentLike = {
   markdown?: string;
   content?: ContentLike;
   emoji?: string;
-  target?: { id?: string };
+  target?: { id?: string; space?: { id?: string; phone?: string } };
   title?: string;
   selected?: boolean;
   option?: { title?: string };
@@ -25,6 +25,7 @@ export type ContentLike = {
 export type ShapedInbound = {
   kind: "text" | "reaction" | "poll_vote" | "attachment" | "voice";
   text: string;
+  replyToMessageId?: string;
   emoji?: string;
   targetMessageId?: string;
   pollTitle?: string;
@@ -46,7 +47,9 @@ export type ShapedInbound = {
  */
 export function shapeInboundContent(
   content: ContentLike | undefined,
+  depth = 0,
 ): ShapedInbound | null {
+  if (depth > 8) return null;
   if (!content) return null;
 
   if (content.type === "text" && typeof content.text === "string") {
@@ -56,7 +59,9 @@ export function shapeInboundContent(
     return { kind: "text", text: content.markdown };
   }
   if (content.type === "reply") {
-    return shapeInboundContent(content.content);
+    const shaped = shapeInboundContent(content.content, depth + 1);
+    if (!shaped) return null;
+    return { ...shaped, ...(typeof content.target?.id === "string" && content.target.id ? { replyToMessageId: content.target.id } : {}) };
   }
   if (content.type === "reaction") {
     const emoji =
@@ -113,11 +118,11 @@ export function shapeInboundContent(
           ? "audio/mp4"
           : "application/octet-stream";
     const size =
-      typeof content.size === "number" && content.size >= 0
+      typeof content.size === "number" && Number.isFinite(content.size) && content.size >= 0
         ? content.size
         : undefined;
     const duration =
-      typeof content.duration === "number" && content.duration >= 0
+      typeof content.duration === "number" && Number.isFinite(content.duration) && content.duration >= 0
         ? content.duration
         : undefined;
     const label = isVoice
@@ -155,6 +160,10 @@ export function toInboundRecord(
     senderId: string;
     timestamp: string;
     receivedAt: string;
+    lineId?: string;
+    pollMessageId?: string;
+    pollOptionId?: string;
+    reactionSelected?: boolean;
   },
   extras?: {
     attachmentPath?: string;
@@ -172,6 +181,11 @@ export function toInboundRecord(
     timestamp: meta.timestamp,
     receivedAt: meta.receivedAt,
     kind: shaped.kind,
+    ...(meta.lineId ? { lineId: meta.lineId } : {}),
+    ...(shaped.replyToMessageId ? { replyToMessageId: shaped.replyToMessageId } : {}),
+    ...(meta.pollMessageId ? { pollMessageId: meta.pollMessageId } : {}),
+    ...(meta.pollOptionId ? { pollOptionId: meta.pollOptionId } : {}),
+    ...(meta.reactionSelected !== undefined ? { reactionSelected: meta.reactionSelected } : {}),
     ...(shaped.emoji ? { emoji: shaped.emoji } : {}),
     ...(shaped.targetMessageId
       ? { targetMessageId: shaped.targetMessageId }

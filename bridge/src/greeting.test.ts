@@ -33,9 +33,10 @@ describe("classifyCasualText", () => {
       expect(classifyCasualText(t)).toBe("greeting");
     }
   });
-  test("thanks and acks", () => {
-    expect(classifyCasualText("thanks")).toBe("thanks");
-    expect(classifyCasualText("ok")).toBe("ack");
+  test("thanks and acknowledgements retain conversational context", () => {
+    expect(classifyCasualText("thanks")).toBeNull();
+    expect(classifyCasualText("ok")).toBeNull();
+    expect(classifyCasualText("yeah")).toBeNull();
   });
   test("rejects tasks", () => {
     expect(classifyCasualText("hi can you find housing")).toBeNull();
@@ -47,9 +48,9 @@ describe("isGreetingOnlyBatch", () => {
   test("pure hi", () => {
     expect(isGreetingOnlyBatch([msg("hi")])).toBe(true);
   });
-  test("hi plus reaction ok", () => {
+  test("hi plus reaction must route to Front Door", () => {
     expect(isGreetingOnlyBatch([msg("hey"), msg("reacted ❤️", "reaction")])).toBe(
-      true,
+      false,
     );
   });
   test("task rejects", () => {
