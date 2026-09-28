@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "batchId": "BATCH_FROM_CLAIM",
+  "claim": { "batchId": "BATCH_FROM_CLAIM", "runId": "RUN_FROM_CLAIM", "generation": 1 },
+  "inputRevision": 1,
+  "actionKey": "answer:1",
+  "purpose": "final",
+  "payload": { "kind": "text", "spaceId": "SPACE_FROM_BOUND_BATCH", "text": "The useful answer." }
+}

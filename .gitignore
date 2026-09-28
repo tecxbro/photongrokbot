@@ -8,3 +8,12 @@ data/models/
 *.log
 pids/
 .DS_Store
+
+# Private instance files: keep legacy locations out of source control.
+/live-mini/secrets/
+/live-mini/runtime/state/
+.env.*
+*.env
+*.env.bak*
+!.env.example
+!*.env.example

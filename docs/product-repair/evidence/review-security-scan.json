@@ -1,0 +1,851 @@
+{
+  "sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+  "scope": "current tracked tree only; no history or credential validation",
+  "tracked_files": 353,
+  "text_files": 348,
+  "total_bytes": 10261239,
+  "categories": {
+    "personal-roster-term": 2,
+    "phone-number": 33,
+    "capability-url": 17,
+    "credential-assignment": 15,
+    "email-address": 13,
+    "uuid-literal": 1,
+    "provider-token-format": 1
+  },
+  "candidates": [
+    {
+      "path": "bridge/scripts/check-instructions.ts",
+      "line": 14,
+      "category": "personal-roster-term",
+      "matches": 4,
+      "classification": "prohibited-roster-regression-pattern"
+    },
+    {
+      "path": "bridge/src/inbound-controller.test.ts",
+      "line": 10,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/inbound-controller.test.ts",
+      "line": 35,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/inbound-controller.test.ts",
+      "line": 54,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/inbound-controller.test.ts",
+      "line": 95,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/inbound-process.test.ts",
+      "line": 9,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/private-setup.test.ts",
+      "line": 15,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/private-setup.test.ts",
+      "line": 15,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/private-setup.test.ts",
+      "line": 66,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/private-setup.test.ts",
+      "line": 68,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/private-setup.test.ts",
+      "line": 74,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/private-setup.test.ts",
+      "line": 128,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/private-storage.test.ts",
+      "line": 84,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/runtime.test.ts",
+      "line": 17,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/runtime.test.ts",
+      "line": 93,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/setup-verification.ts",
+      "line": 10,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "source-code-or-guidance"
+    },
+    {
+      "path": "bridge/src/setup-verification.ts",
+      "line": 24,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "type-declaration-no-literal"
+    },
+    {
+      "path": "bridge/src/setup-verification.ts",
+      "line": 34,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "type-comparison-no-literal"
+    },
+    {
+      "path": "bridge/src/tests/presentation-control.test.ts",
+      "line": 29,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/process.test.ts",
+      "line": 316,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 862,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 888,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 951,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 952,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 953,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 953,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 954,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 955,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 957,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 958,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 959,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 960,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "bridge/src/types.ts",
+      "line": 113,
+      "category": "personal-roster-term",
+      "matches": 1,
+      "classification": "inactive-stale-role-comment-advisory"
+    },
+    {
+      "path": "bridge/src/wake-dispatcher.test.ts",
+      "line": 7,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "live-mini/live-task-cards/.env.example",
+      "line": 5,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "explicit-replacement-placeholder"
+    },
+    {
+      "path": "live-mini/live-task-cards/docs/SOURCES.md",
+      "line": 11,
+      "category": "uuid-literal",
+      "matches": 2,
+      "classification": "historical-supplied-asset-filenames"
+    },
+    {
+      "path": "live-mini/live-task-cards/scripts/preview.mjs",
+      "line": 3,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "source-code-or-guidance"
+    },
+    {
+      "path": "live-mini/live-task-cards/tests/build-runtime.test.mjs",
+      "line": 20,
+      "category": "provider-token-format",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "live-mini/live-task-cards/tests/build-runtime.test.mjs",
+      "line": 20,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "live-mini/live-task-cards/tests/build-runtime.test.mjs",
+      "line": 21,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "live-mini/live-task-cards/tests/model.test.mjs",
+      "line": 84,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "live-mini/live-task-cards/tests/model.test.mjs",
+      "line": 99,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "live-mini/live-task-cards/tests/model.test.mjs",
+      "line": 102,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "live-mini/live-task-cards/tests/model.test.mjs",
+      "line": 103,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "live-mini/live-task-cards/tests/model.test.mjs",
+      "line": 106,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "live-mini/runtime/live-card-milestones.test.mjs",
+      "line": 613,
+      "category": "credential-assignment",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "live-mini/runtime/live-card-milestones.test.mjs",
+      "line": 726,
+      "category": "capability-url",
+      "matches": 1,
+      "classification": "test-source"
+    },
+    {
+      "path": "photon-skills/imessage/references/hosted-v2.md",
+      "line": 30,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/hosted-v2.md",
+      "line": 57,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/hosted-v2.md",
+      "line": 76,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/hosted-v2.md",
+      "line": 78,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/hosted-v2.md",
+      "line": 79,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/hosted-v2.md",
+      "line": 87,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/local-v3.md",
+      "line": 43,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/local-v3.md",
+      "line": 48,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/local-v3.md",
+      "line": 74,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/local-v3.md",
+      "line": 75,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/local-v3.md",
+      "line": 85,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/local-v3.md",
+      "line": 86,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/local-v3.md",
+      "line": 233,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/local-v3.md",
+      "line": 250,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/spectrum.md",
+      "line": 60,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/spectrum.md",
+      "line": 63,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/imessage/references/spectrum.md",
+      "line": 64,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/photon-cli/commands.md",
+      "line": 95,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/photon-cli/spectrum.md",
+      "line": 38,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/photon-cli/spectrum.md",
+      "line": 43,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/photon-cli/spectrum.md",
+      "line": 43,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/best-practices.md",
+      "line": 196,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/content.md",
+      "line": 61,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/platform-narrowing.md",
+      "line": 12,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/providers/imessage.md",
+      "line": 24,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/providers/imessage.md",
+      "line": 25,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/providers/imessage.md",
+      "line": 60,
+      "category": "email-address",
+      "matches": 1,
+      "classification": "public-vendor-contact"
+    },
+    {
+      "path": "photon-skills/spectrum/providers/imessage.md",
+      "line": 67,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/providers/imessage.md",
+      "line": 68,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/providers/imessage.md",
+      "line": 69,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/spaces-and-users.md",
+      "line": 45,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/spaces-and-users.md",
+      "line": 46,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/spaces-and-users.md",
+      "line": 57,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/spaces-and-users.md",
+      "line": 58,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    },
+    {
+      "path": "photon-skills/spectrum/spaces-and-users.md",
+      "line": 71,
+      "category": "phone-number",
+      "matches": 1,
+      "classification": "synthetic-or-placeholder"
+    }
+  ],
+  "binaries": [
+    {
+      "path": "live-mini/live-task-cards/public/assets/hands.png",
+      "format": "PNG",
+      "bytes": 237469,
+      "sha256": "6b010993ea073d6f9a9b28876be91aeb269379dc004ceb830376d709f762cd67",
+      "width": 750,
+      "height": 469,
+      "chunks": {
+        "IHDR": 1,
+        "sRGB": 1,
+        "eXIf": 1,
+        "IDAT": 15,
+        "IEND": 1
+      },
+      "metadata": [
+        {
+          "chunk": "eXIf",
+          "bytes": 68
+        }
+      ],
+      "crc_valid": true,
+      "trailing_bytes": 0,
+      "exif_tags": [
+        {
+          "tag": "0x8769",
+          "name": "ExifIFD",
+          "type": 4,
+          "count": 1
+        },
+        {
+          "tag": "0xa001",
+          "name": "ColorSpace",
+          "type": 3,
+          "count": 1
+        },
+        {
+          "tag": "0xa002",
+          "name": "PixelXDimension",
+          "type": 4,
+          "count": 1
+        },
+        {
+          "tag": "0xa003",
+          "name": "PixelYDimension",
+          "type": 4,
+          "count": 1
+        }
+      ],
+      "visual_review": "generic visual/reference card; no visible secrets or personal conversation data"
+    },
+    {
+      "path": "live-mini/live-task-cards/public/assets/study.png",
+      "format": "PNG",
+      "bytes": 2240148,
+      "sha256": "2e0355dc598e5a4da095555f4e7228b2446f1ea682b13887af23c91b85236405",
+      "width": 1536,
+      "height": 768,
+      "chunks": {
+        "IHDR": 1,
+        "sRGB": 1,
+        "eXIf": 1,
+        "IDAT": 137,
+        "IEND": 1
+      },
+      "metadata": [
+        {
+          "chunk": "eXIf",
+          "bytes": 68
+        }
+      ],
+      "crc_valid": true,
+      "trailing_bytes": 0,
+      "exif_tags": [
+        {
+          "tag": "0x8769",
+          "name": "ExifIFD",
+          "type": 4,
+          "count": 1
+        },
+        {
+          "tag": "0xa001",
+          "name": "ColorSpace",
+          "type": 3,
+          "count": 1
+        },
+        {
+          "tag": "0xa002",
+          "name": "PixelXDimension",
+          "type": 4,
+          "count": 1
+        },
+        {
+          "tag": "0xa003",
+          "name": "PixelYDimension",
+          "type": 4,
+          "count": 1
+        }
+      ],
+      "visual_review": "generic visual/reference card; no visible secrets or personal conversation data"
+    },
+    {
+      "path": "live-mini/live-task-cards/references/01-dot-grid.png",
+      "format": "PNG",
+      "bytes": 1848169,
+      "sha256": "b6f66020ece15d2efb07ea633e12438fe71ef9b460331cb43efe4a3aecbba8c3",
+      "width": 1254,
+      "height": 1254,
+      "chunks": {
+        "IHDR": 1,
+        "sRGB": 1,
+        "eXIf": 1,
+        "IDAT": 113,
+        "IEND": 1
+      },
+      "metadata": [
+        {
+          "chunk": "eXIf",
+          "bytes": 68
+        }
+      ],
+      "crc_valid": true,
+      "trailing_bytes": 0,
+      "exif_tags": [
+        {
+          "tag": "0x8769",
+          "name": "ExifIFD",
+          "type": 4,
+          "count": 1
+        },
+        {
+          "tag": "0xa001",
+          "name": "ColorSpace",
+          "type": 3,
+          "count": 1
+        },
+        {
+          "tag": "0xa002",
+          "name": "PixelXDimension",
+          "type": 4,
+          "count": 1
+        },
+        {
+          "tag": "0xa003",
+          "name": "PixelYDimension",
+          "type": 4,
+          "count": 1
+        }
+      ],
+      "visual_review": "generic visual/reference card; no visible secrets or personal conversation data"
+    },
+    {
+      "path": "live-mini/live-task-cards/references/02-segments.png",
+      "format": "PNG",
+      "bytes": 1890726,
+      "sha256": "86dee4210d8166939cb95eb90071c5ed4dc584d17cf87ad23a8e5afa64ab5a3a",
+      "width": 1254,
+      "height": 1254,
+      "chunks": {
+        "IHDR": 1,
+        "sRGB": 1,
+        "eXIf": 1,
+        "IDAT": 116,
+        "IEND": 1
+      },
+      "metadata": [
+        {
+          "chunk": "eXIf",
+          "bytes": 68
+        }
+      ],
+      "crc_valid": true,
+      "trailing_bytes": 0,
+      "exif_tags": [
+        {
+          "tag": "0x8769",
+          "name": "ExifIFD",
+          "type": 4,
+          "count": 1
+        },
+        {
+          "tag": "0xa001",
+          "name": "ColorSpace",
+          "type": 3,
+          "count": 1
+        },
+        {
+          "tag": "0xa002",
+          "name": "PixelXDimension",
+          "type": 4,
+          "count": 1
+        },
+        {
+          "tag": "0xa003",
+          "name": "PixelYDimension",
+          "type": 4,
+          "count": 1
+        }
+      ],
+      "visual_review": "generic visual/reference card; no visible secrets or personal conversation data"
+    },
+    {
+      "path": "live-mini/live-task-cards/references/03-stages.png",
+      "format": "PNG",
+      "bytes": 1962673,
+      "sha256": "92512c59e9961aea1d2a70b04b218076097799f0b5efd030d8ff33bca1ff56ad",
+      "width": 1254,
+      "height": 1254,
+      "chunks": {
+        "IHDR": 1,
+        "sRGB": 1,
+        "eXIf": 1,
+        "IDAT": 120,
+        "IEND": 1
+      },
+      "metadata": [
+        {
+          "chunk": "eXIf",
+          "bytes": 68
+        }
+      ],
+      "crc_valid": true,
+      "trailing_bytes": 0,
+      "exif_tags": [
+        {
+          "tag": "0x8769",
+          "name": "ExifIFD",
+          "type": 4,
+          "count": 1
+        },
+        {
+          "tag": "0xa001",
+          "name": "ColorSpace",
+          "type": 3,
+          "count": 1
+        },
+        {
+          "tag": "0xa002",
+          "name": "PixelXDimension",
+          "type": 4,
+          "count": 1
+        },
+        {
+          "tag": "0xa003",
+          "name": "PixelYDimension",
+          "type": 4,
+          "count": 1
+        }
+      ],
+      "visual_review": "generic visual/reference card; no visible secrets or personal conversation data"
+    }
+  ],
+  "conclusion": "No actual credential, private key or real access capability identified in current tracked scope; bounded heuristic scan plus manual source and visual review is not proof of secret absence.",
+  "limitations": [
+    "No historical tree scan, credential validation, rotation or history rewrite.",
+    "No private runtime instance, VM, provider account or deployment inspected.",
+    "Asset rights and Marketplace requirements remain deferred.",
+    "One inactive stale role comment remains advisory."
+  ]
+}

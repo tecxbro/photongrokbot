@@ -73,15 +73,7 @@ const updated = await client.update(cardId, {
 });
 ```
 
-The existing shared runtime calls the same write through `liveCards.update`:
-
-```js
-await liveCards.update(cardId, {
-  requestId: 'research-progress-002',
-  expectedRevision: record.revision,
-  content,
-}, originalAuthorizedSpace);
-```
+The integrated product sends this write through the [canonical VM helper](../../runtime/README.md) with explicit taskKey, original task/claim context, expectedRevision and requestId. The helper journals the exact pending/applied operation; it does not perform a second direct Spectrum send.
 
 Do not call both for the same logical write with different request IDs. A matching retry is safe; a stale unrelated update gets `REVISION_CONFLICT`. Confirmed content writes remain allowed during an unresolved initial send. The send attempt itself cannot be repeated until reconciled. Each milestone is one full snapshot and one state write; browser animation and polling cause no writes.
 To honor a light-mode request for an active card, use the same update operation with `{ ...record.content, theme: "light" }`. The exact `viewUrl` remains unchanged. Terminal content remains immutable, including its final theme.
@@ -126,7 +118,7 @@ The measured `progress` contract remains valid for older matrix cards and the ot
 
 ## Provider presentation ledger
 
-The supplied runtime helper handles these calls. They do not call Photon themselves.
+The canonical helper and bridge runtime coordinate these calls. These host endpoints do not call Photon themselves.
 
 Begin body: `{ "revision": 1 }`. A new claim returns its `attempt.id`, `kind: "send"`, and the revision at claim time. Once the initial message reference is accepted, later begin calls return `skipped: true`. Another in-flight or unknown initial send blocks duplicate dispatch; it is not silently timed out or stolen.
 
@@ -146,7 +138,7 @@ The host stores only the opaque reference from the one initial send. State updat
 
 ## Release, discard and history
 
-Release body: `{ "expectedRevision": 3 }`. The task must be terminal, no initial send may be pending, and the initial message reference must be accepted or reconciled. The helper releases automatically after a terminal update when the send is settled; a later `sync()` releases a terminal card whose initial send was reconciled afterward.
+Release body: `{ "expectedRevision": 3 }`. The task must be terminal, no initial send may be pending, and the initial message reference must be accepted or reconciled. The helper releases automatically after a terminal update when the send is settled; the canonical helper can release a terminal card after exact initial-send reconciliation.
 
 Discard body: `{}`. It only applies to a draft with no accepted message and no unresolved send. Discarding a draft does not cancel the real underlying task.
 

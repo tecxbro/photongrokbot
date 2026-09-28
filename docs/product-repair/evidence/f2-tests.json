@@ -1,0 +1,181 @@
+{
+  "sha": "3677b1a2c2137bb0eaff708dccee656b09b03344",
+  "node": "v22.23.3",
+  "results": [
+    {
+      "label": "bridge frozen install",
+      "exit": 0,
+      "output": "bun install v1.4.2 (744846f84)\n\nChecked 137 installs across 130 packages (no changes) [41.00ms]\n"
+    },
+    {
+      "label": "bridge/src/activity.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/activity.test.ts:\n(pass) W04 typing remains through progress and stops when active work ends [9.42ms]\n(pass) W04 typing expires once and cannot renew itself forever [0.10ms]\n\n 2 pass\n 0 fail\n 3 expect() calls\nRan 2 tests across 1 file. [36.00ms]\n"
+    },
+    {
+      "label": "bridge/src/batch-claim.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/batch-claim.test.ts:\n(pass) claim facade requires run token, never resumes by bot identity [32.99ms]\n(pass) claim facade rejects path traversal [10.72ms]\n\n 2 pass\n 0 fail\n 4 expect() calls\nRan 2 tests across 1 file. [85.00ms]\n"
+    },
+    {
+      "label": "bridge/src/greeting.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/greeting.test.ts:\n(pass) normalizeGreetingText > strips punctuation and case [1.45ms]\n(pass) classifyCasualText > greetings [0.08ms]\n(pass) classifyCasualText > thanks and acknowledgements retain conversational context [0.15ms]\n(pass) classifyCasualText > rejects tasks [0.02ms]\n(pass) isGreetingOnlyBatch > pure hi [0.07ms]\n(pass) isGreetingOnlyBatch > hi plus reaction must route to Front Door [0.01ms]\n(pass) isGreetingOnlyBatch > task rejects [0.01ms]\n(pass) isGreetingOnlyBatch > reaction only does not fast-path\n(pass) pickCannedReply > stable for salt [0.41ms]\n(pass) pickCannedReply > batchCasualKind prefers greeting [0.03ms]\n\n 10 pass\n 0 fail\n 22 expect() calls\nRan 10 tests across 1 file. [8.00ms]\n"
+    },
+    {
+      "label": "bridge/src/inbound-attachment.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/inbound-attachment.test.ts:\n(pass) display and atomic private save preserve metadata; jobs cannot collide [6.27ms]\n(pass) declared, streamed and buffered oversize fail; stream is cancelled [2.78ms]\n(pass) stalled stream gets a deadline and cancellation [22.55ms]\n(pass) bounded buffer fallback remains supported; empty download fails [1.74ms]\n(pass) unsafe dot names and symlinked private directory are rejected [2.81ms]\n(pass) interrupted atomic write never publishes a ready output [15.82ms]\n(pass) failed isolated HEIF conversion retains original with degraded status [41.54ms]\n\n 7 pass\n 0 fail\n 26 expect() calls\nRan 7 tests across 1 file. [108.00ms]\n"
+    },
+    {
+      "label": "bridge/src/cards-ready.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/cards-ready.test.ts:\n(pass) K01 concurrent Front Door/watchdog inserts one logical grouped operation [28.02ms]\n(pass) K02 exact operation states never equated to delivered by filenames [23.87ms]\n(pass) K03 missing middle card waits without shifting metadata; complete five remains group [10.31ms]\n(pass) card metadata/count conflicts fail closed; stability helper requires exact expected count [7.49ms]\n(pass) historical completed markers do not block pending kind enumeration [96.11ms]\n\n 5 pass\n 0 fail\n 25 expect() calls\nRan 5 tests across 1 file. [177.00ms]\n"
+    },
+    {
+      "label": "bridge/src/attachment-group.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/attachment-group.test.ts:\n(pass) four, five and seven attachments retain one grouped queued operation [57.46ms]\n(pass) group rejects fewer than two paths without queue mutation [8.05ms]\n(pass) synthetic staged PNG becomes JPEG; returned JPEG passes through [185.28ms]\n\n 3 pass\n 0 fail\n 13 expect() calls\nRan 3 tests across 1 file. [295.00ms]\n"
+    },
+    {
+      "label": "bridge/src/inbound.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/inbound.test.ts:\nALL_INBOUND_TESTS_PASSED\n\n 0 pass\n 0 fail\nRan 0 tests across 1 file. [11.00ms]\n"
+    },
+    {
+      "label": "bridge/src/inbound-controller.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/inbound-controller.test.ts:\n(pass) durable authorized reception > U01 first hi produces one greeting-confetti operation, repeated hi routes to Front Door [17.36ms]\n(pass) durable authorized reception > U02 first substantive question gets onboarding and durable Front Door work [7.69ms]\n(pass) durable authorized reception > U03 voice accepts and celebrates before any bytes; failed STT remains correlated and text continues [9.55ms]\n(pass) durable authorized reception > U04 unauthorized input, echo and receipt persist nothing and never read attachment bytes [10.05ms]\n(pass) durable authorized reception > U05 duplicate/restart/unknown retain original onboarding identity without another send [9.16ms]\n(pass) durable authorized reception > U06/U07 contextual okay, thanks, yeah and mixed reactions always reach Front Door [8.98ms]\n(pass) durable authorized reception > U08 exact older reply target, known poll identity and two destination/line pairs remain isolated [9.12ms]\n(pass) durable authorized reception > U08 rejects mismatched provider space/target but preserves existing authorized group scope [7.76ms]\n(pass) durable authorized reception > D02 commit failure occurs before any receive side effect and leaves no false accepted result [8.30ms]\n(pass) durable authorized reception > W02 independently due conversations, boot recovery and stop never lose pending acceptance [9.10ms]\n(pass) D03 batches above storage page size retain a due continuation across recovery flush [48.62ms]\n(pass) U04 SDK unknown union narrows locally; contact name objects and malformed media are ignored without casting [8.74ms]\n\n 12 pass\n 0 fail\n 59 expect() calls\nRan 12 tests across 1 file. [167.00ms]\n"
+    },
+    {
+      "label": "bridge/src/inbound-process.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/inbound-process.test.ts:\n(pass) D02 receiver SIGKILL before_commit preserves exactly one accepted input and onboarding action on replay [41.70ms]\n(pass) D03 controller SIGKILL before_commit batch formation preserves one input membership and wake [31.13ms]\n(pass) D02 receiver SIGKILL after_commit preserves exactly one accepted input and onboarding action on replay [28.84ms]\n(pass) D03 controller SIGKILL after_commit batch formation preserves one input membership and wake [29.16ms]\n(pass) W03 separate wake processes behind deterministic barrier make one request for the same job [38.42ms]\n\n 5 pass\n 0 fail\n 32 expect() calls\nRan 5 tests across 1 file. [181.00ms]\n"
+    },
+    {
+      "label": "bridge/src/instance-lock.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/instance-lock.test.ts:\n(pass) W04: separate owner cannot steal lifetime lock; SIGKILL releases it [102.04ms]\n\n 1 pass\n 0 fail\n 4 expect() calls\nRan 1 test across 1 file. [109.00ms]\n"
+    },
+    {
+      "label": "bridge/src/job-loop.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/job-loop.test.ts:\n(pass) W03 W04: timer cannot overlap an in-flight task and stop joins it [17.22ms]\n(pass) job errors are redacted through error callback and continue until stop [10.25ms]\n\n 2 pass\n 0 fail\n 5 expect() calls\nRan 2 tests across 1 file. [31.00ms]\n"
+    },
+    {
+      "label": "bridge/src/outbound-app.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/outbound-app.test.ts:\nALL_OUTBOUND_APP_TESTS_PASSED\n\n 0 pass\n 0 fail\nRan 0 tests across 1 file. [4.00ms]\n"
+    },
+    {
+      "label": "bridge/src/outbound-effect.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/outbound-effect.test.ts:\nALL_OUTBOUND_EFFECT_TESTS_PASSED\n\n 0 pass\n 0 fail\nRan 0 tests across 1 file. [25.00ms]\n"
+    },
+    {
+      "label": "bridge/src/media-worker.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/media-worker.test.ts:\n(pass) stalled media leaves receive/text synchronous and correlated completion patches once [3.56ms]\n(pass) worker concurrency bounded; abort cancels in-flight resolution [93.65ms]\n(pass) restart without exact attachment GUID reports unavailable, never guesses [0.24ms]\n(pass) exact restart reference includes original line; mismatched GUID rejected [0.11ms]\n(pass) remembered reader is optional; failed STT preserves audio and later text [1.10ms]\n\n 5 pass\n 0 fail\n 30 expect() calls\nRan 5 tests across 1 file. [110.00ms]\n"
+    },
+    {
+      "label": "bridge/src/outbound-poll.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/outbound-poll.test.ts:\nALL_OUTBOUND_POLL_TESTS_PASSED\n\n 0 pass\n 0 fail\nRan 0 tests across 1 file. [4.00ms]\n"
+    },
+    {
+      "label": "bridge/src/outbound-text.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/outbound-text.test.ts:\nALL_OUTBOUND_TEXT_TESTS_PASSED\n\n 0 pass\n 0 fail\nRan 0 tests across 1 file. [4.00ms]\n"
+    },
+    {
+      "label": "bridge/src/presentation-config.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/presentation-config.test.ts:\n(pass) H04 authorized Live Mini environment registers origin before any task-card send [13.00ms]\n(pass) T02 normal wakes read only verified core role identities from the private registry [8.25ms]\n\n 2 pass\n 0 fail\n 5 expect() calls\nRan 2 tests across 1 file. [31.00ms]\n"
+    },
+    {
+      "label": "bridge/src/outbound-dispatcher.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/outbound-dispatcher.test.ts:\n(pass) O01 two dispatcher instances and overlapping ticks claim once [32.05ms]\n(pass) O02 timeout or throw after acceptance is unknown and never resent [115.37ms]\n(pass) O03 settlement failure preserves sending and exact evidence; restart unknown [11.53ms]\n(pass) O07 same conversation bubbles stay ordered while another conversation progresses [13.64ms]\n(pass) O08 preflight retries bounded and destination mismatch never sends [12.87ms]\n(pass) O06/O09 all content modalities preserve refs, control evidence stays distinct, progress does not stop typing [22.94ms]\n\n 6 pass\n 0 fail\n 37 expect() calls\nRan 6 tests across 1 file. [504.00ms]\n"
+    },
+    {
+      "label": "bridge/src/outbound-jpeg.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/outbound-jpeg.test.ts:\n(pass) outbound normalization permits only staged private files and outputs private JPEGs [354.94ms]\n(pass) hung or corrupt outbound decoder leaves no final output [102.75ms]\n\n 2 pass\n 0 fail\n 7 expect() calls\nRan 2 tests across 1 file. [470.00ms]\n"
+    },
+    {
+      "label": "bridge/src/reaction-option.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/reaction-option.test.ts:\n(pass) child IDs roundtrip and malformed/unsafe indexes rejected [0.16ms]\n(pass) K04 parent/part mapping retained in canonical database and exact conversation/line [16.65ms]\n(pass) K05 any added emoji returns same exact known details/price/original URL [10.69ms]\n(pass) K06 ambiguous asks once by stable action identity, removal not selection, no invented price [11.27ms]\n(pass) incomplete/shifted map and missing option identity stay ambiguous [16.47ms]\n\n 5 pass\n 0 fail\n 29 expect() calls\nRan 5 tests across 1 file. [66.00ms]\n"
+    },
+    {
+      "label": "bridge/src/reply-fallback.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/reply-fallback.test.ts:\n(pass) direct reply retains provider reference and does not fallback [0.24ms]\n(pass) definitive missing target and verified unsupported reply permit one fallback [0.10ms]\n(pass) reply acceptance followed by throw cannot cause second plain send [0.08ms]\n(pass) unverified undefined remains unknown; fallback undefined skipped, fallback throw unknown [0.07ms]\n\n 4 pass\n 0 fail\n 15 expect() calls\nRan 4 tests across 1 file. [5.00ms]\n"
+    },
+    {
+      "label": "bridge/src/private-setup.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/private-setup.test.ts:\n(pass) P01-P05 canonical private boundaries > P01/P02/P03 repository rules ignore private forms, keep examples, and identify separately tracked secrets [240.81ms]\n(pass) P01-P05 canonical private boundaries > P04 private root and file modes; resolution is side-effect free; path spaces work [2.53ms]\n(pass) P01-P05 canonical private boundaries > P05 rejects traversal, symlinks, checkout paths, conflicting instances, default/live test paths and missing guard [4.37ms]\n(pass) S01-S05 resumable setup > S02 private file wins stale exports; parsing never mutates env or chmods diagnostic reads [3.97ms]\n(pass) S01-S05 resumable setup > S02 missing/duplicate/arbitrary fields fail with redacted codes [0.18ms]\n(pass) S01-S05 resumable setup > S01 interruption after every core creation reconciles original identity without duplicate creation or key rotation [50.68ms]\n(pass) S01-S05 resumable setup > S01 intent-only crash refuses blind recreation; setup lock excludes a separate process [27.11ms]\n(pass) S01-S05 resumable setup > S04 Live Mini requires explicit enablement and deployment requires the recorded environment revision [6.37ms]\n(pass) S01-S05 resumable setup > S05 all six roles and mandatory Moonshine; later media failure preserves working text [16.74ms]\n(pass) P06-P08 privacy and R01-R02 recovery > P06 diagnostics and inspections omit seeded secret, bodies and capability URL [4.33ms]\n(pass) P06-P08 privacy and R01-R02 recovery > P07/P08 retention previews first, keeps backups by default, uses store eligibility, and applies only matching plan [5.60ms]\n(pass) P06-P08 privacy and R01-R02 recovery > P08 scope mismatch and symlinks reject before any data mutation [7.22ms]\n(pass) P06-P08 privacy and R01-R02 recovery > P08 export is explicit, private, excludes credentials, and reports no raw private content [10.03ms]\n(pass) P06-P08 privacy and R01-R02 recovery > R01 identity survives restart and missing established identity fails closed [6.84ms]\n(pass) P06-P08 privacy and R01-R02 recovery > R02 missing persistent instance and unsupported SQLite fail closed [3.29ms]\n(pass) setup and privacy recovery edges > S01 setup JSON stdin is bounded while reading, cancels overflow and accepts split chunks [0.35ms]\n(pass) setup and privacy recovery edges > S01 SIGKILL leaves setup lock; explicit dead-owner preview recovers without touching checkpoint [26.83ms]\n(pass) setup and privacy recovery edges > S04 Live Mini env preserves keys and public URL, has no implicit enable, detects changed environment [9.73ms]\n(pass) setup and privacy recovery edges > P08 explicit delete-resolved keeps unresolved rows and backup policy is whole-snapshot rotation [10.89ms]\n\n 19 pass\n 0 fail\n 116 expect() calls\nRan 19 tests across 1 file. [448.00ms]\n"
+    },
+    {
+      "label": "bridge/src/setup-confetti.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/setup-confetti.test.ts:\n(pass) U05 onboarding is the store operation; queued/unknown are not accepted and no marker writer exists [13.39ms]\n(pass) U05 compatibility read reports provider acceptance separately from physical device observation [11.05ms]\n(pass) U05 legacy marker preserves no-repeat behavior without a fabricated new provider/device receipt [13.09ms]\n\n 3 pass\n 0 fail\n 13 expect() calls\nRan 3 tests across 1 file. [50.00ms]\n"
+    },
+    {
+      "label": "bridge/src/submit.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/submit.test.ts:\n(pass) X01/X02 stored destination, claim generation and target gate submission [15.15ms]\n(pass) X03 every original staged path validated before any conversion [24.83ms]\n(pass) X04/X05 strict JSON and legacy context preserve shell text as data [25.63ms]\n(pass) same action/payload reuses ids; changed payload conflicts [18.55ms]\n(pass) operator staging rejects private secrets and creates no send authority [10.42ms]\n\n 5 pass\n 0 fail\n 28 expect() calls\nRan 5 tests across 1 file. [112.00ms]\n"
+    },
+    {
+      "label": "bridge/src/private-storage.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/private-storage.test.ts:\n(pass) R01 setup initializes DB once, uses DB checkpoint after bootstrap, preserves identity across restart [26.69ms]\n(pass) R01 initialized DB loss refuses recreation even with explicit setup rerun [15.15ms]\n(pass) P07 actual SQLite prunes resolved data, retains unknown bodies/assets and dedupe identities [25.64ms]\n(pass) P07 cleanup after DB commit interruption recovers same pending asset instead of orphaning it [18.78ms]\n(pass) P07 expired owned crash intermediates use 7-day policy; arbitrary private assets remain [16.52ms]\n(pass) S03 private setup, doctor, prune and export entrypoints share the explicit instance with leading separator [156.32ms]\n(pass) S05 runtime gates first setup on six roles and Moonshine proof, later media failure leaves text ready [22.21ms]\n\n 7 pass\n 0 fail\n 45 expect() calls\nRan 7 tests across 1 file. [293.00ms]\n"
+    },
+    {
+      "label": "bridge/src/runtime.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/runtime.test.ts:\n[photon] RUNTIME_STOPPED\n[photon] RUNTIME_STOPPED\n(pass) S05 W04 runtime opens one connection only after lock and full setup [29.86ms]\n[photon] RUNTIME_READY\n[photon] RUNTIME_STOPPED\n(pass) U01 U04 one greeting with confetti is committed before receipt; unauthorized ignored [28.77ms]\n[photon] RUNTIME_READY\n[photon] RUNTIME_STOPPED\n(pass) A01 W04 stalled first voice does not block later text; stop preserves correlated work [19.72ms]\n[photon] RUNTIME_STOPPED\n(pass) O04 runtime restart quarantines an old sending attempt before dispatch [13.88ms]\n\n 4 pass\n 0 fail\n 16 expect() calls\nRan 4 tests across 1 file. [316.00ms]\n"
+    },
+    {
+      "label": "bridge/src/tests/storage/media-integration.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/tests/storage/media-integration.test.ts:\n(pass) actual attachment worker commits ready patch into the original SQLite event [29.48ms]\n(pass) actual worker preserves ready conversion warning when original HEIC remains available [42.51ms]\n(pass) actual worker failure without a patch replaces pending media with durable explicit failure [12.70ms]\n(pass) actual worker cancellation commits failed state and error even without a patch [9.07ms]\n(pass) actual worker missing restart reference commits explicit unavailable state [8.49ms]\n(pass) media settlement derives identity and outcome while rejecting mismatched patch identity [15.10ms]\n\n 6 pass\n 0 fail\n 45 expect() calls\nRan 6 tests across 1 file. [139.00ms]\n"
+    },
+    {
+      "label": "bridge/src/subprocess.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/subprocess.test.ts:\n(pass) stdout and stderr are concurrently drained under pipe pressure [22.90ms]\n(pass) oversized output kills child without retaining unlimited output [24.15ms]\n(pass) hung process ignoring TERM is KILLed and reaped by deadline [184.38ms]\n(pass) caller abort kills and reaps process; child environment omits secrets [51.15ms]\n\n 4 pass\n 0 fail\n 9 expect() calls\nRan 4 tests across 1 file. [293.00ms]\n"
+    },
+    {
+      "label": "bridge/src/tests/storage/storage.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/tests/storage/storage.test.ts:\n(pass) transactional store > ordinary open cannot create storage; identity is immutable [13.28ms]\n(pass) transactional store > patched SQLite floor and FULL/local WAL evidence [13.05ms]\n(pass) transactional store > corrupt database is rejected without overwriting [12.73ms]\n(pass) transactional store > input duplicate and first greeting onboarding one atomic intent [13.08ms]\n(pass) transactional store > substantive first input is batched and onboarding commits together [8.66ms]\n(pass) transactional store > failure anywhere during acceptance rolls back input and greeting [8.29ms]\n(pass) transactional store > conversation and line batch boundaries; missing/path traversal rejected [8.70ms]\n(pass) transactional store > wake acknowledgement retains work; active claim prevents additional wakes [8.20ms]\n(pass) transactional store > same bot is never same run; stale owner cannot renew/complete/enqueue [8.73ms]\n(pass) transactional store > same action same payload ids; conflicting payload rejected [10.58ms]\n(pass) transactional store > all child bubbles roll back on injected child insertion failure [13.68ms]\n(pass) transactional store > unknown blocks later conversation content but permits cleanup and other chat [19.21ms]\n(pass) transactional store > sending recovery never fresh sends and old attempt cannot settle [11.97ms]\n(pass) transactional store > provider reference/poll/session/mapping settlement commits atomically [11.81ms]\n(pass) transactional store > unknown native handoff reserves work and cannot create second task [12.38ms]\n(pass) transactional store > media remains same event/batch and stale completion is fenced [9.43ms]\n(pass) transactional store > retention preserves unresolved/active records; prunes resolved bodies only [14.57ms]\n(pass) transactional store > backup includes committed WAL content and read diagnostics bounded [10.08ms]\n(pass) read-only inspection refuses bad modes without repairs or content writes [9.19ms]\n(pass) unused intermediate cleanup survives process loss between redaction and unlink [9.27ms]\n(pass) acknowledged wake can be retried for unclaimed work after the handoff grace period [8.04ms]\n(pass) progress completion preserves typing until final completion or lease expiry [10.48ms]\n(pass) bounded control input rejects oversized stream before EOF [1.48ms]\n(pass) D07 eligible operation reads use indexed outbox after retained history [10.03ms]\n(pass) offline evidence resolution never retries uncertain operation and requires provider reference [14.15ms]\n(pass) expired unknown native task can only resume original binding from explicit receipt [11.05ms]\n(pass) independently due conversations flush only their own exact space and line [8.32ms]\n(pass) destination validation rejects entire flush before pending membership can change [8.73ms]\n(pass) presentation identity is committed with outbox and never changed by idempotent replay [10.82ms]\n(pass) presentation context must match canonical payload and task binding [7.88ms]\n(pass) expired processing lease re-wakes the original batch and fences its abandoned run [8.53ms]\n(pass) expired claim with queued final remains held without re-notification [7.11ms]\n(pass) expired claim with sending final remains held without re-notification [9.29ms]\n(pass) expired claim with retry_wait final remains held without re-notification [9.78ms]\n(pass) expired claim with unknown final remains held without re-notification [8.35ms]\n(pass) expired claim with intent native handoff never creates another wake or task [9.09ms]\n(pass) expired claim with accepted native handoff never creates another wake or task [11.66ms]\n(pass) expired claim with unknown native handoff never creates another wake or task [10.99ms]\n(pass) presentation registration binds exact original task and private full URL idempotently [12.19ms]\n(pass) presentation registration rejects other task, conversation, batch and expired invocation [11.48ms]\n(pass) presentation URL must match configured HTTPS origin, host route and exact card ID [13.28ms]\n(pass) presentation context and URL index roll back together on insertion failure [12.36ms]\n(pass) wake exclusions hold only unresolved HTTP batches while unrelated chats continue [11.33ms]\n(pass) wake exclusion IDs and bounded list validate before any durable claim [9.79ms]\n\n 44 pass\n 0 fail\n 200 expect() calls\nRan 44 tests across 1 file. [477.00ms]\n"
+    },
+    {
+      "label": "bridge/src/tests/storage/migration.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/tests/storage/migration.test.ts:\n(pass) M01 dry-run changes neither source nor target [22.20ms]\n(pass) M02 same source imported once; changed inputs require reconciliation [189.63ms]\n(pass) M03 poll/full session/ordered presentation metadata and conversation preserved [75.29ms]\n(pass) M04 queued becomes unknown; sent no ID preserves legacy acceptance [79.79ms]\n(pass) M05 legacy confetti provenance prevents automatic second celebration [73.19ms]\n(pass) M06 running legacy writer refuses; cutover does not drain copied queues [105.92ms]\n(pass) D04 malformed/unreadable legacy files never replace with empty state [13.95ms]\n(pass) legacy delegated record stays review-needed rather than replaying task [71.43ms]\n(pass) committed migration repairs missing cutover marker without reimporting work [95.39ms]\n(pass) legacy task helper prevents replay even without orchestrator handled record [73.89ms]\n\n 10 pass\n 0 fail\n 48 expect() calls\nRan 10 tests across 1 file. [813.00ms]\n"
+    },
+    {
+      "label": "bridge/src/wake-dispatcher.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/wake-dispatcher.test.ts:\n(pass) bounded durable native wake dispatch > W01 body is batchId only; diagnostics exclude credentials, URL and remote body [14.46ms]\n(pass) bounded durable native wake dispatch > W02 ack is distinct from claim/completion; unclaimed original batch is recoverable after grace [8.77ms]\n(pass) bounded durable native wake dispatch > W02 active/delegated unknown handoffs are not re-notified [9.60ms]\n(pass) bounded durable native wake dispatch > W03 overlapping ticks have one physical request behind deterministic response barrier [8.31ms]\n(pass) bounded durable native wake dispatch > W03 timeout after possible remote acceptance aborts and retains bounded same-batch recovery [25.24ms]\n(pass) bounded durable native wake dispatch > W03 ignored abort excludes the same batch while another conversation wakes; late ack does not overwrite timeout [33.57ms]\n(pass) bounded durable native wake dispatch > W03 no more than four raw transports remain pending even when every fetch ignores abort [47.17ms]\n(pass) bounded durable native wake dispatch > W03 permanent rejection never retries and transient attempts exhaust [17.56ms]\n(pass) bounded durable native wake dispatch > W04 stop aborts/joins active attempt and leaves durable retry without later requests [8.51ms]\n(pass) bounded durable native wake dispatch > W04 stop remains bounded when the raw transport ignores cancellation [8.70ms]\n(pass) bounded durable native wake dispatch > W02 local settlement failure after HTTP response preserves sending until startup recovery [10.35ms]\n(pass) bounded durable native wake dispatch > W02 expired abandoned claim is fenced and original batch wakes without new inbox/task [9.27ms]\n\n 12 pass\n 0 fail\n 50 expect() calls\nRan 12 tests across 1 file. [214.00ms]\n"
+    },
+    {
+      "label": "bridge/src/voice-stt.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/voice-stt.test.ts:\n(pass) voice display preserves duration/transcript; model paths are instance-owned [0.09ms]\n(pass) valid mono PCM WAV reused regardless of extension; unrelated note.wav ignored [1.91ms]\n(pass) stereo and non-16k WAV are decoded; different inputs never share an output [51.82ms]\n(pass) malformed, truncated or decoder-invalid WAV never becomes ready [35.53ms]\n(pass) hung FFmpeg is reaped and partial output removed [74.93ms]\n(pass) STT structured success; failed and empty transcripts are explicit degradation [168.65ms]\n(pass) Python helper uses verified batch API and closes transcriber on empty output [81.97ms]\n\n 7 pass\n 0 fail\n 21 expect() calls\nRan 7 tests across 1 file. [429.00ms]\n"
+    },
+    {
+      "label": "bridge/src/tests/storage/process.test.ts",
+      "exit": 0,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/tests/storage/process.test.ts:\n(pass) D01 real concurrent enqueue and settlement processes preserve every acknowledged child [116.23ms]\n(pass) C01 separate processes with same bot claim one invocation winner [50.97ms]\n(pass) D02 crash before_commit input/onboarding transition remains atomic [34.87ms]\n(pass) D03 crash before_commit batch/wake transition keeps recoverable input [28.30ms]\n(pass) crash before_commit fenced claim cannot produce two valid owners [45.56ms]\n(pass) D06 crash before_commit multi-bubble commit has all or no children [36.23ms]\n(pass) crash before_commit dispatch attempt is queued or unknown, never automatically repeated [33.53ms]\n(pass) crash before_commit settlement preserves reference/evidence together [35.34ms]\n(pass) crash before_commit task reservation cannot blindly duplicate handoff [33.20ms]\n(pass) crash before_commit wake acknowledgement leaves batch actionable [33.31ms]\n(pass) crash before_commit media enrichment remains correlated to same batch [28.89ms]\n(pass) D02 crash after_commit input/onboarding transition remains atomic [31.18ms]\n(pass) D03 crash after_commit batch/wake transition keeps recoverable input [33.24ms]\n(pass) crash after_commit fenced claim cannot produce two valid owners [35.62ms]\n(pass) D06 crash after_commit multi-bubble commit has all or no children [29.46ms]\n(pass) crash after_commit dispatch attempt is queued or unknown, never automatically repeated [29.58ms]\n(pass) crash after_commit settlement preserves reference/evidence together [29.44ms]\n(pass) crash after_commit task reservation cannot blindly duplicate handoff [28.41ms]\n(pass) crash after_commit wake acknowledgement leaves batch actionable [26.94ms]\n(pass) crash after_commit media enrichment remains correlated to same batch [42.05ms]\n(pass) D08 separate writer lock contention fails within bounded busy timeout [2036.43ms]\n(pass) presentation ledger and outbox share one durable commit across crash before_commit [30.26ms]\n(pass) presentation ledger and outbox share one durable commit across crash after_commit [27.99ms]\n\n 23 pass\n 0 fail\n 151 expect() calls\nRan 23 tests across 1 file. [2.87s]\n"
+    },
+    {
+      "label": "bridge typecheck",
+      "exit": 0,
+      "output": "$ tsc --noEmit\n"
+    }
+  ]
+}

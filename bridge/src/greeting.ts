@@ -67,30 +67,6 @@ const GREETING_EXACT = new Set([
   "hello there",
 ]);
 
-const THANKS_EXACT = new Set([
-  "thanks",
-  "thank you",
-  "thank u",
-  "thx",
-  "ty",
-  "tyty",
-  "thanks!",
-]);
-
-const ACK_EXACT = new Set([
-  "ok",
-  "okay",
-  "k",
-  "kk",
-  "cool",
-  "nice",
-  "np",
-  "yep",
-  "yeah",
-  "yea",
-  "bet",
-]);
-
 export type GreetingKind = "greeting" | "thanks" | "ack";
 
 export function classifyCasualText(text: string): GreetingKind | null {
@@ -99,8 +75,6 @@ export function classifyCasualText(text: string): GreetingKind | null {
   // how's → hows already via punctuation strip; keep apostrophe words
   const compact = n.replace(/'/g, "");
   if (GREETING_EXACT.has(n) || GREETING_EXACT.has(compact)) return "greeting";
-  if (THANKS_EXACT.has(n) || THANKS_EXACT.has(compact)) return "thanks";
-  if (ACK_EXACT.has(n) || ACK_EXACT.has(compact)) return "ack";
   return null;
 }
 
@@ -115,15 +89,14 @@ export function pickCannedReply(kind: GreetingKind, salt = Date.now()): string {
 }
 
 /**
- * True when every text message is a casual greeting/ack and there is at least
- * one such text. Reactions alone do not trigger a fast-path reply.
+ * True only for bare greetings without replies or any non-text content.
+ * This is a first-onboarding classifier, never proof that a later chat is idle.
  */
 export function isGreetingOnlyBatch(messages: InboundRecord[]): boolean {
   let sawCasual = false;
   for (const m of messages) {
     const kind = m.kind ?? "text";
-    if (kind === "reaction") continue;
-    if (kind !== "text") return false;
+    if (kind !== "text" || m.replyToMessageId) return false;
     const casual = classifyCasualText(m.text);
     if (!casual) return false;
     sawCasual = true;

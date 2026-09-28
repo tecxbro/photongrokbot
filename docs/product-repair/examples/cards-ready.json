@@ -1,0 +1,24 @@
+{
+  "submission": {
+    "version": 1,
+    "batchId": "BATCH_FROM_CLAIM",
+    "claim": { "batchId": "BATCH_FROM_CLAIM", "runId": "RUN_FROM_CLAIM", "generation": 1 },
+    "inputRevision": 1,
+    "actionKey": "cards:BATCH_FROM_CLAIM:v1",
+    "purpose": "final",
+    "payload": {
+      "kind": "attachment_group", "spaceId": "SPACE_FROM_BOUND_BATCH", "batchId": "BATCH_FROM_CLAIM",
+      "attachmentPaths": ["PRIVATE_ASSET_1", "PRIVATE_ASSET_2", "PRIVATE_ASSET_3", "PRIVATE_ASSET_4", "PRIVATE_ASSET_5"],
+      "cards": [
+        {"optionId":"one","title":"Option one","details":"Verified existing details","price":"$100","url":"https://example.invalid/one"},
+        {"optionId":"two","title":"Option two","details":"Verified existing details","url":"https://example.invalid/two"},
+        {"optionId":"three","title":"Option three","details":"Verified existing details","url":"https://example.invalid/three"},
+        {"optionId":"four","title":"Option four","details":"Verified existing details","url":"https://example.invalid/four"},
+        {"optionId":"five","title":"Option five","details":"Verified existing details","url":"https://example.invalid/five"}
+      ]
+    }
+  },
+  "expectedCount": 5,
+  "revision": "v1",
+  "readyAt": "2026-09-28T00:00:00.000Z"
+}

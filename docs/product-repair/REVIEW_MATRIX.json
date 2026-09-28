@@ -1,0 +1,2518 @@
+{
+  "sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+  "requirements": 93,
+  "scope": "Local synthetic acceptance; no VM/provider/device claims",
+  "rows": [
+    {
+      "id": "P01",
+      "required": "Legacy prod.env/state paths are excluded by repository rules without relying on global Git excludes.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Legacy prod.env/state paths are excluded by repository rules without relying on global Git excludes.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "P01-P05 canonical private boundaries > P01/P02/P03 repository rules ignore private forms, keep examples, and identify separately tracked secrets",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "P02",
+      "required": "Tracked secrets are detected separately; adding ignore rules is not reported as untracking/history removal.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Tracked secrets are detected separately; adding ignore rules is not reported as untracking/history removal.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "P01-P05 canonical private boundaries > P01/P02/P03 repository rules ignore private forms, keep examples, and identify separately tracked secrets",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "P03",
+      "required": "Sample .env.example files remain distributable; real .env/.env.bak/prod.env are excluded.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Sample .env.example files remain distributable; real .env/.env.bak/prod.env are excluded.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "P01-P05 canonical private boundaries > P01/P02/P03 repository rules ignore private forms, keep examples, and identify separately tracked secrets",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "P04",
+      "required": "New private root is outside checkout, 0700; credential/private data files are 0600.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "New private root is outside checkout, 0700; credential/private data files are 0600.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "P01-P05 canonical private boundaries > P04 private root and file modes; resolution is side-effect free; path spaces work",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "P05",
+      "required": "Path traversal, symlink escape, another instance and default live path in test mode are rejected.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Path traversal, symlink escape, another instance and default live path in test mode are rejected.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "P01-P05 canonical private boundaries > P05 rejects traversal, symlinks, checkout paths, conflicting instances, default/live test paths and missing guard",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW P05/S03 actual control entrypoints fail closed without a synthetic root",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "P06",
+      "required": "Redacted inspection/doctor/errors never include seeded secret values, message bodies or full k= URLs.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Redacted inspection/doctor/errors never include seeded secret values, message bodies or full k= URLs.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "P06-P08 privacy and R01-R02 recovery > P06 diagnostics and inspections omit seeded secret, bodies and capability URL",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "publisher client preserves known conflict codes while discarding remote secret text and unknown codes",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "P07",
+      "required": "Retention removes only eligible resolved data; unknown sends, active tasks and dedupe tombstones remain.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Retention removes only eligible resolved data; unknown sends, active tasks and dedupe tombstones remain.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "P07 actual SQLite prunes resolved data, retains unknown bodies/assets and dedupe identities",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "P07 cleanup after DB commit interruption recovers same pending asset instead of orphaning it",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "P08",
+      "required": "Export/delete/prune is instance-scoped, previewable and cannot follow symlinks into source/another project.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Export/delete/prune is instance-scoped, previewable and cannot follow symlinks into source/another project.",
+      "observed": "Original scope/preview checks passed; first standalone export read failed. Supplemental actual SQLite snapshot, export CLI, prune and independent probe now pass at c550d051453db80c3f338dbee19e5f9674b46782. No write-open repair or sidecar prerequisite.",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "P06-P08 privacy and R01-R02 recovery > P08 scope mismatch and symlinks reject before any data mutation",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "P06-P08 privacy and R01-R02 recovery > P08 export is explicit, private, excludes credentials, and reports no raw private content",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "P08 approved retention rotates 0500 migration snapshots and retains unselected immutable modes",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/recovery-runbook.test.ts",
+          "test_name": "T01/P08 runbook CLI reconciles original unknown operations and exports an independently readable snapshot",
+          "command_label": "bridge/src/tests/acceptance/recovery-runbook.test.ts",
+          "exit": 0,
+          "tested_sha": "c550d051453db80c3f338dbee19e5f9674b46782",
+          "evidence": "evidence/review-followup.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/storage.test.ts",
+          "test_name": "transactional store > backup opens read-only before any write-open and preserves committed WAL contents",
+          "command_label": "bridge/src/tests/storage/storage.test.ts",
+          "exit": 0,
+          "tested_sha": "c550d051453db80c3f338dbee19e5f9674b46782",
+          "evidence": "evidence/review-followup.json"
+        }
+      ],
+      "original_status": "PARTIAL",
+      "supplemental_tested_sha": "c550d051453db80c3f338dbee19e5f9674b46782"
+    },
+    {
+      "id": "S01",
+      "required": "Interrupt/resume at every setup phase; rerun creates no duplicate bot/routine/project or changed key.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Interrupt/resume at every setup phase; rerun creates no duplicate bot/routine/project or changed key.",
+      "observed": "Mapped named tests executed successfully (exit 0). Local adapters reconcile each core resource; three SIGKILL children materialize equivalent first-bootstrap disk states. Actual native provisioning interruption is unexecuted.",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "S01-S05 resumable setup > S01 interruption after every core creation reconciles original identity without duplicate creation or key rotation",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "R01 interrupted first database creation resumes intent-only with original identity",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "R01 interrupted first database creation resumes exclusive-empty-file with original identity",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "R01 interrupted first database creation resumes schema-before-ready with original identity",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "setup and privacy recovery edges > S01 SIGKILL leaves setup lock; explicit dead-owner preview recovers without touching checkpoint",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "S02",
+      "required": "Existing private env is preserved; missing/conflicting required keys produce redacted diagnostics.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Existing private env is preserved; missing/conflicting required keys produce redacted diagnostics.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "S01-S05 resumable setup > S02 private file wins stale exports; parsing never mutates env or chmods diagnostic reads",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "S01-S05 resumable setup > S02 missing/duplicate/arbitrary fields fail with redacted codes",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "S03",
+      "required": "CLI file selection is consistent across start, enqueue, read-batch and Node Live Mini helper.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "CLI file selection is consistent across start, enqueue, read-batch and Node Live Mini helper.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW P05/S03 actual control entrypoints fail closed without a synthetic root",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "S03 private setup, doctor, prune and export entrypoints share the explicit instance with leading separator",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "private helper env rejects duplicate, unknown, malformed and oversized configuration without secret errors",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "S04",
+      "required": "Generic iMessage setup does not provision Live Mini; explicit recorded enablement performs only missing authorized steps.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Generic iMessage setup does not provision Live Mini; explicit recorded enablement performs only missing authorized steps.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "S01-S05 resumable setup > S04 Live Mini requires explicit enablement and deployment requires the recorded environment revision",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "setup and privacy recovery edges > S04 Live Mini env preserves keys and public URL, has no implicit enable, detects changed environment",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "S05",
+      "required": "Core six roles and required Moonshine remain required for full first setup; later media failure does not disable text.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Core six roles and required Moonshine remain required for full first setup; later media failure does not disable text.",
+      "observed": "Mapped named tests executed successfully (exit 0). Missing or fabricated Moonshine proof is rejected and later degradation preserves text. Real installed-model inference is an external gate.",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "S05 runtime gates first setup on six roles and Moonshine proof, later media failure leaves text ready",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T05 documented setup CLI preserves actual verified identities and requires real Moonshine verification",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "R01",
+      "required": "Same installation identity survives code update and restart; missing state after unexpected loss fails closed.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Same installation identity survives code update and restart; missing state after unexpected loss fails closed.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "R01 setup initializes DB once, uses DB checkpoint after bootstrap, preserves identity across restart",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "R01 initialized DB loss refuses recreation even with explicit setup rerun",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "R01 interrupted first database creation resumes intent-only with original identity",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "R01 interrupted first database creation resumes exclusive-empty-file with original identity",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "R01 interrupted first database creation resumes schema-before-ready with original identity",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/private-storage.test.ts",
+          "test_name": "R01 initial intent cannot replace nonempty unversioned or corrupt database",
+          "command_label": "bridge/src/private-storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "R02",
+      "required": "Wrong/missing persistent-workspace or unsupported SQLite build is surfaced; no silent fresh instance.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Wrong/missing persistent-workspace or unsupported SQLite build is surfaced; no silent fresh instance.",
+      "observed": "Mapped named tests executed successfully (exit 0). Measured local APFS/SQLite build only; target persistent VM and filesystem durability remain unverified.",
+      "tests": [
+        {
+          "test_file": "bridge/src/private-setup.test.ts",
+          "test_name": "P06-P08 privacy and R01-R02 recovery > R02 missing persistent instance and unsupported SQLite fail closed",
+          "command_label": "bridge/src/private-setup.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/storage.test.ts",
+          "test_name": "transactional store > patched SQLite floor and FULL/local WAL evidence",
+          "command_label": "bridge/src/tests/storage/storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "D01",
+      "required": "Separate enqueue/status-update processes cannot lose any operation whose enqueue returned success.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Separate enqueue/status-update processes cannot lose any operation whose enqueue returned success.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/process.test.ts",
+          "test_name": "D01 real concurrent enqueue and settlement processes preserve every acknowledged child",
+          "command_label": "bridge/src/tests/storage/process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "D02",
+      "required": "Crash before/after input commit leaves each accepted provider event recoverable exactly once in local state.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Crash before/after input commit leaves each accepted provider event recoverable exactly once in local state.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/inbound-process.test.ts",
+          "test_name": "D02 receiver SIGKILL before_commit preserves exactly one accepted input and onboarding action on replay",
+          "command_label": "bridge/src/inbound-process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/inbound-process.test.ts",
+          "test_name": "D02 receiver SIGKILL after_commit preserves exactly one accepted input and onboarding action on replay",
+          "command_label": "bridge/src/inbound-process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "D03",
+      "required": "Crash at batch formation/wake intent boundary cannot erase input or lose automatic recovery eligibility.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Crash at batch formation/wake intent boundary cannot erase input or lose automatic recovery eligibility.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/inbound-process.test.ts",
+          "test_name": "D03 controller SIGKILL before_commit batch formation preserves one input membership and wake",
+          "command_label": "bridge/src/inbound-process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/inbound-process.test.ts",
+          "test_name": "D03 controller SIGKILL after_commit batch formation preserves one input membership and wake",
+          "command_label": "bridge/src/inbound-process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/inbound-controller.test.ts",
+          "test_name": "D03 batches above storage page size retain a due continuation across recovery flush",
+          "command_label": "bridge/src/inbound-controller.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "D04",
+      "required": "Malformed/permission-denied legacy files or corrupt DB cannot become an empty replacement.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Malformed/permission-denied legacy files or corrupt DB cannot become an empty replacement.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/migration.test.ts",
+          "test_name": "D04 malformed/unreadable legacy files never replace with empty state",
+          "command_label": "bridge/src/tests/storage/migration.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/storage.test.ts",
+          "test_name": "transactional store > corrupt database is rejected without overwriting",
+          "command_label": "bridge/src/tests/storage/storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "D05",
+      "required": "Same logical operation+same payload returns original IDs; same key+changed payload conflicts.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Same logical operation+same payload returns original IDs; same key+changed payload conflicts.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/storage.test.ts",
+          "test_name": "transactional store > same action same payload ids; conflicting payload rejected",
+          "command_label": "bridge/src/tests/storage/storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "D06",
+      "required": "Intended multi-bubble enqueue is one local transaction; partial child insertion rolls back.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Intended multi-bubble enqueue is one local transaction; partial child insertion rolls back.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/storage.test.ts",
+          "test_name": "transactional store > all child bubbles roll back on injected child insertion failure",
+          "command_label": "bridge/src/tests/storage/storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/process.test.ts",
+          "test_name": "D06 crash before_commit multi-bubble commit has all or no children",
+          "command_label": "bridge/src/tests/storage/process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/process.test.ts",
+          "test_name": "D06 crash after_commit multi-bubble commit has all or no children",
+          "command_label": "bridge/src/tests/storage/process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "D07",
+      "required": "Long retained history does not require scanning/rewriting every record for each new send.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Long retained history does not require scanning/rewriting every record for each new send.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/storage.test.ts",
+          "test_name": "D07 eligible operation reads use indexed outbox after retained history",
+          "command_label": "bridge/src/tests/storage/storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/storage.test.ts",
+          "test_name": "ordinary opens avoid full integrity scans; explicit diagnostics traverse and reject retained corruption",
+          "command_label": "bridge/src/tests/storage/storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "D08",
+      "required": "DB-busy retries are bounded; network/media awaits never occur inside write transactions.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "DB-busy retries are bounded; network/media awaits never occur inside write transactions.",
+      "observed": "Mapped named tests executed successfully (exit 0). Separate writer contention is bounded; storage tx() rejects returned promises. Source inspection finds network/media awaits outside synchronous transactions.",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/process.test.ts",
+          "test_name": "D08 separate writer lock contention fails within bounded busy timeout",
+          "command_label": "bridge/src/tests/storage/process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "C01",
+      "required": "Two simultaneous invocations of the same bot for one batch have one claim winner.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Two simultaneous invocations of the same bot for one batch have one claim winner.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/process.test.ts",
+          "test_name": "C01 separate processes with same bot claim one invocation winner",
+          "command_label": "bridge/src/tests/storage/process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "required": "Expired run cannot renew/complete/enqueue under a newer fencing generation.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Expired run cannot renew/complete/enqueue under a newer fencing generation.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/storage.test.ts",
+          "test_name": "transactional store > same bot is never same run; stale owner cannot renew/complete/enqueue",
+          "command_label": "bridge/src/tests/storage/storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "required": "No reaction/effect or native handoff is attempted before a valid processing claim.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "No reaction/effect or native handoff is attempted before a valid processing claim.",
+      "observed": "Mapped named tests executed successfully (exit 0). Supported enqueue/delegation controls enforce claims. Actual native bot-tool invocation order is an external gate.",
+      "tests": [
+        {
+          "test_file": "bridge/src/submit.test.ts",
+          "test_name": "X01/X02 stored destination, claim generation and target gate submission",
+          "command_label": "bridge/src/submit.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/storage.test.ts",
+          "test_name": "transactional store > unknown native handoff reserves work and cannot create second task",
+          "command_label": "bridge/src/tests/storage/storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T01-T04 every existing operating target has valid links, commands and generated roles",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "required": "Unknown native handoff acceptance retains its intent and is not blindly issued again.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Unknown native handoff acceptance retains its intent and is not blindly issued again.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/storage.test.ts",
+          "test_name": "transactional store > unknown native handoff reserves work and cannot create second task",
+          "command_label": "bridge/src/tests/storage/storage.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/process.test.ts",
+          "test_name": "crash before_commit task reservation cannot blindly duplicate handoff",
+          "command_label": "bridge/src/tests/storage/process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/process.test.ts",
+          "test_name": "crash after_commit task reservation cannot blindly duplicate handoff",
+          "command_label": "bridge/src/tests/storage/process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "M01",
+      "required": "Migration dry-run changes neither legacy input nor the target instance.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Migration dry-run changes neither legacy input nor the target instance.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/migration.test.ts",
+          "test_name": "M01 dry-run changes neither source nor target",
+          "command_label": "bridge/src/tests/storage/migration.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW M01-M05 executable migration preserves evidence and never dispatches ambiguous legacy work",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "M02",
+      "required": "Rerun imports the same immutable source once; detects conflicting/changed legacy inputs.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Rerun imports the same immutable source once; detects conflicting/changed legacy inputs.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/migration.test.ts",
+          "test_name": "M02 same source imported once; changed inputs require reconciliation",
+          "command_label": "bridge/src/tests/storage/migration.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW M01-M05 executable migration preserves evidence and never dispatches ambiguous legacy work",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "M03",
+      "required": "Migration preserves poll/session/presentation/option and original-conversation mappings.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Migration preserves poll/session/presentation/option and original-conversation mappings.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/migration.test.ts",
+          "test_name": "M03 poll/full session/ordered presentation metadata and conversation preserved",
+          "command_label": "bridge/src/tests/storage/migration.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW M01-M05 executable migration preserves evidence and never dispatches ambiguous legacy work",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "M04",
+      "required": "Ambiguous legacy queued sends become review-needed/unknown, not automatically resent.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Ambiguous legacy queued sends become review-needed/unknown, not automatically resent.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/migration.test.ts",
+          "test_name": "M04 queued becomes unknown; sent no ID preserves legacy acceptance",
+          "command_label": "bridge/src/tests/storage/migration.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW M01-M05 executable migration preserves evidence and never dispatches ambiguous legacy work",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "M05",
+      "required": "Legacy celebrated marker preserves no-repeat behavior without being labelled device-observed.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Legacy celebrated marker preserves no-repeat behavior without being labelled device-observed.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/migration.test.ts",
+          "test_name": "M05 legacy confetti provenance prevents automatic second celebration",
+          "command_label": "bridge/src/tests/storage/migration.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW M01-M05 executable migration preserves evidence and never dispatches ambiguous legacy work",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "M06",
+      "required": "Migration refuses a running old writer; simulated code rollback does not replay old already-sent queues.",
+      "status": "PARTIAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Migration refuses a running old writer; simulated code rollback does not replay old already-sent queues.",
+      "observed": "Mapped named tests executed successfully (exit 0). Live PID refusal, cutover marker and zero eligible imported sends executed. Historical code rollback was not launched; old JSON writers are explicitly prohibited by the runbook.",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/storage/migration.test.ts",
+          "test_name": "M06 running legacy writer refuses; cutover does not drain copied queues",
+          "command_label": "bridge/src/tests/storage/migration.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "U01",
+      "required": "First authorized hi produces one logical greeting-with-confetti and no competing canned/Front Door greeting.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "First authorized hi produces one logical greeting-with-confetti and no competing canned/Front Door greeting.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/inbound-controller.test.ts",
+          "test_name": "durable authorized reception > U01 first hi produces one greeting-confetti operation, repeated hi routes to Front Door",
+          "command_label": "bridge/src/inbound-controller.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "U02",
+      "required": "First substantive question receives onboarding once AND reaches Front Door as useful work.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "First substantive question receives onboarding once AND reaches Front Door as useful work.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/inbound-controller.test.ts",
+          "test_name": "durable authorized reception > U02 first substantive question gets onboarding and durable Front Door work",
+          "command_label": "bridge/src/inbound-controller.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "U03",
+      "required": "First supported voice/image triggers onboarding without requiring successful media processing.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "First supported voice/image triggers onboarding without requiring successful media processing.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/inbound-controller.test.ts",
+          "test_name": "durable authorized reception > U03 voice accepts and celebrates before any bytes; failed STT remains correlated and text continues",
+          "command_label": "bridge/src/inbound-controller.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "U04",
+      "required": "Unauthorized input, outbound echo and pure receipt never trigger onboarding or private attachment read.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Unauthorized input, outbound echo and pure receipt never trigger onboarding or private attachment read.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/inbound-controller.test.ts",
+          "test_name": "durable authorized reception > U04 unauthorized input, echo and receipt persist nothing and never read attachment bytes",
+          "command_label": "bridge/src/inbound-controller.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/inbound-controller.test.ts",
+          "test_name": "U04 SDK unknown union narrows locally; contact name objects and malformed media are ignored without casting",
+          "command_label": "bridge/src/inbound-controller.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "U05",
+      "required": "Duplicate first input/restart/unknown result reuse the original onboarding operation.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Duplicate first input/restart/unknown result reuse the original onboarding operation.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/inbound-controller.test.ts",
+          "test_name": "durable authorized reception > U05 duplicate/restart/unknown retain original onboarding identity without another send",
+          "command_label": "bridge/src/inbound-controller.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "U06",
+      "required": "Pending question plus okay/yeah routes to Front Door rather than a canned acknowledgement.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Pending question plus okay/yeah routes to Front Door rather than a canned acknowledgement.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/inbound-controller.test.ts",
+          "test_name": "durable authorized reception > U06/U07 contextual okay, thanks, yeah and mixed reactions always reach Front Door",
+          "command_label": "bridge/src/inbound-controller.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "U07",
+      "required": "Reaction plus greeting/okay cannot bypass card-selection handling.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Reaction plus greeting/okay cannot bypass card-selection handling.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/inbound-controller.test.ts",
+          "test_name": "durable authorized reception > U06/U07 contextual okay, thanks, yeah and mixed reactions always reach Front Door",
+          "command_label": "bridge/src/inbound-controller.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "U08",
+      "required": "Two authorized conversations remain isolated; reply to an older message retains its target.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Two authorized conversations remain isolated; reply to an older message retains its target.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/inbound-controller.test.ts",
+          "test_name": "durable authorized reception > U08 exact older reply target, known poll identity and two destination/line pairs remain isolated",
+          "command_label": "bridge/src/inbound-controller.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW U01/U08/X01 same provider ID is independent per conversation and line through the CLI",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "W01",
+      "required": "Webhook payload contains batchId only; URL/bearer/body secrets are absent from logs.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Webhook payload contains batchId only; URL/bearer/body secrets are absent from logs.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W01 body is batchId only; diagnostics exclude credentials, URL and remote body",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "W02",
+      "required": "HTTP acknowledgement is distinct from claimed/delegated/completed; abandoned unclaimed work remains recoverable.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "HTTP acknowledgement is distinct from claimed/delegated/completed; abandoned unclaimed work remains recoverable.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W02 ack is distinct from claim/completion; unclaimed original batch is recoverable after grace",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W02 only documented HTTP 200 is acknowledgement; other 2xx keep bounded recovery",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W02 active/delegated unknown handoffs are not re-notified",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W02 local settlement failure after HTTP response preserves sending until startup recovery",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W02 expired abandoned claim is fenced and original batch wakes without new inbox/task",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "W03",
+      "required": "Hanging network request has one in-flight attempt per job and bounded backoff; permanent rejection stops.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Hanging network request has one in-flight attempt per job and bounded backoff; permanent rejection stops.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W03 overlapping ticks have one physical request behind deterministic response barrier",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W03 timeout after possible remote acceptance aborts and retains bounded same-batch recovery",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W03 ignored abort excludes the same batch while another conversation wakes; late ack does not overwrite timeout",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W03 no more than four raw transports remain pending even when every fetch ignores abort",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W03 permanent rejection never retries and transient attempts exhaust",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "W04",
+      "required": "Shutdown leaves durable jobs/uncertain attempts, stops typing safely and prevents a second live Spectrum owner.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Shutdown leaves durable jobs/uncertain attempts, stops typing safely and prevents a second live Spectrum owner.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/instance-lock.test.ts",
+          "test_name": "W04: separate owner cannot steal lifetime lock; SIGKILL releases it",
+          "command_label": "bridge/src/instance-lock.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/runtime.test.ts",
+          "test_name": "S05 W04 runtime opens one connection only after lock and full setup",
+          "command_label": "bridge/src/runtime.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W04 stop aborts/joins active attempt and leaves durable retry without later requests",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/wake-dispatcher.test.ts",
+          "test_name": "bounded durable native wake dispatch > W04 stop remains bounded when the raw transport ignores cancellation",
+          "command_label": "bridge/src/wake-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/outbound-dispatcher.test.ts",
+          "test_name": "W04 stopping a hung dispatched operation is bounded and preserves uncertainty",
+          "command_label": "bridge/src/outbound-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "O01",
+      "required": "Two dispatch processes or overlapping timer ticks do not send one operation twice.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Two dispatch processes or overlapping timer ticks do not send one operation twice.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/outbound-dispatcher.test.ts",
+          "test_name": "O01 two dispatcher instances and overlapping ticks claim once",
+          "command_label": "bridge/src/outbound-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/delivery-process.test.ts",
+          "test_name": "O01 two dispatch processes cannot emit one provider operation twice",
+          "command_label": "bridge/src/delivery-process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "O02",
+      "required": "Provider accepts then throws/times out: record unknown; no automatic fresh provider call.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Provider accepts then throws/times out: record unknown; no automatic fresh provider call.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/outbound-dispatcher.test.ts",
+          "test_name": "O02 timeout or throw after acceptance is unknown and never resent",
+          "command_label": "bridge/src/outbound-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "O03",
+      "required": "Provider returns success but local settlement fails: restart preserves uncertainty/reference evidence.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Provider returns success but local settlement fails: restart preserves uncertainty/reference evidence.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/outbound-dispatcher.test.ts",
+          "test_name": "O03 settlement failure preserves sending and exact evidence; restart unknown",
+          "command_label": "bridge/src/outbound-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "O04",
+      "required": "Recovery of a sending attempt does not reset queued merely because the process/lease died.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Recovery of a sending attempt does not reset queued merely because the process/lease died.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/delivery-process.test.ts",
+          "test_name": "O04 SIGKILL after fake provider effect leaves sending, recovery unknown never replays",
+          "command_label": "bridge/src/delivery-process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "O05",
+      "required": "Definitively unsupported reply permits documented fallback; ambiguous reply does not.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Definitively unsupported reply permits documented fallback; ambiguous reply does not.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/reply-fallback.test.ts",
+          "test_name": "definitive missing target and verified unsupported reply permit one fallback",
+          "command_label": "bridge/src/reply-fallback.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/reply-fallback.test.ts",
+          "test_name": "reply acceptance followed by throw cannot cause second plain send",
+          "command_label": "bridge/src/reply-fallback.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/reply-fallback.test.ts",
+          "test_name": "unverified undefined remains unknown; fallback undefined skipped, fallback throw unknown",
+          "command_label": "bridge/src/reply-fallback.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "O06",
+      "required": "Provider references retained for all message modalities where supplied; control no-op/skip is honest.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Provider references retained for all message modalities where supplied; control no-op/skip is honest.",
+      "observed": "Mapped named tests executed successfully (exit 0). Locked-source contracts plus mock provider references prove local normalization only; actual provider/device semantics remain gated.",
+      "tests": [
+        {
+          "test_file": "bridge/src/outbound-dispatcher.test.ts",
+          "test_name": "O06/O09 all content modalities preserve refs, control evidence stays distinct, progress does not stop typing",
+          "command_label": "bridge/src/outbound-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/outbound-dispatcher.test.ts",
+          "test_name": "unsupported content is skipped; missing typing capability is skipped",
+          "command_label": "bridge/src/outbound-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/outbound-dispatcher.test.ts",
+          "test_name": "app edit requires complete original session, accepts resolved locked path and preserves refreshed session",
+          "command_label": "bridge/src/outbound-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "O07",
+      "required": "Bubbles within one result remain ordered; unrelated conversations continue while one result is unknown.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Bubbles within one result remain ordered; unrelated conversations continue while one result is unknown.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/outbound-dispatcher.test.ts",
+          "test_name": "O07 same conversation bubbles stay ordered while another conversation progresses",
+          "command_label": "bridge/src/outbound-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "O08",
+      "required": "Confirmed non-application retries are bounded; repeated permanent errors do not retry forever.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Confirmed non-application retries are bounded; repeated permanent errors do not retry forever.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/outbound-dispatcher.test.ts",
+          "test_name": "O08 preflight retries bounded and destination mismatch never sends",
+          "command_label": "bridge/src/outbound-dispatcher.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "O09",
+      "required": "Typing follows real active/delegated state and stops on final/wait/cancel/failure; progress bubble alone is not final.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Typing follows real active/delegated state and stops on final/wait/cancel/failure; progress bubble alone is not final.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/activity.test.ts",
+          "test_name": "O09 uncertain typing start disables refresh but retains final cleanup",
+          "command_label": "bridge/src/activity.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/activity.test.ts",
+          "test_name": "O09 uncertain typing start still receives bounded lifetime cleanup",
+          "command_label": "bridge/src/activity.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/activity.test.ts",
+          "test_name": "W04 timed-out typing start keeps one cleanup attempt at shutdown",
+          "command_label": "bridge/src/activity.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW W04/O09 uncertain typing starts disable refresh but retain one cleanup across conversation changes",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "X01",
+      "required": "Payload destination cannot override original stored conversation/line/task binding.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Payload destination cannot override original stored conversation/line/task binding.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/submit.test.ts",
+          "test_name": "X01/X02 stored destination, claim generation and target gate submission",
+          "command_label": "bridge/src/submit.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "X02",
+      "required": "Reply/react/update target from another conversation is rejected before SDK call.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Reply/react/update target from another conversation is rejected before SDK call.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/submit.test.ts",
+          "test_name": "X01/X02 stored destination, claim generation and target gate submission",
+          "command_label": "bridge/src/submit.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "X03",
+      "required": "Arbitrary secret path, directory, ../ traversal and symlink-to-secret cannot become an attachment.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Arbitrary secret path, directory, ../ traversal and symlink-to-secret cannot become an attachment.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/submit.test.ts",
+          "test_name": "X03 every original staged path validated before any conversion",
+          "command_label": "bridge/src/submit.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/submit.test.ts",
+          "test_name": "operator staging rejects private secrets and creates no send authority",
+          "command_label": "bridge/src/submit.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "X04",
+      "required": "Structured CLI rejects incompatible flags, missing values and unknown fields; shell characters are data.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Structured CLI rejects incompatible flags, missing values and unknown fields; shell characters are data.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/submit.test.ts",
+          "test_name": "X04/X05 strict JSON and legacy context preserve shell text as data",
+          "command_label": "bridge/src/submit.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "X05",
+      "required": "Role string/authorized:true cannot create new rights through the supported API; valid authorized staging works.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Role string/authorized:true cannot create new rights through the supported API; valid authorized staging works.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/submit.test.ts",
+          "test_name": "operator staging rejects private secrets and creates no send authority",
+          "command_label": "bridge/src/submit.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/submit.test.ts",
+          "test_name": "X04/X05 strict JSON and legacy context preserve shell text as data",
+          "command_label": "bridge/src/submit.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/submit.test.ts",
+          "test_name": "explicit operator staging creates a private artifact usable only with claim",
+          "command_label": "bridge/src/submit.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "K01",
+      "required": "Concurrent Front Door/watchdog card completion inserts one logical grouped send.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Concurrent Front Door/watchdog card completion inserts one logical grouped send.",
+      "observed": "Mapped named tests executed successfully (exit 0). Same-process Front Door/watchdog overlap plus separate-process canonical enqueue uniqueness; no live card send.",
+      "tests": [
+        {
+          "test_file": "bridge/src/cards-ready.test.ts",
+          "test_name": "K01 concurrent Front Door/watchdog inserts one logical grouped operation",
+          "command_label": "bridge/src/cards-ready.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "K02",
+      "required": "Queued/unknown/failed card entries are not equated to successful delivery by filename matching.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Queued/unknown/failed card entries are not equated to successful delivery by filename matching.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/cards-ready.test.ts",
+          "test_name": "K02 exact operation states never equated to delivered by filenames",
+          "command_label": "bridge/src/cards-ready.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "K03",
+      "required": "Missing middle attachment never shifts metadata to the wrong card.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Missing middle attachment never shifts metadata to the wrong card.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/cards-ready.test.ts",
+          "test_name": "K03 missing middle card waits without shifting metadata; complete five remains group",
+          "command_label": "bridge/src/cards-ready.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "K04",
+      "required": "Five/seven cards stay one group; expected count and provider parent/part mappings persist across restart.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Five/seven cards stay one group; expected count and provider parent/part mappings persist across restart.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/reaction-option.test.ts",
+          "test_name": "K04 parent/part mapping retained in canonical database and exact conversation/line",
+          "command_label": "bridge/src/reaction-option.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/attachment-group.test.ts",
+          "test_name": "four, five and seven attachments retain one grouped queued operation",
+          "command_label": "bridge/src/attachment-group.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "K05",
+      "required": "Every added emoji on an option yields that exact known option details/price/direct URL, no sentiment action routing.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Every added emoji on an option yields that exact known option details/price/direct URL, no sentiment action routing.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/reaction-option.test.ts",
+          "test_name": "K05 any added emoji returns same exact known details/price/original URL",
+          "command_label": "bridge/src/reaction-option.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "K06",
+      "required": "Ambiguous target asks once; removal is not a new selection; missing price is never invented.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Ambiguous target asks once; removal is not a new selection; missing price is never invented.",
+      "observed": "Mapped named tests executed successfully (exit 0). Synthetic removal stays nonselection; locked SDK maps added reactions only, so actual removal events are not claimed supported.",
+      "tests": [
+        {
+          "test_file": "bridge/src/reaction-option.test.ts",
+          "test_name": "K06 ambiguous asks once by stable action identity, removal not selection, no invented price",
+          "command_label": "bridge/src/reaction-option.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/reaction-option.test.ts",
+          "test_name": "K06 repeated ambiguous option reactions across batches enqueue one clarification",
+          "command_label": "bridge/src/reaction-option.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "A01",
+      "required": "Stalled media does not block persistence/routing of later text; pending-media context remains explicit.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Stalled media does not block persistence/routing of later text; pending-media context remains explicit.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/runtime.test.ts",
+          "test_name": "A01 W04 stalled first voice does not block later text; stop preserves correlated work",
+          "command_label": "bridge/src/runtime.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW A01/A04/A07/U03 first media uses a bounded stream and preserves later text in its original batch",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "A02",
+      "required": "FFmpeg/stdout/stderr pipe pressure cannot deadlock; timeout cancels and reaps the child.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "FFmpeg/stdout/stderr pipe pressure cannot deadlock; timeout cancels and reaps the child.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/subprocess.test.ts",
+          "test_name": "stdout and stderr are concurrently drained under pipe pressure",
+          "command_label": "bridge/src/subprocess.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/subprocess.test.ts",
+          "test_name": "hung process ignoring TERM is KILLed and reaped by deadline",
+          "command_label": "bridge/src/subprocess.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "A03",
+      "required": "WAV input sample rate/channels are validated or converted, not assumed from extension.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "WAV input sample rate/channels are validated or converted, not assumed from extension.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/voice-stt.test.ts",
+          "test_name": "stereo and non-16k WAV are decoded; different inputs never share an output",
+          "command_label": "bridge/src/voice-stt.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/voice-stt.test.ts",
+          "test_name": "valid mono PCM WAV reused regardless of extension; unrelated note.wav ignored",
+          "command_label": "bridge/src/voice-stt.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "A04",
+      "required": "Oversized/truncated/malformed media fails within bounded time/resource limits.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Oversized/truncated/malformed media fails within bounded time/resource limits.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW A01/A04/A07/U03 first media uses a bounded stream and preserves later text in its original batch",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/inbound-attachment.test.ts",
+          "test_name": "declared, streamed and buffered oversize fail; stream is cancelled",
+          "command_label": "bridge/src/inbound-attachment.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/voice-stt.test.ts",
+          "test_name": "malformed, truncated or decoder-invalid WAV never becomes ready",
+          "command_label": "bridge/src/voice-stt.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "A05",
+      "required": "Restart with missing durable provider reference reports unavailable, never selects a guessed recent attachment.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Restart with missing durable provider reference reports unavailable, never selects a guessed recent attachment.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/media-worker.test.ts",
+          "test_name": "restart without exact attachment GUID reports unavailable, never guesses",
+          "command_label": "bridge/src/media-worker.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/media-integration.test.ts",
+          "test_name": "actual worker missing restart reference commits explicit unavailable state",
+          "command_label": "bridge/src/tests/storage/media-integration.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "A06",
+      "required": "Interrupted media save leaves no file that is mistaken for ready output; paths stay safe.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Interrupted media save leaves no file that is mistaken for ready output; paths stay safe.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/inbound-attachment.test.ts",
+          "test_name": "interrupted atomic write never publishes a ready output",
+          "command_label": "bridge/src/inbound-attachment.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/inbound-attachment.test.ts",
+          "test_name": "unsafe dot names and symlinked private directory are rejected",
+          "command_label": "bridge/src/inbound-attachment.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "A07",
+      "required": "Correlated transcript completion does not start a duplicate independent task; later failure leaves text usable.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Correlated transcript completion does not start a duplicate independent task; later failure leaves text usable.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/tests/acceptance/review.test.ts",
+          "test_name": "REVIEW A01/A04/A07/U03 first media uses a bounded stream and preserves later text in its original batch",
+          "command_label": "bridge/src/tests/acceptance/review.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/media-integration.test.ts",
+          "test_name": "actual attachment worker commits ready patch into the original SQLite event",
+          "command_label": "bridge/src/tests/storage/media-integration.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/process.test.ts",
+          "test_name": "crash before_commit media enrichment remains correlated to same batch",
+          "command_label": "bridge/src/tests/storage/process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/storage/process.test.ts",
+          "test_name": "crash after_commit media enrichment remains correlated to same batch",
+          "command_label": "bridge/src/tests/storage/process.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "L01",
+      "required": "Two simultaneous first Blob writes preserve both cards in different slots.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Two simultaneous first Blob writes preserve both cards in different slots.",
+      "observed": "Mapped named tests executed successfully (exit 0). Deterministic barrier in official-SDK-shaped storage double, not a real Blob service race.",
+      "tests": [
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L01 deterministic simultaneous absent reads preserve both slot claims",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "L02",
+      "required": "Existing missing/invalid/weak validator cannot trigger an unconditional update.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Existing missing/invalid/weak validator cannot trigger an unconditional update.",
+      "observed": "Mapped named tests executed successfully (exit 0). Missing/invalid/weak validators rejected in injected boundary; no real conditional Blob request.",
+      "tests": [
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L02 reject unusable validator undefined",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L02 reject unusable validator \"\"",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L02 reject unusable validator \"W/\\\\\"abc\\\\\"\"",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L02 reject unusable validator \"abc\"",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L02 reject unusable validator \"\\\\\"bad\\\\nvalue\\\\\"\"",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "L03",
+      "required": "Seeded valid ETag conflict retries preserve both changes within bounded CAS budget.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Seeded valid ETag conflict retries preserve both changes within bounded CAS budget.",
+      "observed": "Mapped named tests executed successfully (exit 0). Injected typed official-SDK precondition conflicts; no hosted CAS proof.",
+      "tests": [
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L03 existing ETag conflict bounded reread preserves concurrent state",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "L04",
+      "required": "Timeout after Blob commit is reconciled by original request identity; no invented new ID.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Timeout after Blob commit is reconciled by original request identity; no invented new ID.",
+      "observed": "Mapped named tests executed successfully (exit 0). Lost-response fault retains request identity locally; actual Blob service remains gated.",
+      "tests": [
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L04 timeout after commit reconciles original request identity",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L04 existing conditional write lost response is uncertain until same request replay",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "L05",
+      "required": "Unexpected 304/cache/error/corrupt registry does not initialize empty state.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Unexpected 304/cache/error/corrupt registry does not initialize empty state.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L05 corrupt/cache/error response fails closed 304undefined",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L05 corrupt/cache/error response fails closed 500undefined",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L05 corrupt/cache/error response fails closed 200",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L05 corrupt/cache/error response fails closed 200{bad",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "L06",
+      "required": "Read-size and write-size limits are enforced; errors contain no private tokens/URLs.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Read-size and write-size limits are enforced; errors contain no private tokens/URLs.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "live-mini/live-task-cards/tests/blob.test.mjs",
+          "test_name": "L06 bounds streaming read and write; cancellation does not print secrets",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "B01",
+      "required": "Generated Vercel function imports dependency bundle and resolves local assets without source-tree dependencies.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Generated Vercel function imports dependency bundle and resolves local assets without source-tree dependencies.",
+      "observed": "Mapped named tests executed successfully (exit 0). Generated function copied outside checkout and imported; local loopback health/assets checked without real Blob operations.",
+      "tests": [
+        {
+          "test_file": "live-mini/live-task-cards/tests/build-runtime.test.mjs",
+          "test_name": "B01 B02 deployed artifact imports bundled SDK and serves local assets without checkout or credentials",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "B02",
+      "required": "Normal build uses committed verified assets and no production Blob credentials or mutable code fetch.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Normal build uses committed verified assets and no production Blob credentials or mutable code fetch.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "live-mini/live-task-cards/tests/build-runtime.test.mjs",
+          "test_name": "B01 B02 deployed artifact imports bundled SDK and serves local assets without checkout or credentials",
+          "command_label": "host tests",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "H01",
+      "required": "Stale milestone revision conflicts; helper never retries old content under the newest revision.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Stale milestone revision conflicts; helper never retries old content under the newest revision.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H01/H02 explicit stale revisions and changed content never rebase or mint a fresh request",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "expired update cannot create an unsent journal blocking a newly fenced successor",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "H02",
+      "required": "Idempotency conflict retains original request identity rather than manufacturing a reconcile suffix.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Idempotency conflict retains original request identity rather than manufacturing a reconcile suffix.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H01/H02 explicit stale revisions and changed content never rebase or mint a fresh request",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "H03",
+      "required": "Changed full URL path or k token fails before helper state overwrite; old context survives.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Changed full URL path or k token fails before helper state overwrite; old context survives.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H03 token changes preserve previous context byte-for-byte without secret errors",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H03 path changes preserve previous context byte-for-byte without secret errors",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "H04",
+      "required": "No card send without stored card/task/original conversation context; supplied URL/space mismatch rejects.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "No card send without stored card/task/original conversation context; supplied URL/space mismatch rejects.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H04 missing context, wrong full URL and original space reject before enqueue",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "expired saved create intent cannot allocate a host card and cannot overwrite its context",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "H05",
+      "required": "Crash/lost response after create/claim/enqueue/send/settle recovers same identities without new physical send.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Crash/lost response after create/claim/enqueue/send/settle recovers same identities without new physical send.",
+      "observed": "Mapped named tests executed successfully (exit 0). Four actual Node SIGKILL barriers and four lost-response cases, real local SQLite/Bun controls and loopback host; Spectrum delivery is synthetic.",
+      "tests": [
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H05 lost create acknowledgement recovers same card, claim and physical send",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H05 lost claim acknowledgement recovers same card, claim and physical send",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H05 lost enqueue acknowledgement recovers same card, claim and physical send",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H05 lost settle acknowledgement recovers same card, claim and physical send",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H05 real Node SIGKILL after create commit recovers original identities",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H05 real Node SIGKILL after claim commit recovers original identities",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H05 real Node SIGKILL after enqueue commit recovers original identities",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H05 real Node SIGKILL after settle commit recovers original identities",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "H06",
+      "required": "Unknown initial send keeps slot occupied and does not permit a replacement task card.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Unknown initial send keeps slot occupied and does not permit a replacement task card.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H06 unknown retains occupancy and never creates another outbox action",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "H07",
+      "required": "Normal milestones update same URL JSON only; terminal settled record releases without Spectrum edit/resend.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Normal milestones update same URL JSON only; terminal settled record releases without Spectrum edit/resend.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H07 progress stays at same URL and terminal release needs no edit or resend",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "H08",
+      "required": "Node helper queries the canonical bridge status contract, never raw mutable queue JSON.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Node helper queries the canonical bridge status contract, never raw mutable queue JSON.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "live-mini/runtime/live-card-milestones.test.mjs",
+          "test_name": "H08 bounded Node child controls ignore raw legacy queue and redact rejected output",
+          "command_label": "Live Mini helper",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "T01",
+      "required": "All operating CLI examples execute in a synthetic instance and point to existing paths.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "All operating CLI examples execute in a synthetic instance and point to existing paths.",
+      "observed": "Original core instructions passed but maintenance walkthroughs were incomplete. Corrected direct source entrypoints executed under the kernel lock; accepted/cancelled reconciliation, status, export and prune plus negative authorization checks pass at c550d051453db80c3f338dbee19e5f9674b46782. External provisioning/model installation examples remain separate unexecuted gates.",
+      "tests": [
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T01-T04 every existing operating target has valid links, commands and generated roles",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T01-T04 checker detects drift and active obsolete vocabulary instead of appending a competing contract",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T05 documented claim/read/JSON submission and five-card producer execute against the canonical store",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/recovery-runbook.test.ts",
+          "test_name": "T01 protected maintenance examples invoke source entrypoints without losing the lock descriptor",
+          "command_label": "bridge/src/tests/acceptance/recovery-runbook.test.ts",
+          "exit": 0,
+          "tested_sha": "c550d051453db80c3f338dbee19e5f9674b46782",
+          "evidence": "evidence/review-followup.json"
+        },
+        {
+          "test_file": "bridge/src/tests/acceptance/recovery-runbook.test.ts",
+          "test_name": "T01/P08 runbook CLI reconciles original unknown operations and exports an independently readable snapshot",
+          "command_label": "bridge/src/tests/acceptance/recovery-runbook.test.ts",
+          "exit": 0,
+          "tested_sha": "c550d051453db80c3f338dbee19e5f9674b46782",
+          "evidence": "evidence/review-followup.json"
+        }
+      ],
+      "original_status": "PARTIAL",
+      "supplemental_tested_sha": "c550d051453db80c3f338dbee19e5f9674b46782"
+    },
+    {
+      "id": "T02",
+      "required": "Required role placeholders/vocabulary are consistent; disabled optional template placeholders are allowed only as templates.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Required role placeholders/vocabulary are consistent; disabled optional template placeholders are allowed only as templates.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T01-T04 every existing operating target has valid links, commands and generated roles",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T01-T04 checker detects drift and active obsolete vocabulary instead of appending a competing contract",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/presentation-config.test.ts",
+          "test_name": "T02 normal wakes read only verified core role identities from the private registry",
+          "command_label": "bridge/src/presentation-config.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "T03",
+      "required": "No old personal roster is treated as active; generic policies and actual user histories are not deleted.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "No old personal roster is treated as active; generic policies and actual user histories are not deleted.",
+      "observed": "Mapped named tests executed successfully (exit 0). Operating templates/registry verified and current tracked tree scanned; actual private user histories were not read or deleted.",
+      "tests": [
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T01-T04 every existing operating target has valid links, commands and generated roles",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T01-T04 checker detects drift and active obsolete vocabulary instead of appending a competing contract",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "T04",
+      "required": "Bootstrap versus normal wake, one final-response owner, any-emoji cards and code-owned onboarding agree everywhere.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Bootstrap versus normal wake, one final-response owner, any-emoji cards and code-owned onboarding agree everywhere.",
+      "observed": "Mapped named tests executed successfully (exit 0).",
+      "tests": [
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T01-T04 every existing operating target has valid links, commands and generated roles",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T01-T04 checker detects drift and active obsolete vocabulary instead of appending a competing contract",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/inbound-controller.test.ts",
+          "test_name": "durable authorized reception > U06/U07 contextual okay, thanks, yeah and mixed reactions always reach Front Door",
+          "command_label": "bridge/src/inbound-controller.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        },
+        {
+          "test_file": "bridge/src/runtime.test.ts",
+          "test_name": "U01 U04 one greeting with confetti is committed before receipt; unauthorized ignored",
+          "command_label": "bridge/src/runtime.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    },
+    {
+      "id": "T05",
+      "required": "Original suites plus all new tests run from frozen installs at recorded SHA; historical evidence not relabelled.",
+      "status": "PASS_LOCAL",
+      "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+      "expected": "Original suites plus all new tests run from frozen installs at recorded SHA; historical evidence not relabelled.",
+      "observed": "Mapped named tests executed successfully (exit 0). 46 full-suite commands, frozen installs, typecheck/check/build; repeated process/helper runs and current manifests. Five historical script-style validators execute assertions while Bun reports zero named tests. Optional custom-loader-browser.mjs is outside package suites and unexecuted.",
+      "tests": [
+        {
+          "test_file": "bridge/src/instruction-consistency.test.ts",
+          "test_name": "T01 deterministic source and host digests detect changed source and reject private files",
+          "command_label": "bridge/src/instruction-consistency.test.ts",
+          "exit": 0,
+          "tested_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+          "evidence": "evidence/review-full.json"
+        }
+      ]
+    }
+  ],
+  "supplemental_sha": "c550d051453db80c3f338dbee19e5f9674b46782",
+  "counts": {
+    "PASS_LOCAL": 92,
+    "PARTIAL": 1
+  },
+  "original_counts": {
+    "PASS_LOCAL": 90,
+    "PARTIAL": 3
+  }
+}

@@ -1,533 +1,753 @@
-/**
- * Durable live-task-cards milestone helper for Grok VM / Spectrum task execution.
- *
- * Lives OUTSIDE the Vercel deploy tree. Progress = PUT /api/cards/:id at the
- * same viewUrl. Spectrum app(viewUrl,{live:true}) is sent ONCE on create via
- * grok-photon-proof enqueue — never edit/resend for ordinary progress.
- *
- * Prefer attachLiveTaskCards when an in-process Spectrum Space is available;
- * otherwise use publisher HTTP + enqueue (this module's default path).
- */
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { spawn } from 'node:child_process';
-import { PublisherClient } from '../live-task-cards/src/client.mjs';
-import { CardError } from '../live-task-cards/src/errors.mjs';
+/** Private Node 22 publisher helper. All physical sends use the existing bridge outbox. */
+import {
+  readFileSync,
+  existsSync,
+  openSync,
+  fstatSync,
+  readSync,
+  closeSync,
+  constants,
+} from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
+import { spawn } from "node:child_process";
+import {
+  resolveInstancePaths,
+  assertPrivateFile,
+  atomicPrivateWrite,
+} from "../../shared/instance-paths.mjs";
+import { PublisherClient } from "../live-task-cards/src/client.mjs";
+import { CardError, assert } from "../live-task-cards/src/errors.mjs";
+import { parseBridgeControlError } from "../../shared/bridge-control-errors.mjs";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const INSTALL_ROOT = resolve(__dirname, '..');
-const DEFAULT_STATE_DIR = join(__dirname, 'state');
-const DEFAULT_SECRETS = join(INSTALL_ROOT, 'secrets', 'prod.env');
-const DEFAULT_PROOF_ROOT = '{{BRIDGE_ROOT}}';
-const SPACE_PROOF = '{{AUTHORIZED_SPACE_ID}}';
+const HERE = dirname(fileURLToPath(import.meta.url));
+const BRIDGE_ROOT = resolve(HERE, "../../bridge");
+const LIMIT = 65536;
+const terminal = new Set(["completed", "failed", "cancelled"]);
+function fail(code) {
+  throw new CardError(code, code, 409);
+}
+function identifier(value) {
+  assert(
+    typeof value === "string" &&
+      /^[A-Za-z0-9][A-Za-z0-9._:-]{0,511}$/.test(value),
+    "CONTEXT_REQUIRED",
+    "A complete task identity is required.",
+  );
+  return value;
+}
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object")
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonical(value[key])]),
+    );
+  return value;
+}
+const serialize = (value) => JSON.stringify(canonical(value));
+const hash = (value) =>
+  createHash("sha256").update(serialize(value)).digest("hex");
 
-/** Parse KEY=VALUE env file without printing values. */
-export function loadEnvFile(path) {
+export function loadEnvFile(path, root = dirname(path)) {
   if (!existsSync(path)) return {};
-  const out = {};
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
-    const t = line.trim();
-    if (!t || t.startsWith('#')) continue;
-    const i = t.indexOf('=');
-    if (i < 0) continue;
-    const key = t.slice(0, i).trim();
-    let val = t.slice(i + 1).trim();
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-      val = val.slice(1, -1);
+  let fd;
+  let raw;
+  try {
+    fd = openSync(
+      assertPrivateFile(path, root),
+      constants.O_RDONLY | constants.O_NOFOLLOW,
+    );
+    const stat = fstatSync(fd);
+    if (!stat.isFile() || (stat.mode & 0o077) !== 0 || stat.size > LIMIT)
+      fail("CONFIG_ERROR");
+    const bytes = Buffer.alloc(stat.size);
+    let offset = 0;
+    while (offset < bytes.length) {
+      const count = readSync(fd, bytes, offset, bytes.length - offset, offset);
+      if (!count) fail("CONFIG_ERROR");
+      offset += count;
     }
-    out[key] = val;
+    if (fstatSync(fd).size !== stat.size) fail("CONFIG_ERROR");
+    raw = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    fail("CONFIG_ERROR");
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
+  const out = Object.create(null);
+  for (const rawLine of raw.split(/\r?\n/)) {
+    if (/[\x00-\x1f\x7f]/.test(rawLine)) fail("CONFIG_ERROR");
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const match = /^(PUBLIC_BASE_URL|PUBLISHER_TOKEN)\s*=\s*(.*)$/.exec(line);
+    if (!match || Object.hasOwn(out, match[1])) fail("CONFIG_ERROR");
+    let value = match[2];
+    if (/^["']/.test(value)) {
+      if (value.length < 2 || value.at(-1) !== value[0]) fail("CONFIG_ERROR");
+      value = value.slice(1, -1);
+    }
+    if (!value || /[\x00-\x20\x7f"']/.test(value)) fail("CONFIG_ERROR");
+    out[match[1]] = value; // Literal values only: no expansion, interpolation or shell evaluation.
+  }
+  if (!out.PUBLIC_BASE_URL || !out.PUBLISHER_TOKEN) fail("CONFIG_ERROR");
+  try {
+    const url = new URL(out.PUBLIC_BASE_URL);
+    if (
+      url.protocol !== "https:" ||
+      url.pathname !== "/" ||
+      url.username ||
+      url.password ||
+      url.hash ||
+      url.search
+    )
+      fail("CONFIG_ERROR");
+  } catch {
+    fail("CONFIG_ERROR");
   }
   return out;
 }
-
-export function resolvePublisherConfig(opts = {}) {
-  const fileEnv = loadEnvFile(opts.secretsPath || process.env.LIVE_CARDS_SECRETS || DEFAULT_SECRETS);
-  const baseUrl = (
-    opts.baseUrl ||
-    process.env.LIVE_CARDS_BASE_URL ||
-    process.env.PUBLIC_BASE_URL ||
-    fileEnv.PUBLIC_BASE_URL ||
-    ''
-  ).replace(/\/$/, '');
-  const token =
-    opts.publisherToken ||
-    process.env.LIVE_CARDS_PUBLISHER_TOKEN ||
-    process.env.PUBLISHER_TOKEN ||
-    fileEnv.PUBLISHER_TOKEN ||
-    '';
-  if (!baseUrl || !token) {
-    throw new CardError('CONFIG_ERROR', 'Publisher base URL and token are required (secrets/local.env or env).', 503);
-  }
+export function resolvePublisherConfig(
+  opts = {},
+  paths = resolveInstancePaths(),
+) {
+  if (opts.secretsPath || opts.stateDir) fail("CANONICAL_PATHS_REQUIRED");
+  const env = loadEnvFile(paths.liveMiniEnv, paths.root);
+  const baseUrl = opts.baseUrl ?? env.PUBLIC_BASE_URL;
+  const token = opts.publisherToken ?? env.PUBLISHER_TOKEN;
+  if (!baseUrl || !token) fail("CONFIG_ERROR");
   return { baseUrl, token };
 }
 
-function ensureDir(dir) {
-  mkdirSync(dir, { recursive: true });
-}
-
-function statePath(stateDir, taskKey) {
-  const safe = String(taskKey).replace(/[^A-Za-z0-9._:-]+/g, '_').slice(0, 120);
-  return join(stateDir, `${safe}.json`);
-}
-
-function redactViewUrl(url) {
-  if (typeof url !== 'string') return url;
-  return url.replace(/([?&]k=)[^&]+/gi, '$1REDACTED');
-}
-
-function publicViewUrl(url) {
-  // Strip query for equality checks of "same URL forever" path identity.
-  try {
-    const u = new URL(url);
-    return `${u.origin}${u.pathname}`;
-  } catch {
-    return String(url).split('?')[0];
-  }
-}
-
-/**
- * @param {object} [opts]
- * @param {string} [opts.secretsPath]
- * @param {string} [opts.baseUrl]
- * @param {string} [opts.publisherToken]
- * @param {string} [opts.stateDir]
- * @param {string} [opts.proofRoot] grok-photon-proof checkout (for enqueue CLI)
- * @param {object} [opts.liveCards] optional attachLiveTaskCards runtime (in-process Space path)
- * @param {object} [opts.space] authorized Spectrum Space when using liveCards
- * @param {object} [opts.taskContext] context passed to liveCards owner hooks
- * @param {typeof fetch} [opts.fetchImpl]
- */
-export function createLiveCardMilestones(opts = {}) {
-  const { baseUrl, token } = resolvePublisherConfig(opts);
-  const client = new PublisherClient({ baseUrl, token, fetchImpl: opts.fetchImpl });
-  const stateDir = opts.stateDir || DEFAULT_STATE_DIR;
-  const proofRoot = opts.proofRoot || process.env.GROK_PHOTON_PROOF || DEFAULT_PROOF_ROOT;
-  const liveCards = opts.liveCards || null;
-  const space = opts.space || null;
-  const taskContext = opts.taskContext || {};
-  ensureDir(stateDir);
-
-  const log = (...args) => {
-    if (opts.silent) return;
-    console.log('[live-card-milestones]', ...args);
+/** No shell, bounded stdin/stdout/stderr, finite deadline and a fixed safe error vocabulary. */
+export function runBridgeControl({
+  command,
+  body,
+  bridgeRoot = BRIDGE_ROOT,
+  bun = process.env.PHOTON_BUN_BIN || "bun",
+  timeoutMs = 10000,
+  env = process.env,
+}) {
+  const scripts = {
+    "task-context": ["src/presentation-control.ts", "task-context"],
+    register: ["src/presentation-control.ts", "register"],
+    "operation-status": ["src/presentation-control.ts", "operation-status"],
+    enqueue: ["src/enqueue.ts"],
   };
-
-  function loadContext(taskKey) {
-    const p = statePath(stateDir, taskKey);
-    if (!existsSync(p)) return null;
-    return JSON.parse(readFileSync(p, 'utf8'));
-  }
-
-  function saveContext(taskKey, ctx) {
-    const p = statePath(stateDir, taskKey);
-    const safe = {
-      ...ctx,
-      viewUrlRedacted: redactViewUrl(ctx.viewUrl),
-      updatedAt: new Date().toISOString(),
+  if (!scripts[command])
+    return Promise.reject(
+      new CardError("BRIDGE_COMMAND_INVALID", "Bridge command rejected."),
+    );
+  const input = JSON.stringify(body);
+  if (Buffer.byteLength(input) > LIMIT)
+    return Promise.reject(
+      new CardError("BRIDGE_INPUT_TOO_LARGE", "Bridge input rejected."),
+    );
+  return new Promise((resolveResult, reject) => {
+    const child = spawn(bun, ["run", ...scripts[command], "--json-stdin"], {
+      cwd: bridgeRoot,
+      env,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    let output = "", errorOutput = "",
+      bytes = 0,
+      settled = false;
+    const finish = (error, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (error) {
+        child.kill("SIGKILL");
+        const safe = typeof error === "string" ? { code: error } : error;
+        const failure = new CardError(safe.code, safe.code, 502);
+        if (safe.recovery) failure.recovery = safe.recovery;
+        reject(failure);
+      } else resolveResult(value);
     };
-    // Persist full viewUrl for executor reuse (file is gitignored); never log k=.
-    writeFileSync(p, JSON.stringify(safe, null, 2) + '\n', { mode: 0o600 });
-    return safe;
-  }
+    const timer = setTimeout(
+      () => finish("BRIDGE_RESPONSE_UNKNOWN"),
+      timeoutMs,
+    );
+    child.stdout.on("data", (chunk) => {
+      bytes += chunk.length;
+      if (bytes > LIMIT) finish("BRIDGE_RESPONSE_TOO_LARGE");
+      else output += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      bytes += chunk.length;
+      if (bytes > LIMIT) finish("BRIDGE_RESPONSE_TOO_LARGE");
+      else errorOutput += chunk.toString();
+    });
+    child.on("error", () => finish("BRIDGE_UNAVAILABLE"));
+    child.stdin.on("error", () => finish("BRIDGE_RESPONSE_UNKNOWN"));
+    child.on("close", (code) => {
+      if (code !== 0) return finish(parseBridgeControlError(errorOutput) ?? "BRIDGE_REJECTED");
+      try {
+        finish(null, JSON.parse(output));
+      } catch {
+        finish("BRIDGE_RESPONSE_UNKNOWN");
+      }
+    });
+    child.stdin.end(input);
+  });
+}
 
-  async function createCard(payload, taskKey = payload.taskId || payload.requestId) {
-    if (liveCards && space) {
-      const started = await liveCards.start(payload, space, taskContext);
-      const record = started.record;
-      const ctx = saveContext(taskKey, {
-        taskKey,
+/** Lock holder has no publisher secrets. EOF releases after Node death; holder loss fences writes. */
+export async function withContextLock(
+  path,
+  action,
+  { python = "python3" } = {},
+) {
+  const child = spawn(python, [join(HERE, "context-lock.py"), path], {
+    env: { PATH: process.env.PATH ?? "/usr/bin:/bin", PYTHONUTF8: "1" },
+    stdio: ["pipe", "pipe", "ignore"],
+  });
+  let alive = true;
+  child.stdin.on("error", () => {
+    alive = false;
+  });
+  const closed = new Promise((resolveClosed) => {
+    child.once("close", () => {
+      alive = false;
+      resolveClosed();
+    });
+    child.once("error", () => {
+      alive = false;
+      resolveClosed();
+    });
+  });
+  const check = () => {
+    if (!alive) fail("CONTEXT_LOCK_LOST");
+  };
+  try {
+    await new Promise((resolveReady, reject) => {
+      const timer = setTimeout(() => {
+        child.kill("SIGKILL");
+        reject(
+          new CardError(
+            "CONTEXT_LOCK_UNAVAILABLE",
+            "Context lock unavailable.",
+          ),
+        );
+      }, 3000);
+      child.once("error", () => {
+        clearTimeout(timer);
+        reject(
+          new CardError(
+            "CONTEXT_LOCK_UNAVAILABLE",
+            "Context lock unavailable.",
+          ),
+        );
+      });
+      child.once("close", () => {
+        clearTimeout(timer);
+        reject(
+          new CardError(
+            "CONTEXT_BUSY",
+            "Context is busy; retry the same task identity.",
+          ),
+        );
+      });
+      child.stdout.once("data", (chunk) => {
+        clearTimeout(timer);
+        if (chunk.toString() === "CONTEXT_LOCKED\n") resolveReady();
+        else {
+          child.kill();
+          reject(
+            new CardError(
+              "CONTEXT_LOCK_UNAVAILABLE",
+              "Context lock unavailable.",
+            ),
+          );
+        }
+      });
+    });
+    check();
+    return await action(check, child.pid);
+  } finally {
+    child.stdin.end();
+    await closed;
+  }
+}
+
+export function createLiveCardMilestones(opts = {}) {
+  if (opts.liveCards || opts.space) fail("CANONICAL_BRIDGE_REQUIRED");
+  const paths = resolveInstancePaths({ instanceDir: opts.paths?.root });
+  if (existsSync(join(HERE, "state"))) fail("LEGACY_CONTEXT_REVIEW_REQUIRED");
+  // Reading verifies this is an initialized private instance; helpers never bootstrap it.
+  const installationId = JSON.parse(
+    readFileSync(assertPrivateFile(paths.configPath, paths.root), "utf8"),
+  ).installationId;
+  identifier(installationId);
+  let task = opts.taskContext;
+  if (!task) fail("CONTEXT_REQUIRED");
+  const taskId = identifier(task.taskId);
+  function validateTask(value) {
+    if (!value || value.taskId !== taskId) fail("CONTEXT_MISMATCH");
+    identifier(value.batchId);
+    if (value.claim && value.claim.batchId !== value.batchId) fail("CONTEXT_MISMATCH");
+    for (const revision of [value.inputRevision, value.taskInputRevision])
+      if (revision !== undefined && (!Number.isSafeInteger(revision) || revision < 1)) fail("CONTEXT_MISMATCH");
+    return { ...value, ...(value.claim ? { claim: { ...value.claim } } : {}) };
+  }
+  task = validateTask(task);
+  const { baseUrl, token } = resolvePublisherConfig(opts, paths);
+  const client = new PublisherClient({
+    baseUrl,
+    token,
+    fetchImpl: opts.fetchImpl,
+  });
+  const control =
+    opts.control ??
+    ((command, body) =>
+      runBridgeControl({
+        command,
+        body,
+        bridgeRoot: opts.bridgeRoot ?? BRIDGE_ROOT,
+        bun: opts.bun,
+        env: { ...process.env, PHOTON_INSTANCE_DIR: paths.root },
+      }));
+  async function binding(authority, write = false) {
+    if (write && !authority.claim) fail("CLAIM_REQUIRED");
+    const result = await control("task-context", {
+      taskId,
+      batchId: authority.batchId,
+      inputRevision: authority.inputRevision,
+      taskInputRevision: authority.taskInputRevision,
+      ...(write ? { claim: authority.claim } : {}),
+    });
+    if (
+      result.taskId !== taskId ||
+      result.batchId !== authority.batchId ||
+      result.origin !== new URL(baseUrl).origin
+    )
+      fail("CONTEXT_MISMATCH");
+    identifier(result.originalBatchId);
+    for (const revision of [result.inputRevision, result.taskInputRevision])
+      if (!Number.isSafeInteger(revision) || revision < 1) fail("CONTEXT_MISMATCH");
+    for (const value of [
+      result.destination?.spaceId,
+      result.destination?.lineId,
+    ])
+      if (
+        typeof value !== "string" ||
+        !value.trim() ||
+        value.length > 1000 ||
+        value.includes("\0")
+      )
+        fail("CONTEXT_MISMATCH");
+    return result;
+  }
+  async function scoped(taskKey, action) {
+    if (
+      typeof taskKey !== "string" ||
+      !taskKey.trim() ||
+      taskKey.length > 1024 ||
+      taskKey.includes("\0")
+    )
+      fail("CONTEXT_REQUIRED");
+    const current = validateTask(opts.getTaskContext ? await opts.getTaskContext() : task);
+    const bound = await binding(current);
+    const authority = { ...current, inputRevision: bound.inputRevision, taskInputRevision: bound.taskInputRevision };
+    const identity = {
+      installationId,
+      taskId,
+      // Preserve the existing context hash across follow-up processing batches.
+      batchId: bound.originalBatchId,
+      destination: bound.destination,
+      taskKey,
+    };
+    const digest = hash(identity);
+    const path = join(paths.liveMiniContextDir, `${digest}.json`);
+    return withContextLock(`${path}.lock`, async (check) => {
+      const load = () => {
+        check();
+        if (!existsSync(path)) return null;
+        const context = JSON.parse(
+          readFileSync(assertPrivateFile(path, paths.root), "utf8"),
+        );
+        if (serialize(context.identity) !== serialize(identity))
+          fail("CONTEXT_MISMATCH");
+        return context;
+      };
+      const save = (context) => {
+        check();
+        const prior = load();
+        if (prior?.viewUrl && context.viewUrl !== prior.viewUrl)
+          fail("URL_CHANGED");
+        atomicPrivateWrite(path, `${JSON.stringify(context, null, 2)}\n`);
+        return context;
+      };
+      const required = () => {
+        const ctx = load();
+        if (!ctx?.cardId || !ctx.viewUrl) fail("CONTEXT_REQUIRED");
+        return ctx;
+      };
+      return action({ load, save, required, check, identity, digest, path, authority,
+        validateAuthority: () => binding(authority, true) });
+    });
+  }
+  function verifyRecord(ctx, record) {
+    if (
+      !record ||
+      record.taskId !== taskId ||
+      record.conversationRef !== ctx.identity.destination.spaceId ||
+      (ctx.cardId && record.id !== ctx.cardId)
+    )
+      fail("CONTEXT_MISMATCH");
+    if (ctx.viewUrl && record.viewUrl !== ctx.viewUrl) fail("URL_CHANGED");
+    const url = new URL(record.viewUrl);
+    if (
+      url.origin !== new URL(baseUrl).origin ||
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.hash ||
+      url.href !== record.viewUrl ||
+      url.pathname !== `/${record.slot}/${record.id}` ||
+      !/^live-(?:[1-9]|10)$/.test(record.slot) ||
+      !url.searchParams.get("k") ||
+      [...url.searchParams.keys()].join() !== "k"
+    )
+      fail("CONTEXT_MISMATCH");
+    return record;
+  }
+  const presentationContext = (ctx) => ({
+    cardId: ctx.cardId,
+    taskId,
+    batchId: ctx.identity.batchId,
+    destination: ctx.identity.destination,
+    viewUrl: ctx.viewUrl,
+  });
+  async function status(ctx, authority) {
+    const result = await control("operation-status", {
+      taskId,
+      batchId: authority.batchId,
+      inputRevision: authority.inputRevision,
+      taskInputRevision: authority.taskInputRevision,
+      cardId: ctx.cardId,
+      actionKey: ctx.actionKey,
+    });
+    if (!Array.isArray(result.items) || result.items.length > 1)
+      fail("OUTBOUND_STATUS_INVALID");
+    return result.items[0];
+  }
+  async function createCard(payload, taskKey) {
+    return scoped(taskKey, async ({ load, save, identity, digest, check, authority, validateAuthority }) => {
+      if (
+        payload.taskId !== taskId ||
+        payload.conversationRef !== identity.destination.spaceId
+      )
+        fail("CONTEXT_MISMATCH");
+      identifier(payload.requestId);
+      if (Buffer.byteLength(serialize(payload)) > LIMIT)
+        fail("CREATE_INPUT_TOO_LARGE");
+      let ctx = load();
+      if (ctx && serialize(ctx.creation) !== serialize(payload))
+        fail("IDEMPOTENCY_CONFLICT");
+      if (!ctx?.cardId) {
+        await validateAuthority();
+      }
+      if (!ctx) {
+        ctx = save({
+          version: 1,
+          identity,
+          creation: payload,
+          actionKey: `live-card:${digest}`,
+          phase: "create_intent",
+        });
+      }
+      check();
+      const record = verifyRecord(
+        ctx,
+        ctx.cardId
+          ? await client.get(ctx.cardId)
+          : await client.create(ctx.creation),
+      );
+      ctx = save({
+        ...ctx,
         cardId: record.id,
-        revision: record.revision,
         viewUrl: record.viewUrl,
         slot: record.slot,
-        conversationRef: record.conversationRef,
-        template: record.content?.template,
-        spectrumMessageId: record.delivery?.messageRef || null,
-        spectrumSendCount: record.delivery?.messageRef ? 1 : 0,
-        presentation: started.presentation,
-        path: 'attachLiveTaskCards',
+        revision: record.revision,
+        phase: ctx.phase === "create_intent" ? "created" : ctx.phase,
       });
-      log('createCard(attach)', { cardId: ctx.cardId, slot: ctx.slot, revision: ctx.revision, presentation: started.presentation });
-      return { record, context: ctx, presentation: started.presentation };
-    }
-
-    const record = await client.create(payload);
-    const ctx = saveContext(taskKey, {
-      taskKey,
-      cardId: record.id,
-      revision: record.revision,
-      viewUrl: record.viewUrl,
-      slot: record.slot,
-      conversationRef: record.conversationRef,
-      template: record.content?.template,
-      spectrumMessageId: null,
-      spectrumSendCount: 0,
-      path: 'publisher+enqueue',
+      check();
+      await control("register", {
+        claim: authority.claim,
+        inputRevision: authority.inputRevision,
+        taskInputRevision: authority.taskInputRevision,
+        context: presentationContext(ctx),
+      });
+      return { record, context: ctx };
     });
-    log('createCard', { cardId: ctx.cardId, slot: ctx.slot, revision: ctx.revision, viewPath: publicViewUrl(record.viewUrl) });
-    return { record, context: ctx };
   }
-
-  /**
-   * Enqueue Spectrum app(url,{live:true}) once via grok-photon-proof CLI.
-   * Does not use --app-update. Idempotent if context already has spectrumMessageId.
-   */
   async function sendOnce(spaceId, viewUrl, taskKey) {
-    const ctx = taskKey ? loadContext(taskKey) : null;
-    if (ctx?.spectrumMessageId && ctx.spectrumSendCount >= 1) {
-      log('sendOnce skipped — already sent', { messageId: ctx.spectrumMessageId, sendCount: ctx.spectrumSendCount });
-      return { skipped: true, messageId: ctx.spectrumMessageId, outboundId: ctx.outboundId || null, context: ctx };
-    }
-    if (liveCards && space) {
-      // attach path already sent on start(); sync only if needed
-      if (ctx?.cardId) {
-        const synced = await liveCards.sync(ctx.cardId, space, taskContext);
-        const next = saveContext(taskKey || ctx.taskKey, {
-          ...ctx,
-          revision: synced.record.revision,
-          spectrumMessageId: synced.record.delivery?.messageRef || ctx.spectrumMessageId,
-          spectrumSendCount: synced.record.delivery?.messageRef ? 1 : ctx.spectrumSendCount || 0,
-          presentation: synced.presentation,
+    return scoped(taskKey, async ({ required, save, check, authority, validateAuthority }) => {
+      let ctx = required();
+      if (
+        spaceId !== ctx.identity.destination.spaceId ||
+        viewUrl !== ctx.viewUrl
+      )
+        fail("CONTEXT_MISMATCH");
+      let record = verifyRecord(ctx, await client.get(ctx.cardId));
+      let outcome = await status(ctx, authority);
+      if (!ctx.attemptId && !ctx.beginIntent && record.activeAttempt)
+        fail("PRESENTATION_PENDING");
+      if (!ctx.attemptId && record.delivery.messageRef)
+        fail("PRESENTATION_EVIDENCE_REQUIRED");
+      if (!ctx.attemptId) {
+        check();
+        await validateAuthority();
+        await control("register", {
+          claim: authority.claim,
+          inputRevision: authority.inputRevision,
+          taskInputRevision: authority.taskInputRevision,
+          context: presentationContext(ctx),
         });
-        return { skipped: synced.presentation === 'already_sent', messageId: next.spectrumMessageId, context: next, presentation: synced.presentation };
-      }
-    }
-
-    const url = viewUrl || ctx?.viewUrl;
-    if (!url) throw new CardError('CONFIG_ERROR', 'sendOnce requires viewUrl or persisted context.', 400);
-    const sid = spaceId || ctx?.conversationRef || SPACE_PROOF;
-
-    // Claim presentation before send so duplicates cannot race (HTTP path).
-    let attemptId = null;
-    if (ctx?.cardId) {
-      try {
-        const claim = await client.beginPresentation(ctx.cardId, ctx.revision);
-        if (!claim.skipped) attemptId = claim.attempt?.id;
-        else if (claim.record?.delivery?.messageRef) {
-          const next = saveContext(taskKey || ctx.taskKey, {
+        if (!ctx.beginIntent)
+          ctx = save({
             ...ctx,
-            revision: claim.record.revision,
-            spectrumMessageId: claim.record.delivery.messageRef,
-            spectrumSendCount: 1,
+            beginIntent: { revision: record.revision },
+            phase: "claim_intent",
           });
-          log('sendOnce skipped — presentation already settled');
-          return { skipped: true, messageId: next.spectrumMessageId, context: next };
+        if (record.activeAttempt) {
+          if (
+            record.activeAttempt.revision !== ctx.beginIntent.revision ||
+            record.activeAttempt.kind !== "send"
+          )
+            fail("PRESENTATION_PENDING");
+          ctx = save({
+            ...ctx,
+            attemptId: record.activeAttempt.id,
+            phase: "claimed",
+          });
+        } else {
+          check();
+          const claim = await client.beginPresentation(
+            ctx.cardId,
+            ctx.beginIntent.revision,
+          );
+          verifyRecord(ctx, claim.record);
+          if (claim.skipped || !claim.attempt?.id)
+            fail("PRESENTATION_EVIDENCE_REQUIRED");
+          record = claim.record;
+          ctx = save({ ...ctx, attemptId: claim.attempt.id, phase: "claimed" });
         }
-      } catch (err) {
-        if (!(err instanceof CardError && err.code === 'PRESENTATION_PENDING')) throw err;
-        throw new CardError('PRESENTATION_PENDING', 'Reconcile in-flight initial send; do not enqueue a replacement.', 409);
       }
-    }
-
-    const enqueueResult = await runEnqueueApp({ proofRoot, spaceId: sid, url, live: true });
-    const outboundId = enqueueResult.items?.[0]?.id;
-    log('enqueue app live', { outboundId, spaceId: sid, viewPath: publicViewUrl(url) });
-
-    const delivered = await waitOutboundSent({ proofRoot, outboundId, timeoutMs: opts.sendTimeoutMs || 90_000 });
-    const messageId = delivered.messageId;
-    if (!messageId) {
-      if (attemptId && ctx?.cardId) {
+      if (record.activeAttempt && record.activeAttempt.id !== ctx.attemptId)
+        fail("PRESENTATION_PENDING");
+      if (!outcome) {
+        // An uncertain external claim or a previously committed submission may never be replaced.
+        if (
+          record.activeAttempt?.state === "unknown" ||
+          record.delivery.messageRef ||
+          ctx.outboundId ||
+          ctx.phase === "submitted" ||
+          ctx.phase === "settled"
+        )
+          fail("PRESENTATION_UNKNOWN");
+        const submission = {
+          version: 1,
+          batchId: authority.batchId,
+          taskId,
+          claim: authority.claim,
+          inputRevision: authority.inputRevision,
+          taskInputRevision: authority.taskInputRevision,
+          actionKey: ctx.actionKey,
+          purpose: "presentation",
+          payload: { kind: "app", spaceId, url: viewUrl, live: true },
+          presentation: {
+            cardId: ctx.cardId,
+            taskId,
+            viewUrl,
+            claimId: ctx.attemptId,
+          },
+        };
+        check();
+        const result = await control("enqueue", submission);
+        const items = Array.isArray(result) ? result : result.items;
+        if (!Array.isArray(items) || items.length !== 1 || !items[0]?.id)
+          fail("OUTBOUND_STATUS_INVALID");
+        outcome = items[0];
+        ctx = save({ ...ctx, outboundId: outcome.id, phase: "submitted" });
+      } else if (!ctx.outboundId)
+        ctx = save({ ...ctx, outboundId: outcome.id, phase: "submitted" });
+      if (ctx.outboundId !== outcome.id) fail("OUTBOUND_STATUS_INVALID");
+      const deadline = Date.now() + (opts.sendTimeoutMs ?? 90000);
+      while (
+        ["queued", "sending", "retry_wait"].includes(outcome.state) &&
+        Date.now() < deadline
+      ) {
+        await new Promise((resolveWait) =>
+          setTimeout(resolveWait, opts.pollMs ?? 250),
+        );
+        check();
+        outcome = await status(ctx, authority);
+        if (!outcome || outcome.id !== ctx.outboundId)
+          fail("OUTBOUND_STATUS_INVALID");
+      }
+      if (outcome.state !== "accepted" || !outcome.reference?.messageId) {
+        // Keep the same host claim occupied. A later exact operator reconciliation may settle it.
+        check();
         try {
-          await client.settlePresentation(ctx.cardId, {
-            attemptId,
-            outcome: 'unknown',
-            note: 'Enqueue accepted but messageId not observed in time.',
-          });
-        } catch { /* durable claim remains */ }
+          verifyRecord(
+            ctx,
+            await client.settlePresentation(ctx.cardId, {
+              attemptId: ctx.attemptId,
+              outcome: "unknown",
+              note: "Canonical outbox outcome needs reconciliation.",
+            }),
+          );
+        } catch {
+          /* Claim remains held on host/response loss. */
+        }
+        fail("PRESENTATION_UNKNOWN");
       }
-      throw new CardError('PRESENTATION_UNKNOWN', `Outbound ${outboundId} did not yield messageId; reconcile without resend.`, 502);
-    }
-
-    if (attemptId && ctx?.cardId) {
-      const settled = await client.settlePresentation(ctx.cardId, {
-        attemptId,
-        outcome: 'accepted',
-        messageRef: messageId,
-      });
-      const next = saveContext(taskKey || ctx.taskKey, {
+      const messageId = outcome.reference.messageId;
+      if (
+        record.delivery.messageRef &&
+        record.delivery.messageRef !== messageId
+      )
+        fail("PRESENTATION_EVIDENCE_CONFLICT");
+      ctx = save({
         ...ctx,
-        revision: settled.revision,
+        settlement: {
+          attemptId: ctx.attemptId,
+          outcome: "accepted",
+          messageRef: messageId,
+        },
+        phase: "settle_intent",
+      });
+      check();
+      record = verifyRecord(
+        ctx,
+        await client.settlePresentation(ctx.cardId, ctx.settlement),
+      );
+      ctx = save({
+        ...ctx,
+        revision: record.revision,
         spectrumMessageId: messageId,
         spectrumSendCount: 1,
-        outboundId,
-        viewUrl: settled.viewUrl || ctx.viewUrl,
+        phase: "settled",
       });
-      log('presentation settled', { messageId, revision: next.revision, sendCount: 1 });
-      return { skipped: false, messageId, outboundId, context: next, record: settled };
-    }
-
-    const next = ctx
-      ? saveContext(taskKey || ctx.taskKey, {
-          ...ctx,
-          spectrumMessageId: messageId,
-          spectrumSendCount: 1,
-          outboundId,
-        })
-      : { spectrumMessageId: messageId, spectrumSendCount: 1, outboundId, viewUrl: url };
-    log('sendOnce complete (no presentation claim)', { messageId, sendCount: 1 });
-    return { skipped: false, messageId, outboundId, context: next };
-  }
-
-  /**
-   * PUT milestone snapshot. On REVISION_CONFLICT: re-get and reconcile expectedRevision once
-   * (same requestId retry is idempotent if content matches).
-   */
-  async function updateMilestone(cardId, updateBody, taskKey) {
-    const id = cardId || (taskKey && loadContext(taskKey)?.cardId);
-    if (!id) throw new CardError('INVALID_INPUT', 'updateMilestone requires cardId or taskKey with state.', 400);
-
-    if (liveCards && space) {
-      const body = { ...updateBody };
-      if (body.expectedRevision == null) {
-        const existing = await liveCards.get(id, space, taskContext);
-        body.expectedRevision = existing.revision;
-      }
-      try {
-        const result = await liveCards.update(id, body, space, taskContext);
-        if (taskKey || loadContext(id)) {
-          const key = taskKey || loadContext(id)?.taskKey || id;
-          const prev = loadContext(key) || { taskKey: key, cardId: id };
-          saveContext(key, {
-            ...prev,
-            cardId: result.record.id,
-            revision: result.record.revision,
-            viewUrl: result.record.viewUrl || prev.viewUrl,
-            spectrumMessageId: result.record.delivery?.messageRef || prev.spectrumMessageId,
-            lastMilestoneRequestId: body.requestId,
-          });
-        }
-        log('updateMilestone(attach)', {
-          cardId: id,
-          revision: result.record.revision,
-          status: result.record.content?.status,
-          presentation: result.presentation,
-          viewPath: publicViewUrl(result.record.viewUrl),
-        });
-        return { record: result.record, presentation: result.presentation };
-      } catch (err) {
-        if (!(err instanceof CardError && err.code === 'REVISION_CONFLICT')) throw err;
-        const fresh = await liveCards.get(id, space, taskContext);
-        const retry = { ...body, expectedRevision: fresh.revision };
-        const result = await liveCards.update(id, retry, space, taskContext);
-        log('updateMilestone reconciled REVISION_CONFLICT', { cardId: id, revision: result.record.revision });
-        return { record: result.record, presentation: result.presentation, reconciled: true };
-      }
-    }
-
-    const body = { ...updateBody };
-    if (body.expectedRevision == null) {
-      const existing = await client.get(id);
-      body.expectedRevision = existing.revision;
-    }
-
-    try {
-      const record = await client.update(id, body);
-      persistAfterWrite(taskKey, id, record, body.requestId);
-      assertSameUrl(taskKey, id, record);
-      log('updateMilestone', {
-        cardId: id,
-        revision: record.revision,
-        status: record.content?.status,
-        active: record.content?.stages?.find((s) => s.state === 'active')?.id,
-        viewPath: publicViewUrl(record.viewUrl),
-      });
-      return { record };
-    } catch (err) {
-      if (!(err instanceof CardError && err.code === 'REVISION_CONFLICT')) throw err;
-      const fresh = await client.get(id);
-      const retryBody = { ...body, expectedRevision: fresh.revision };
-      // Same requestId + same content is safe idempotent retry; different content needs new requestId.
-      try {
-        const record = await client.update(id, retryBody);
-        persistAfterWrite(taskKey, id, record, retryBody.requestId);
-        assertSameUrl(taskKey, id, record);
-        log('updateMilestone reconciled REVISION_CONFLICT (same requestId)', { cardId: id, revision: record.revision });
-        return { record, reconciled: true };
-      } catch (err2) {
-        if (!(err2 instanceof CardError && err2.code === 'IDEMPOTENCY_CONFLICT')) throw err2;
-        const freshRequestId = `${body.requestId}-reconcile-${Date.now()}`;
-        const record = await client.update(id, { ...retryBody, requestId: freshRequestId });
-        persistAfterWrite(taskKey, id, record, freshRequestId);
-        assertSameUrl(taskKey, id, record);
-        log('updateMilestone reconciled with new requestId', { cardId: id, revision: record.revision });
-        return { record, reconciled: true };
-      }
-    }
-  }
-
-  function persistAfterWrite(taskKey, id, record, requestId) {
-    const prev = (taskKey && loadContext(taskKey)) || loadContext(id) || { taskKey: taskKey || id, cardId: id };
-    saveContext(prev.taskKey || taskKey || id, {
-      ...prev,
-      cardId: record.id,
-      revision: record.revision,
-      viewUrl: record.viewUrl || prev.viewUrl,
-      slot: record.slot || prev.slot,
-      lastMilestoneRequestId: requestId,
+      return { record, context: ctx, messageId, outboundId: ctx.outboundId };
     });
   }
-
-  function assertSameUrl(taskKey, id, record) {
-    const prev = (taskKey && loadContext(taskKey)) || loadContext(id);
-    if (!prev?.viewUrl || !record.viewUrl) return;
-    const a = publicViewUrl(prev.viewUrl);
-    const b = publicViewUrl(record.viewUrl);
-    if (a !== b) {
-      throw new CardError('URL_CHANGED', `viewUrl path changed from ${a} to ${b}; aborting.`, 500);
-    }
-  }
-
-  /**
-   * Ensure terminal status then release slot. Requires reconciled initial send (messageRef).
-   */
-  async function completeAndRelease(cardId, taskKey, terminalContent) {
-    const key = taskKey;
-    let ctx = key ? loadContext(key) : null;
-    const id = cardId || ctx?.cardId;
-    if (!id) throw new CardError('INVALID_INPUT', 'completeAndRelease requires cardId or taskKey.', 400);
-
-    let record = await client.get(id);
-    if (!['completed', 'failed', 'cancelled'].includes(record.content.status)) {
-      if (!terminalContent) {
-        throw new CardError('TASK_NOT_FINISHED', 'Provide terminal content snapshot before release.', 409);
-      }
-      const updated = await updateMilestone(
-        id,
-        {
-          requestId: terminalContent.requestId || `complete-${id}-${Date.now()}`,
-          expectedRevision: record.revision,
-          content: terminalContent.content || terminalContent,
-        },
-        key,
+  async function updateMilestone(cardId, updateBody, taskKey) {
+    return scoped(taskKey, async ({ required, save, check, path, validateAuthority }) => {
+      const ctx = required();
+      if (
+        cardId !== ctx.cardId ||
+        !Number.isSafeInteger(updateBody.expectedRevision)
+      )
+        fail("CONTEXT_MISMATCH");
+      identifier(updateBody.requestId);
+      if (Buffer.byteLength(serialize(updateBody)) > LIMIT)
+        fail("UPDATE_INPUT_TOO_LARGE");
+      const journalPath = `${path}.update.json`;
+      const journal = existsSync(journalPath)
+        ? JSON.parse(
+            readFileSync(assertPrivateFile(journalPath, paths.root), "utf8"),
+          )
+        : null;
+      if (
+        journal &&
+        !journal.done &&
+        serialize(journal.body) !== serialize(updateBody)
+      )
+        fail("UPDATE_RECONCILIATION_REQUIRED");
+      if (
+        journal?.body.requestId === updateBody.requestId &&
+        serialize(journal.body) !== serialize(updateBody)
+      )
+        fail("IDEMPOTENCY_CONFLICT");
+      // Reject stale workers before they can leave an unsent journal blocking a successor.
+      await validateAuthority();
+      // Journal separately: changed URL/conflict cannot overwrite the prior card context.
+      check();
+      atomicPrivateWrite(
+        journalPath,
+        JSON.stringify({ body: updateBody, done: false }),
       );
-      record = updated.record;
-    }
-
-    if (liveCards && space) {
-      // update() on attach path auto-archives when terminal + messageRef
-      record = (await liveCards.get(id, space, taskContext));
-      if (record.archivedAt) {
-        const next = saveContext(key || id, { ...(ctx || {}), cardId: id, revision: record.revision, archivedAt: record.archivedAt, released: true });
-        log('completeAndRelease already archived', { cardId: id, revision: record.revision });
-        return { record, context: next };
+      check();
+      let record;
+      try {
+        record = verifyRecord(ctx, await client.update(cardId, updateBody));
+      } catch (error) {
+        if (
+          ["REVISION_CONFLICT", "IDEMPOTENCY_CONFLICT"].includes(error.code)
+        ) {
+          check();
+          atomicPrivateWrite(
+            journalPath,
+            JSON.stringify({
+              body: updateBody,
+              done: true,
+              rejected: error.code,
+            }),
+          );
+        }
+        throw error;
       }
-    }
-
-    try {
-      const archived = await client.release(id, record.revision);
-      const next = saveContext(key || id, {
-        ...(ctx || loadContext(id) || { taskKey: key || id, cardId: id }),
-        revision: archived.revision,
-        archivedAt: archived.archivedAt,
-        released: true,
-        spectrumMessageId: archived.delivery?.messageRef || ctx?.spectrumMessageId,
+      save({
+        ...ctx,
+        revision: record.revision,
+        lastMilestoneRequestId: updateBody.requestId,
       });
-      log('completeAndRelease', { cardId: id, revision: archived.revision, archivedAt: archived.archivedAt });
-      return { record: archived, context: next };
-    } catch (err) {
-      if (err instanceof CardError && err.code === 'REVISION_CONFLICT') {
-        const fresh = await client.get(id);
-        const archived = await client.release(id, fresh.revision);
-        const next = saveContext(key || id, {
-          ...(ctx || { taskKey: key || id, cardId: id }),
-          revision: archived.revision,
-          archivedAt: archived.archivedAt,
-          released: true,
-        });
-        return { record: archived, context: next, reconciled: true };
-      }
-      // Prod host may require presentedRevision === final revision (FINAL_NOT_PRESENTED).
-      // Package service.mjs does not. Never Spectrum edit/resend to satisfy that — terminal
-      // JSON is already at the same URL; slot stays occupied until host aligns or operator discards policy allows.
-      if (err instanceof CardError && err.code === 'FINAL_NOT_PRESENTED') {
-        const next = saveContext(key || id, {
-          ...(ctx || loadContext(id) || { taskKey: key || id, cardId: id }),
-          revision: record.revision,
-          released: false,
-          releaseBlocked: 'FINAL_NOT_PRESENTED',
-          spectrumMessageId: record.delivery?.messageRef || ctx?.spectrumMessageId,
-        });
-        log('completeAndRelease blocked FINAL_NOT_PRESENTED (no Spectrum re-present)', {
-          cardId: id,
-          revision: record.revision,
-          presentedRevision: record.delivery?.presentedRevision,
-        });
-        return { record, context: next, releaseBlocked: 'FINAL_NOT_PRESENTED' };
-      }
-      throw err;
-    }
+      check();
+      atomicPrivateWrite(
+        journalPath,
+        JSON.stringify({ body: updateBody, done: true }),
+      );
+      return { record };
+    });
   }
-
+  async function completeAndRelease(cardId, taskKey, terminalUpdate) {
+    if (terminalUpdate) await updateMilestone(cardId, terminalUpdate, taskKey);
+    return scoped(taskKey, async ({ required, save, check, authority, validateAuthority }) => {
+      const ctx = required();
+      if (cardId !== ctx.cardId) fail("CONTEXT_MISMATCH");
+      let record = verifyRecord(ctx, await client.get(cardId));
+      const outcome = await status(ctx, authority);
+      if (
+        !ctx.spectrumMessageId ||
+        outcome?.state !== "accepted" ||
+        outcome.reference?.messageId !== ctx.spectrumMessageId ||
+        record.delivery.messageRef !== ctx.spectrumMessageId ||
+        record.activeAttempt
+      )
+        fail("INITIAL_SEND_NOT_RECONCILED");
+      if (!terminal.has(record.content.status)) fail("TASK_NOT_FINISHED");
+      if (!record.archivedAt) {
+        check();
+        await validateAuthority();
+        record = verifyRecord(
+          ctx,
+          await client.release(cardId, record.revision),
+        );
+      }
+      return {
+        record,
+        context: save({
+          ...ctx,
+          revision: record.revision,
+          archivedAt: record.archivedAt,
+          released: true,
+        }),
+      };
+    });
+  }
   return {
-    client,
-    baseUrl,
-    stateDir,
-    loadContext,
-    saveContext,
     createCard,
     sendOnce,
     updateMilestone,
     completeAndRelease,
+    setTaskContext: (context) => { task = validateTask(context); },
+    loadContext: (taskKey) => scoped(taskKey, ({ load }) => load()),
     doctor: () => client.doctor(),
     slots: () => client.slots(),
-    get: (id) => client.get(id),
-    SPACE_PROOF,
   };
 }
-
-/** Spawn: bun run enqueue -- --space-id … --app-url … --live */
-export function runEnqueueApp({ proofRoot, spaceId, url, live = true }) {
-  return new Promise((resolvePromise, reject) => {
-    const args = ['run', 'enqueue', '--', '--space-id', spaceId, '--app-url', url];
-    if (live) args.push('--live');
-    const child = spawn('bun', args, { cwd: proofRoot, env: process.env });
-    let stdout = '';
-    let stderr = '';
-    child.stdout.on('data', (c) => { stdout += c; });
-    child.stderr.on('data', (c) => { stderr += c; });
-    child.on('error', reject);
-    child.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(`enqueue exited ${code}: ${stderr || stdout}`));
-        return;
-      }
-      try {
-        resolvePromise(JSON.parse(stdout));
-      } catch (err) {
-        reject(new Error(`enqueue returned non-JSON: ${stdout.slice(0, 400)}`));
-      }
-    });
-  });
-}
-
-export async function waitOutboundSent({ proofRoot, outboundId, timeoutMs = 90_000, pollMs = 500 }) {
-  const queuePath = join(proofRoot, 'data', 'outbound-queue.json');
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    if (existsSync(queuePath)) {
-      const file = JSON.parse(readFileSync(queuePath, 'utf8'));
-      const items = Array.isArray(file) ? file : file.items || [];
-      const item = items.find((i) => i.id === outboundId);
-      if (item?.status === 'sent' && item.messageId) {
-        return { messageId: item.messageId, item };
-      }
-      if (item?.status === 'failed' || item?.status === 'error') {
-        throw new Error(`outbound ${outboundId} failed: ${item.lastError || item.error || item.status}`);
-      }
-    }
-    await new Promise((r) => setTimeout(r, pollMs));
-  }
-  return { messageId: null };
-}
-
-/**
- * Optional: wrap attachLiveTaskCards when Spectrum Space + app builder exist in-process.
- * Import examples/existing-runtime.mjs from the caller's shared Spectrum process.
- */
-export async function tryAttachLiveTaskCards(attachOpts) {
-  const mod = await import('../live-task-cards/examples/existing-runtime.mjs');
-  return mod.attachLiveTaskCards(attachOpts);
-}
-
-export { SPACE_PROOF, DEFAULT_STATE_DIR, DEFAULT_SECRETS, redactViewUrl, publicViewUrl };

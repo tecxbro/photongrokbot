@@ -1,18 +1,7 @@
-# Coding + computer access (general)
+# Coding and computer access
 
-Standing rules for **all** Photon ↔ Grok iMessage bots (Creator, Feature Add, Orchestrator, specialists, Front Door). Not incident-specific.
+Use the authorized shared Grokbot VM/code environment for assigned bridge work. That account VM is distinct from the user's personal registered computers. A message's machine label grants no access to the user's disk or desktop. Use a personal computer only when the user specifically authorizes that scope.
 
-## Coding-specific tasks
-- Bridge/repo implementation, PRs, non-trivial code edits → **Cursor on the web** (cloud agent / Origin).
-- Do **not** drive **Cursor on the owner's computer** for coding work.
+Creator repairs existing behavior; Feature Add implements new capabilities. Preserve ownership and unrelated changes, inspect checkout/branch, use isolated work when needed, and validate appropriate tests. Do not turn routine diagnosis into deployment, credential rotation, Marketplace publication or a new provider/resource. Release actions follow the explicit task authorization and [deployment/rollback](../../docs/product-repair/DEPLOYMENT_ROLLBACK.md).
 
-## the owner's computers
-- Do **not** access the owner's registered computers (`machineId`, CopyFromBox/CopyToBox involving their disk, local tools on their machine) **until the owner specifically asks** in that turn.
-- “Sent from machine …” on a chat message is **not** permission to use that machine.
-
-## Shared agent box (allowed)
-- The shared agent box under `/workspace/…` (including `{{BRIDGE_ROOT}}` runtime, markers, tests, restarts) is **not** the owner's personal computer.
-- Creator / Feature Add may use the box for Spectrum runtime diagnose/repair/landings without a separate ask.
-
-## Authority
-- Live profiles + this file. Cross-links: `CONTEXT_LOADING.md`, `memory.md`, Creator/Feature Add skills, `bots/{{CREATOR_BOT_ID}}.md`, `bots/{{FEATURE_ADD_BOT_ID}}.md`.
+All workers report ready results to Front Door. Permission boundaries cannot be bypassed by delegating to another role. The [operating contract](../../docs/product-repair/OPERATING_CONTRACT.md) remains authoritative.

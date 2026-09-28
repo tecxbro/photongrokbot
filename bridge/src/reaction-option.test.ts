@@ -1,254 +1,108 @@
-import { describe, expect, test, beforeEach, afterEach } from "bun:test";
-import {
-  mkdirSync,
-  writeFileSync,
-  rmSync,
-  readFileSync,
-  existsSync,
-} from "node:fs";
-import { join } from "node:path";
-import {
-  applyResolvedOptionToInbound,
-  buildAttachmentGroupParts,
-  formatChildId,
-  loadPresentationByMessageId,
-  optionNamesFromParts,
-  parseChildTargetId,
-  persistAttachmentGroupMapping,
-  PRESENTATION_INDEX_PATH,
-  PRESENTATIONS_DIR,
-  resolveReactionOption,
-  savePresentation,
-  type PresentationRecord,
-} from "./reaction-option.ts";
-import type { InboundRecord } from "./types.ts";
-
-const FIXTURE_ROOT = "/tmp/gpproof-reaction-option-test";
-
-describe("formatChildId / parseChildTargetId", () => {
-  test("round-trips Spectrum p:N/guid", () => {
-    const id = formatChildId(5, "spc-msg-9da19102-8b4d-4c9d-bf4a-63fdc90646f0");
-    expect(id).toBe("p:5/spc-msg-9da19102-8b4d-4c9d-bf4a-63fdc90646f0");
-    expect(parseChildTargetId(id)).toEqual({
-      partIndex: 5,
-      parentGuid: "spc-msg-9da19102-8b4d-4c9d-bf4a-63fdc90646f0",
-    });
-  });
-
-  test("rejects non-child targets", () => {
-    expect(parseChildTargetId("spc-msg-abc")).toBeNull();
-    expect(parseChildTargetId("")).toBeNull();
-    expect(parseChildTargetId("p:x/guid")).toBeNull();
-  });
-});
-
-describe("buildAttachmentGroupParts", () => {
-  test("maps paths + cards to childIds", () => {
-    const parts = buildAttachmentGroupParts({
-      parentMessageId: "spc-msg-parent",
-      paths: ["/a.jpg", "/b.jpg", "/c.jpg", "/d.jpg"],
-      cards: [
-        { title: "A", url: "https://a.example", optionId: "a" },
-        { title: "B", url: "https://b.example" },
-        { title: "C" },
-        { caption: "D only caption" },
-      ],
-    });
-    expect(parts).toHaveLength(4);
-    expect(parts[0]).toMatchObject({
-      partIndex: 0,
-      childId: "p:0/spc-msg-parent",
-      optionId: "a",
-      title: "A",
-      url: "https://a.example",
-    });
-    expect(parts[3]!.title).toBeUndefined();
-    expect(parts[3]!.caption).toBe("D only caption");
-  });
-});
-
-describe("persist + resolve", () => {
-  const batchId = "{{DEPLOY_ID_PREFIX}}-b-test-reaction-opt";
-  const parentId = "spc-msg-test-parent-guid";
-
-  beforeEach(() => {
-    rmSync(FIXTURE_ROOT, { recursive: true, force: true });
-    mkdirSync(PRESENTATIONS_DIR, { recursive: true });
-    // Clean any prior test presentation/index entries for this batch
-    const pres = join(PRESENTATIONS_DIR, `${batchId}.json`);
-    if (existsSync(pres)) rmSync(pres, { force: true });
-  });
-
-  afterEach(() => {
-    const pres = join(PRESENTATIONS_DIR, `${batchId}.json`);
-    if (existsSync(pres)) rmSync(pres, { force: true });
-    if (existsSync(PRESENTATION_INDEX_PATH)) {
-      try {
-        const index = JSON.parse(readFileSync(PRESENTATION_INDEX_PATH, "utf8")) as {
-          byMessageId: Record<string, unknown>;
-        };
-        if (index.byMessageId?.[parentId]) {
-          delete index.byMessageId[parentId];
-          writeFileSync(
-            PRESENTATION_INDEX_PATH,
-            `${JSON.stringify(index, null, 2)}\n`,
-            { encoding: "utf8", mode: 0o600 },
-          );
+import { test, expect } from "bun:test";
+import { deliveryFixture } from "./delivery-fixture.ts";
+import { openStore } from "./storage.ts";
+import { batch } from "./tests/storage/fixture.ts";
+import { submitOutbound } from "./submit.ts";
+import { formatChildId, parseChildTargetId, buildAttachmentGroupParts, resolveReactionOption, applyResolvedOptionToInbound, formatOptionSelection, optionSelectionActionKey, optionNamesFromParts } from "./reaction-option.ts";
+function presentation(f: ReturnType<typeof deliveryFixture>) { const paths = Array.from({ length: 5 }, () => f.asset()); const cards = paths.map((_, i) => ({ optionId: `id-${i}`, title: `Title ${i}`, details: `Detailed description ${i}`, url: `https://example.test/original/${i}?original=1`, ...(i === 2 ? { price: "$42", priceQualifier: "per night" } : {}) })); const items = f.store.enqueue({ kind: "attachment_group", spaceId: f.destination.spaceId, attachmentPaths: paths, cards, batchId: f.batch.batchId }, { destination: f.destination, claim: f.claim, actionKey: "cards", purpose: "final" }); const c = f.store.claimOutbound()!; f.store.settleOutbound(c.item.id, c.attemptId, { state: "accepted", evidence: "synthetic-returned-reference", reference: { messageId: "parent-guid", parts: buildAttachmentGroupParts({ parentMessageId: "parent-guid", paths, cards }) } }); return { items, paths, cards }; }
+test("child IDs roundtrip and malformed/unsafe indexes rejected", () => { expect(parseChildTargetId(formatChildId(2, "parent"))).toEqual({ partIndex: 2, parentGuid: "parent" }); for (const s of ["parent", "p:-1/parent", "p:1/", "p:99999999999999999999/x", "p:01/x"])
+    expect(parseChildTargetId(s)).toBeNull(); expect(() => buildAttachmentGroupParts({ parentMessageId: "p", paths: ["a", "b"], cards: [{ title: "one" }] })).toThrow("CARD_ALIGNMENT_INVALID"); });
+test("K04 parent/part mapping retained in canonical database and exact conversation/line", () => { const f = deliveryFixture(); try {
+    presentation(f);
+    const reopened = openStore({ paths: f.paths });
+    try {
+        const result = resolveReactionOption(reopened, f.destination, "p:2/parent-guid");
+        expect(result.ambiguous).toBe(false);
+        if (!result.ambiguous) {
+            expect(result.title).toBe("Title 2");
+            expect(result.price).toBe("$42");
+            expect(result.url).toBe("https://example.test/original/2?original=1");
         }
-      } catch {
-        // ignore
-      }
+        expect(resolveReactionOption(reopened, { ...f.destination, lineId: "other" }, "p:2/parent-guid").ambiguous).toBe(true);
+        expect(resolveReactionOption(reopened, { ...f.destination, spaceId: "other" }, "p:2/parent-guid").ambiguous).toBe(true);
     }
-  });
-
-  test("persistAttachmentGroupMapping writes presentation + index", async () => {
-    const { parts, presentationPath } = await persistAttachmentGroupMapping({
-      outboundId: "{{DEPLOY_ID_PREFIX}}-o-test-1",
-      spaceId: "any;-;+1000",
-      parentMessageId: parentId,
-      batchId,
-      paths: ["/tmp/a.jpg", "/tmp/b.jpg", "/tmp/c.jpg", "/tmp/d.jpg"],
-      cards: [
-        { title: "GrandMarc Studio A", url: "https://gm.example/a", optionId: "gm-a" },
-        { title: "GrandMarc 1x1", url: "https://gm.example/b", optionId: "gm-b" },
-        { title: "Sterling House A2", url: "https://st.example", optionId: "sterling" },
-        { title: "Diplomat 2BR", url: "https://dip.example", optionId: "diplomat" },
-      ],
-    });
-    expect(existsSync(presentationPath)).toBe(true);
-    expect(parts[2]!.childId).toBe(`p:2/${parentId}`);
-
-    const loaded = await loadPresentationByMessageId(parentId);
-    expect(loaded).not.toBeNull();
-    expect(loaded!.batchId).toBe(batchId);
-    expect(loaded!.parts).toHaveLength(4);
-    expect(loaded!.parts[0]!.title).toBe("GrandMarc Studio A");
-
-    const index = JSON.parse(readFileSync(PRESENTATION_INDEX_PATH, "utf8")) as {
-      byMessageId: Record<string, { batchId: string }>;
-    };
-    expect(index.byMessageId[parentId]?.batchId).toBe(batchId);
-  });
-
-  test("resolveReactionOption returns option for p:N/guid", async () => {
-    await persistAttachmentGroupMapping({
-      outboundId: "{{DEPLOY_ID_PREFIX}}-o-test-2",
-      spaceId: "any;-;+1000",
-      parentMessageId: parentId,
-      batchId,
-      paths: ["/tmp/a.jpg", "/tmp/b.jpg", "/tmp/c.jpg", "/tmp/d.jpg"],
-      cards: [
-        { title: "A", url: "https://a", optionId: "a" },
-        { title: "B", url: "https://b", optionId: "b" },
-        { title: "C", url: "https://c", optionId: "c" },
-        { title: "D", url: "https://d", optionId: "d" },
-      ],
-    });
-
-    const hit = await resolveReactionOption(`p:2/${parentId}`);
-    expect(hit.ambiguous).toBe(false);
-    if (!hit.ambiguous) {
-      expect(hit.partIndex).toBe(2);
-      expect(hit.title).toBe("C");
-      expect(hit.optionId).toBe("c");
-      expect(hit.url).toBe("https://c");
-      expect(hit.batchId).toBe(batchId);
+    finally {
+        reopened.close();
     }
-  });
-
-  test("missing map → ambiguous with empty or listed names — never guesses", async () => {
-    const miss = await resolveReactionOption("p:1/spc-msg-does-not-exist");
-    expect(miss.ambiguous).toBe(true);
-    if (miss.ambiguous) {
-      expect(miss.reason).toBe("missing-presentation");
-      expect(miss.optionNames).toEqual([]);
+}
+finally {
+    f.cleanup();
+} });
+test("K05 any added emoji returns same exact known details/price/original URL", () => { const f = deliveryFixture(); try {
+    presentation(f);
+    for (const emoji of ["❤️", "👎", "😂", "❓", "🔥"]) {
+        const record = applyResolvedOptionToInbound({ ...f.batch.messages[0]!, kind: "reaction", reactionSelected: true, emoji, targetMessageId: "p:2/parent-guid" }, resolveReactionOption(f.store, f.destination, "p:2/parent-guid"));
+        expect(formatOptionSelection(record)).toBe("Title 2\nDetailed description 2\n$42 per night\nhttps://example.test/original/2?original=1");
     }
+}
+finally {
+    f.cleanup();
+} });
+test("K06 ambiguous asks once by stable action identity, removal not selection, no invented price", () => { const f = deliveryFixture(); try {
+    presentation(f);
+    const resolved = resolveReactionOption(f.store, f.destination, "parent-guid");
+    expect(resolved.ambiguous).toBe(true);
+    const one = applyResolvedOptionToInbound({ ...f.batch.messages[0]!, id: "reaction-one", kind: "reaction", targetMessageId: "parent-guid" }, resolved);
+    const two = { ...one, id: "reaction-two" };
+    expect(formatOptionSelection(one)).toContain("Which option");
+    expect(optionSelectionActionKey(one)).toBe(optionSelectionActionKey(two));
+    const removed = applyResolvedOptionToInbound({ ...one, reactionSelected: false }, resolveReactionOption(f.store, f.destination, "p:2/parent-guid"));
+    expect(formatOptionSelection(removed)).toBeUndefined();
+    const noPrice = applyResolvedOptionToInbound({ ...one, targetMessageId: "p:1/parent-guid" }, resolveReactionOption(f.store, f.destination, "p:1/parent-guid"));
+    expect(noPrice.optionPrice).toBeUndefined();
+    expect(formatOptionSelection(noPrice)).not.toContain("$");
+    expect(resolveReactionOption(f.store, f.destination, "p:99/parent-guid").ambiguous).toBe(true);
+    expect(resolveReactionOption(f.store, f.destination, "p:0/missing").ambiguous).toBe(true);
+    expect(optionNamesFromParts([{ title: " A " }, { optionId: "id" }, {}])).toEqual(["A", "id"]);
+}
+finally {
+    f.cleanup();
+} });
+test("incomplete/shifted map and missing option identity stay ambiguous", () => { const f = deliveryFixture(); try {
+    presentation(f);
+    const record = f.store.getMetadata<any>("presentation", f.batch.batchId);
+    record.parts.splice(1, 1);
+    f.store.setMetadata("presentation", f.batch.batchId, record);
+    expect(resolveReactionOption(f.store, f.destination, "p:2/parent-guid").ambiguous).toBe(true);
+    record.parts = [{ partIndex: 0, childId: "p:0/parent-guid", path: "test" }];
+    f.store.setMetadata("presentation", f.batch.batchId, record);
+    expect(resolveReactionOption(f.store, f.destination, "p:0/parent-guid").ambiguous).toBe(true);
+}
+finally {
+    f.cleanup();
+} });
 
-    // Parent-only target against a known presentation → batch-only ambiguous
-    await persistAttachmentGroupMapping({
-      outboundId: "{{DEPLOY_ID_PREFIX}}-o-test-3",
-      spaceId: "any;-;+1000",
-      parentMessageId: parentId,
-      batchId,
-      paths: ["/tmp/a.jpg", "/tmp/b.jpg", "/tmp/c.jpg", "/tmp/d.jpg"],
-      cards: [
-        { title: "Alpha" },
-        { title: "Beta" },
-        { title: "Gamma" },
-        { title: "Delta" },
-      ],
-    });
-    const batchOnly = await resolveReactionOption(parentId);
-    expect(batchOnly.ambiguous).toBe(true);
-    if (batchOnly.ambiguous) {
-      expect(batchOnly.reason).toBe("batch-only-target");
-      expect(batchOnly.optionNames).toEqual(["Alpha", "Beta", "Gamma", "Delta"]);
-    }
-  });
+test("ordinary reactions remain unchanged without known option presentation evidence", () => {
+    const f = deliveryFixture();
+    try {
+        for (const target of [undefined, "ordinary-message", "p:0/ordinary-group"]) {
+            const inbound = { ...f.batch.messages[0]!, kind: "reaction" as const, emoji: "❤️", targetMessageId: target };
+            const applied = applyResolvedOptionToInbound(inbound, resolveReactionOption(f.store, f.destination, target));
+            expect(applied).toBe(inbound);
+            expect(Object.hasOwn(applied, "optionAmbiguous")).toBe(false);
+            expect(formatOptionSelection(applied)).toBeUndefined();
+        }
+        presentation(f);
+        const ordinary = f.store.getMetadata<any>("presentation", f.batch.batchId);
+        ordinary.parts = ordinary.parts.map(({ partIndex, path, childId }: {partIndex: number; path: string; childId: string}) => ({ partIndex, path, childId }));
+        f.store.setMetadata("presentation", f.batch.batchId, ordinary);
+        const inbound = { ...f.batch.messages[0]!, kind: "reaction" as const, emoji: "😂", targetMessageId: "p:0/parent-guid" };
+        expect(applyResolvedOptionToInbound(inbound, resolveReactionOption(f.store, f.destination, inbound.targetMessageId))).toBe(inbound);
+    } finally { f.cleanup(); }
+});
 
-  test("part without identity → ambiguous with optionNames", async () => {
-    const record: PresentationRecord = {
-      batchId,
-      spaceId: "s",
-      messageId: parentId,
-      savedAt: new Date().toISOString(),
-      parts: [
-        { partIndex: 0, path: "/a.jpg", childId: formatChildId(0, parentId), title: "Named" },
-        { partIndex: 1, path: "/b.jpg", childId: formatChildId(1, parentId) }, // no identity
-      ],
-    };
-    await savePresentation(record);
-    const r = await resolveReactionOption(`p:1/${parentId}`);
-    expect(r.ambiguous).toBe(true);
-    if (r.ambiguous) {
-      expect(r.reason).toBe("part-missing-option-identity");
-      expect(r.optionNames).toEqual(["Named"]);
-    }
-  });
-
-  test("applyResolvedOptionToInbound enriches Front Door fields", async () => {
-    await persistAttachmentGroupMapping({
-      outboundId: "{{DEPLOY_ID_PREFIX}}-o-test-4",
-      spaceId: "any;-;+1000",
-      parentMessageId: parentId,
-      batchId,
-      paths: ["/tmp/a.jpg", "/tmp/b.jpg", "/tmp/c.jpg", "/tmp/d.jpg"],
-      cards: [
-        { title: "Windsor", url: "https://w", optionId: "windsor" },
-        { title: "Avalon", url: "https://a", optionId: "avalon" },
-        { title: "Brick", url: "https://b", optionId: "brick" },
-        { title: "Mariposa", url: "https://m", optionId: "mariposa" },
-      ],
-    });
-    const base: InboundRecord = {
-      id: `${parentId}:reaction:1:1`,
-      spaceId: "any;-;+1000",
-      senderId: "+1000",
-      text: "reacted ❤️",
-      timestamp: "2026-09-26T00:00:00.000Z",
-      receivedAt: "2026-09-26T00:00:01.000Z",
-      kind: "reaction",
-      emoji: "❤️",
-      targetMessageId: `p:1/${parentId}`,
-    };
-    const resolved = await resolveReactionOption(base.targetMessageId);
-    const enriched = applyResolvedOptionToInbound(base, resolved);
-    expect(enriched.optionAmbiguous).toBe(false);
-    expect(enriched.reactedPartIndex).toBe(1);
-    expect(enriched.optionTitle).toBe("Avalon");
-    expect(enriched.optionId).toBe("avalon");
-    expect(enriched.optionUrl).toBe("https://a");
-    expect(enriched.text).toBe('reacted ❤️ on "Avalon"');
-    expect(enriched.reactedChildId).toBe(`p:1/${parentId}`);
-  });
-
-  test("optionNamesFromParts prefers title then optionId", () => {
-    expect(
-      optionNamesFromParts([
-        { title: "T" },
-        { optionId: "oid" },
-        { path: "/x" },
-      ]),
-    ).toEqual(["T", "oid"]);
-  });
+test("K06 distinct ambiguous option reactions each receive their own clarification", async () => {
+    const f = deliveryFixture();
+    try {
+        presentation(f);
+        const ids: string[] = [];
+        for (const emoji of ["❤️", "👎"]) {
+            const context = batch(f.store, f.destination.spaceId);
+            const record = applyResolvedOptionToInbound({ ...context.batch.messages[0]!, kind: "reaction", emoji, targetMessageId: "parent-guid" }, resolveReactionOption(f.store, f.destination, "parent-guid"));
+            const statuses = await submitOutbound({ version: 1, batchId: context.batch.batchId, claim: context.claim, purpose: "final", actionKey: optionSelectionActionKey(record), payload: { kind: "text", spaceId: context.destination.spaceId, text: formatOptionSelection(record)! } }, f);
+            ids.push(statuses[0]!.id);
+        }
+        expect(ids[0]).not.toBe(ids[1]);
+        expect(f.store.listOutbound()).toHaveLength(3); // Original card group and one clarification per new request.
+    } finally { f.cleanup(); }
 });

@@ -1,15 +1,36 @@
 {
-  "name": "{{DEPLOY_ID_PREFIX}}",
+  "name": "photongrokbot-bridge",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "bun run src/index.ts",
+    "start": "bun run src/run-locked.ts",
     "read-batch": "bun run src/read-batch.ts",
-    "enqueue": "bun run src/enqueue.ts"
+    "enqueue": "bun run src/enqueue.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "batch": "bun run src/batch-control.ts",
+    "outbound-status": "bun run src/outbound-status.ts",
+    "migrate": "bun run src/migrate-legacy-state.ts",
+    "setup-state": "bun run src/setup-state.ts",
+    "preflight": "bun run src/preflight.ts",
+    "prune-instance": "bun run src/prune-instance.ts",
+    "export-instance": "bun run src/export-instance.ts",
+    "presentation-control": "bun run src/presentation-control.ts",
+    "check:instructions": "bun run scripts/check-instructions.ts"
   },
   "dependencies": {
-    "heif2jpeg": "^0.1.6",
-    "spectrum-ts": "^12.8.0"
+    "heif2jpeg": "0.1.6",
+    "spectrum-ts": "12.8.0"
+  },
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "bun": ">=1.4.2",
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2",
+    "@types/node": "22.20.4",
+    "typescript": "6.0.3"
   }
 }

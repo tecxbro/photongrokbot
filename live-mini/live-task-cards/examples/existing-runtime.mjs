@@ -1,32 +1,24 @@
-// Import this factory into your EXISTING shared Spectrum process, not into the Vercel host.
-// The caller supplies the already installed spectrum-ts builders; this package installs no SDK.
-import { PublisherClient } from '../src/client.mjs';
-import { createSpectrumPresenter, createTaskCardRuntime, MemoryTargets } from '../src/spectrum-presenter.mjs';
+// VM-only integration: the existing bridge remains the only Spectrum connection.
+// This adapter uses its bounded Bun control plane; never import it into the host.
+import { createLiveCardMilestones } from "../../runtime/live-card-milestones.mjs";
 
-export function attachLiveTaskCards({ app, originalTargets, baseUrl, publisherToken, resolveOwner, authorizeLoaderChange }) {
-  const client = new PublisherClient({ baseUrl, token: publisherToken });
-  const presenter = createSpectrumPresenter({ app, targets: originalTargets });
-  return createTaskCardRuntime({ client, presenter, resolveOwner, authorizeLoaderChange });
+export function attachLiveTaskCards(options) {
+  return createLiveCardMilestones(options);
 }
 
 /*
-Inside the existing runtime, once:
-
-import { app } from 'spectrum-ts';
-import { attachLiveTaskCards } from './live-task-cards/examples/existing-runtime.mjs';
-import { MemoryTargets } from './live-task-cards/src/spectrum-presenter.mjs';
-
 const liveCards = attachLiveTaskCards({
-  app,
-  originalTargets: new MemoryTargets(), // Optional send audit; progress needs no message session.
-  baseUrl: process.env.LIVE_CARDS_BASE_URL,
-  publisherToken: process.env.LIVE_CARDS_PUBLISHER_TOKEN,
+  taskContext: { taskId: storedTaskId, batchId: originalBatchId, claim: currentClaim },
 });
-
-// Within your existing authorized queue/executor handler, with the original Space:
-const started = await liveCards.start(createPayload, originalSpace);
-const changed = await liveCards.update(started.record.id, updatePayload, originalSpace); // JSON write only.
-
-// Register these exported functions through your existing validated invocation mechanism.
-// Do not invent enqueue flags, instantiate another Spectrum, or route to the first configured line.
+// Private instance configuration supplies the configured host and publisher token.
+// Native task acceptance and original batch/line binding must already be recorded.
+const started = await liveCards.createCard(createPayload, stableTaskKey);
+await liveCards.sendOnce(originalSpaceId, started.record.viewUrl, stableTaskKey);
+await liveCards.updateMilestone(started.record.id, {
+  requestId: stableMilestoneId,
+  expectedRevision: started.record.revision, // Revision used to compute this snapshot.
+  content: nextContent,
+}, stableTaskKey);
+// A conflict requires reviewing newer content, not replaying stale content with a new ID.
+// Unknown delivery retains the host claim; rerun sendOnce only to reconcile its same outbox action.
 */

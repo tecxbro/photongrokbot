@@ -1,9 +1,3 @@
-# Orchestrator memory — pointer
+# Operating reference pointer
 
-**Source of truth** lives under:
-
-```text
-bridge/orchestrator-memory/
-```
-
-This top-level folder exists for discoverability only. Prefer editing and copying from `bridge/orchestrator-memory/`.
+The current [operating contract](../docs/product-repair/OPERATING_CONTRACT.md) governs all roles. Compact topic references live in [bridge/orchestrator-memory](../bridge/orchestrator-memory/README.md). Active role identities and task state live in the private canonical instance, not this source directory.

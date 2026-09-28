@@ -24,14 +24,15 @@ assertEqual(
   "markdown",
 );
 
-// nested reply unwraps
+// nested reply retains the original target
 assertEqual(
   shapeInboundContent({
     type: "reply",
+    target: { id: "original-message" },
     content: { type: "text", text: "nested" },
   }),
-  { kind: "text", text: "nested" },
-  "reply unwrap",
+  { kind: "text", text: "nested", replyToMessageId: "original-message" },
+  "reply target",
 );
 
 // reaction with target

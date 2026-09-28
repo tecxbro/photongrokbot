@@ -1,268 +1,383 @@
-MANIFEST — imessage-photon-grok-pack
-Built: 2026-09-27 (America/Los_Angeles / PT)
-Source: scrubbed copy of /workspace/grok-photon-proof + agent-data workflows + sand-data agent profiles + live-mini-app-install + photon-hq/skills
-
-=== Scrub notes ===
-- Excluded: .env (values), node_modules, data/unread|outbound|inbound live queues, logs, pids, personal attachments, .venv-moonshine, STT weights
-- Excluded agents: personal specialists (housing/hotels/party/CMOS/logo/Chatty)
-- Live Mini: OPTIONAL include — scrubbed live-mini/ + agents/live-mini/; excluded prod secrets / Blob tokens / migration dumps
-- Replaced: bot serverIds → {{*_BOT_ID}}; agent UUIDs → {{*_AGENT_UUID}}; webhook UUID → {{PHOTON_WAKE_ROUTINE_ID}}
-- Replaced: /workspace/grok-photon-proof → {{BRIDGE_ROOT}}; owner personal name → "the owner"; phones → placeholders
-- SoT for memory: bridge/orchestrator-memory/ (top-level orchestrator-memory/ is a pointer only)
-- .env.example kept with empty values / key names only
-- Adopter intent: bot installs vendored photon-hq/skills (photon-cli, spectrum, imessage) on the VM; device-login hands URL (typically https://app.photon.codes/sign-in/device) + CLI code; free-plan project/hosted line; adopter texts anything to hosted number and receives greeting + confetti once; bot creates siblings + webhook wake (not a human checklist).
-- Vendored Photon skills: photon-hq/skills commit abf227fdec233d654b4198293e5901207c6d8332; scanned for embedded credentials/tokens; none found.
-
-=== File inventory ===
-   6755  00-README.md
-   4395  01-ARCHITECTURE.md
-   3252  02-SECRETS.md
-   3722  03-WHAT-NOT-IN-SHARE.md
-   1599  agents/README.md
-   2097  agents/app-sheet/PROFILE_TEMPLATE.md
-    843  agents/app-sheet/README.md
-   2090  agents/creator/PROFILE_TEMPLATE.md
-    833  agents/creator/README.md
-   2233  agents/feature-add/PROFILE_TEMPLATE.md
-    835  agents/feature-add/README.md
-  11231  agents/front-door/PROFILE_TEMPLATE.md
-   1797  agents/front-door/README.md
-   1290  agents/image-cards/PROFILE_TEMPLATE.md
-    885  agents/image-cards/README.md
-   3176  agents/live-mini/PROFILE_TEMPLATE.md
-   1572  agents/live-mini/README.md
-   2779  agents/master-orchestrator/PROFILE_TEMPLATE.md
-    879  agents/master-orchestrator/README.md
-    387  bridge/.env.example
-    170  bridge/.gitignore
-   4464  bridge/PHASE1.md
-  10799  bridge/README.md
-  35229  bridge/bun.lock
-      0  bridge/data/.gitkeep
-    947  bridge/data/README.md
-   4221  bridge/orchestrator-memory/APPS.md
-   7369  bridge/orchestrator-memory/ATTACHMENTS.md
-   2390  bridge/orchestrator-memory/AUDIO.md
-  19236  bridge/orchestrator-memory/CHAT_VS_TASK.md
-   1172  bridge/orchestrator-memory/CODING_AND_COMPUTER_ACCESS.md
-   4675  bridge/orchestrator-memory/CONTEXT_LOADING.md
-   2472  bridge/orchestrator-memory/POLLS.md
-  10232  bridge/orchestrator-memory/REACTIONS_EFFECTS.md
-    736  bridge/orchestrator-memory/README.md
-   4801  bridge/orchestrator-memory/REPLY_MODALITY.md
-   3488  bridge/orchestrator-memory/SPECTRUM_PROJECT_SWITCH.md
-    801  bridge/orchestrator-memory/bots/README.md
-    757  bridge/orchestrator-memory/bots/ROLE_APP_SHEET.md
-    755  bridge/orchestrator-memory/bots/ROLE_CREATOR.md
-    749  bridge/orchestrator-memory/bots/ROLE_FEATURE_ADD.md
-    759  bridge/orchestrator-memory/bots/ROLE_FRONT_DOOR.md
-    766  bridge/orchestrator-memory/bots/ROLE_IMAGE_CARDS.md
-    758  bridge/orchestrator-memory/bots/ROLE_ORCHESTRATOR.md
-    265  bridge/orchestrator-memory/bots/_TEMPLATE.md
-   3581  bridge/orchestrator-memory/memory.md
-     51  bridge/orchestrator-memory/sunset/log.md
-      0  bridge/orchestrator-memory/threads/.gitkeep
-    323  bridge/package.json
-   3776  bridge/prompts/voice-policy.md
-    685  bridge/scripts/find-recent-msg.mjs
-   2482  bridge/scripts/fixture-reaction-option.mjs
-    486  bridge/scripts/start-runtime.sh
-   2347  bridge/src/attachment-group.test.ts
-   2629  bridge/src/batch-claim.test.ts
-   4950  bridge/src/batch-claim.ts
-   6512  bridge/src/cards-ready.test.ts
-  13920  bridge/src/cards-ready.ts
-   1452  bridge/src/config.ts
-   9401  bridge/src/enqueue.ts
-   2176  bridge/src/greeting.test.ts
-   3292  bridge/src/greeting.ts
-   3544  bridge/src/inbound-attachment.test.ts
-   6657  bridge/src/inbound-attachment.ts
-   4826  bridge/src/inbound.test.ts
-   6726  bridge/src/inbound.ts
-    335  bridge/src/index.ts
-   1514  bridge/src/outbound-app.test.ts
-   1069  bridge/src/outbound-app.ts
-   3863  bridge/src/outbound-effect.test.ts
-   1365  bridge/src/outbound-effect.ts
-   3740  bridge/src/outbound-jpeg.ts
-   1166  bridge/src/outbound-poll.test.ts
-   1034  bridge/src/outbound-poll.ts
-   4885  bridge/src/outbound-text.test.ts
-   3372  bridge/src/outbound-text.ts
-   8948  bridge/src/reaction-option.test.ts
-  13154  bridge/src/reaction-option.ts
-    320  bridge/src/read-batch.ts
-   2088  bridge/src/reply-fallback.test.ts
-   1473  bridge/src/reply-fallback.ts
-  28918  bridge/src/runtime.ts
-    784  bridge/src/send-hello.ts
-   1372  bridge/src/setup-confetti.test.ts
-   1810  bridge/src/setup-confetti.ts
-  14996  bridge/src/storage.ts
-   7354  bridge/src/types.ts
-   2529  bridge/src/voice-stt.test.ts
-   5408  bridge/src/voice-stt.ts
-    553  bridge/tools/moonshine-transcribe.py
-   4482  bridge/tools/moonshine_stt.py
-    450  bridge/tsconfig.json
-   6701  live-mini/ARCHITECTURE.md
-   3614  live-mini/README.md
-    625  live-mini/live-task-cards/.env.example
-     81  live-mini/live-task-cards/.gitignore
-   8641  live-mini/live-task-cards/DESIGN.md
-   8156  live-mini/live-task-cards/HANDOFF.md
-   7823  live-mini/live-task-cards/INSTALL.md
-  10515  live-mini/live-task-cards/MANIFEST.sha256.json
-   8521  live-mini/live-task-cards/README.md
-  14731  live-mini/live-task-cards/SKILL.md
-   2229  live-mini/live-task-cards/bin/live-card.mjs
-  12489  live-mini/live-task-cards/docs/API.md
-   9249  live-mini/live-task-cards/docs/CUSTOM_LOADERS.md
-   2103  live-mini/live-task-cards/docs/ICONS.md
-   5402  live-mini/live-task-cards/docs/INTEGRATION.md
-   3657  live-mini/live-task-cards/docs/SECURITY.md
-   3791  live-mini/live-task-cards/docs/SOURCES.md
-   4954  live-mini/live-task-cards/evidence/HANDOFF_READINESS.md
-   8903  live-mini/live-task-cards/evidence/TEST_REPORT.md
-    137  live-mini/live-task-cards/evidence/build.txt
-  10748  live-mini/live-task-cards/evidence/clean-install.txt
-    139  live-mini/live-task-cards/evidence/syntax-check.txt
-   9164  live-mini/live-task-cards/evidence/unit-tests.tap
-    778  live-mini/live-task-cards/examples/checks.json
-    864  live-mini/live-task-cards/examples/complete-research.json
-   1681  live-mini/live-task-cards/examples/existing-runtime.mjs
-   9031  live-mini/live-task-cards/examples/loader-animation.json
-    420  live-mini/live-task-cards/examples/loader-static.json
-   2119  live-mini/live-task-cards/examples/matrix.json
-    764  live-mini/live-task-cards/examples/research.json
-    699  live-mini/live-task-cards/examples/stages.json
-    863  live-mini/live-task-cards/examples/update-research.json
-   1696  live-mini/live-task-cards/grokbot-matrix/dot-matrix.js
-   4743  live-mini/live-task-cards/grokbot-matrix/mini-card.css
-  13544  live-mini/live-task-cards/grokbot-matrix/mini-card.js
-   4807  live-mini/live-task-cards/grokbot-matrix/mini-core.js
- 102910  live-mini/live-task-cards/grokbot-matrix/square-animation.js
-    715  live-mini/live-task-cards/index.mjs
-    260  live-mini/live-task-cards/package-lock.json
-    722  live-mini/live-task-cards/package.json
- 237469  live-mini/live-task-cards/public/assets/hands.png
-2240148  live-mini/live-task-cards/public/assets/study.png
-   2232  live-mini/live-task-cards/public/card-client.mjs
-   6603  live-mini/live-task-cards/public/card-motion.mjs
-   7007  live-mini/live-task-cards/public/card-template.mjs
-   1034  live-mini/live-task-cards/public/card-theme.mjs
-  11786  live-mini/live-task-cards/public/card.css
-   1486  live-mini/live-task-cards/public/demo-entry.mjs
-   3185  live-mini/live-task-cards/public/demo-playback.mjs
-   2184  live-mini/live-task-cards/public/demo-variants-playback.mjs
-   1606  live-mini/live-task-cards/public/dot-progress.mjs
-    599  live-mini/live-task-cards/public/gallery.css
-    692  live-mini/live-task-cards/public/loader-animation.mjs
-   2363  live-mini/live-task-cards/public/matrix-demo-playback.mjs
-   4126  live-mini/live-task-cards/public/matrix-live.mjs
-   1201  live-mini/live-task-cards/public/matrix-presentation.mjs
-   6339  live-mini/live-task-cards/public/task-matrix.css
-   7248  live-mini/live-task-cards/public/task-matrix.mjs
-   1298  live-mini/live-task-cards/public/workflow-progress.mjs
-1848169  live-mini/live-task-cards/references/01-dot-grid.png
-1890726  live-mini/live-task-cards/references/02-segments.png
-1962673  live-mini/live-task-cards/references/03-stages.png
-   2643  live-mini/live-task-cards/scripts/build.mjs
-   1381  live-mini/live-task-cards/scripts/check.mjs
-    684  live-mini/live-task-cards/scripts/init.mjs
-   3189  live-mini/live-task-cards/scripts/package-handoff.mjs
-    717  live-mini/live-task-cards/scripts/prepare-loader.mjs
-    531  live-mini/live-task-cards/scripts/preview.mjs
-    731  live-mini/live-task-cards/scripts/verify-handoff.mjs
-    757  live-mini/live-task-cards/server.mjs
-   5520  live-mini/live-task-cards/skills/dot-matrix-mini-app/SKILL.md
-    261  live-mini/live-task-cards/skills/dot-matrix-mini-app/agents/openai.yaml
-   2417  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/compare.html
-   4674  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/dev/tap-core.test.mjs
-   1696  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/dot-matrix.js
-   2123  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/index.html
-   4743  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/mini-card.css
-  10883  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/mini-card.js
-   4687  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/mini-core.js
-   4775  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/mini-demo.js
- 102910  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/square-animation.js
-   5567  live-mini/live-task-cards/skills/dot-matrix-mini-app/references/card-contract.md
-   4788  live-mini/live-task-cards/skills/dot-matrix-mini-app/references/photo-to-matrix.md
-   5989  live-mini/live-task-cards/skills/dot-matrix-mini-app/references/reference-motion.md
-   1077  live-mini/live-task-cards/skills/dot-matrix-mini-app/scripts/scaffold.py
-   2734  live-mini/live-task-cards/src/client.mjs
-   3108  live-mini/live-task-cards/src/config.mjs
-   1971  live-mini/live-task-cards/src/demo.mjs
-    316  live-mini/live-task-cards/src/errors.mjs
-  12250  live-mini/live-task-cards/src/http.mjs
-   5699  live-mini/live-task-cards/src/loaders.mjs
-  10264  live-mini/live-task-cards/src/model.mjs
-  12354  live-mini/live-task-cards/src/service.mjs
-   7002  live-mini/live-task-cards/src/spectrum-presenter.mjs
-  10056  live-mini/live-task-cards/src/store.mjs
-   3148  live-mini/live-task-cards/src/types.d.ts
-   6075  live-mini/live-task-cards/src/vercel-blob-lite.mjs
-    966  live-mini/live-task-cards/tests/card-motion.test.mjs
-   6962  live-mini/live-task-cards/tests/custom-loader-browser.mjs
-   2162  live-mini/live-task-cards/tests/helpers.mjs
-   7061  live-mini/live-task-cards/tests/http.test.mjs
-  13716  live-mini/live-task-cards/tests/loaders.test.mjs
-   2329  live-mini/live-task-cards/tests/matrix-plan.test.mjs
-   6065  live-mini/live-task-cards/tests/model.test.mjs
-   7458  live-mini/live-task-cards/tests/presenter.test.mjs
-   3036  live-mini/live-task-cards/tests/redis.test.mjs
-   3147  live-mini/live-task-cards/tests/render.test.mjs
-  13212  live-mini/live-task-cards/tests/service.test.mjs
-   4934  live-mini/live-task-cards/tests/workflow-progress.test.mjs
-    113  live-mini/live-task-cards/vercel.json
-     97  live-mini/live-task-cards-handoff.tar.gz.sha256
-   4844  live-mini/migration/BLOB-CAS.md
-   2687  live-mini/migration/DEPLOY-NOTES.md
-   1159  live-mini/runtime/README.md
-  21689  live-mini/runtime/live-card-milestones.mjs
-    228  orchestrator-memory/README.md
-    953  photon-skills/README.md
-   3868  photon-skills/imessage/SKILL.md
-   6651  photon-skills/imessage/references/hosted-v2.md
-   2039  photon-skills/imessage/references/legacy-and-tools.md
-   8322  photon-skills/imessage/references/local-v3.md
-   3974  photon-skills/imessage/references/spectrum.md
-   7407  photon-skills/photon-cli/SKILL.md
-   6465  photon-skills/photon-cli/commands.md
-   3135  photon-skills/photon-cli/environment.md
-   8355  photon-skills/photon-cli/getting-started.md
-   3745  photon-skills/photon-cli/spectrum.md
-   4490  photon-skills/photon-cli/workflows.md
-   3429  photon-skills/spectrum/SKILL.md
-  12015  photon-skills/spectrum/best-practices.md
-   2122  photon-skills/spectrum/capability-semantics.md
-   4449  photon-skills/spectrum/content.md
-   1389  photon-skills/spectrum/custom-events-and-lifecycle.md
-   7528  photon-skills/spectrum/custom-platforms.md
-   4397  photon-skills/spectrum/getting-started.md
-   4490  photon-skills/spectrum/messages.md
-   1764  photon-skills/spectrum/platform-narrowing.md
-   7049  photon-skills/spectrum/providers/imessage.md
-   1964  photon-skills/spectrum/providers/terminal.md
-   1040  photon-skills/spectrum/providers/whatsapp-business.md
-   1259  photon-skills/spectrum/reactions-and-replies.md
-   3792  photon-skills/spectrum/spaces-and-users.md
-    362  routines/README.md
-   1038  routines/photon-imessage-wake.REDACTED.json
-   1298  skills/README.md
-  13786  skills/getting-started/SKILL.md
-   1891  skills/imessage-creator/SKILL.md
-   2125  skills/imessage-feature-add/SKILL.md
-   8665  skills/imessage-front-door-wake/SKILL.md
-   1226  skills/imessage-master-orchestrator/SKILL.md
-  14200  skills/photon-demo-image-overlay/SKILL.md
-   4457  skills/photon-image-card-delivery/SKILL.md
-   2577  skills/spectrum-imessage-apps-nudge/SKILL.md
-   3847  stt/INSTALL.md
-
-=== Totals ===
-files: 246
- (+ MANIFEST.txt)
-bytes (excl. MANIFEST): 9417770
-  14120  MANIFEST.txt
+# SHA-256 source inventory; generated by bridge/scripts/refresh-manifests.ts
+# Excludes this manifest, ignored private/runtime/build files, and absent tracked files.
+6858112d11e481c07739db08090614e8acae9bb6989eaa261518f6497229dfb8  .github/workflows/product-repair.yml
+857b06f55aefab2bd194a666a8b00408c17a97cf36e1d270a10aae7ef36f2dd6  .gitignore
+9a823d98b42d59565280c23ebb1de8ea18009e190f40b7bf741c131948027678  00-README.md
+347aae09139a9da7fc31ebe4f15542c254b90e7362c4890de71fd0009531543e  01-ARCHITECTURE.md
+b9b2c951dcf8620ed26c42aed508f9fc754a95cbfe279f9bcf268a40a7152741  02-SECRETS.md
+9a35a228f4f883b62623ad020131ba99ff51f42ae08f081df66c85d69f265c85  03-WHAT-NOT-IN-SHARE.md
+34dd6f867bee6d84e1326d82cc82e784064299ed1f93141aac2f930e9bea9ad0  agents/app-sheet/PROFILE_TEMPLATE.md
+4fed9e5da0b2f05f94d50b079b0774e882fe4596fe64ccfcef7af0e251b23f05  agents/app-sheet/README.md
+62b047bfba40aeb0cf5b9bdec884fef140acc81878465e6d536c464159807141  agents/creator/PROFILE_TEMPLATE.md
+9dd1d3f3be6e727f21afc60731dfbae93b82a98da5a775142126b516dc0d1fde  agents/creator/README.md
+924de7724a524131adbb5772011e4136298a57bcbb47ff91651e176e0a3660ae  agents/feature-add/PROFILE_TEMPLATE.md
+56e90937be910741a4f720b277a43cae3261e98570e9cbfeea656e03d6d414c9  agents/feature-add/README.md
+f8913e6fab843da1fb417a3242666f76269c896310f41ad241985d515abb2ce3  agents/front-door/PROFILE_TEMPLATE.md
+a1b0e58cdda03306f56f577684685aa4951fbb97aa1495521af6e55da2e8fe5d  agents/front-door/README.md
+9e6aa2450b928692e1d6674e7a926659a3d8ae632daa75514d0eab3dd29f3ede  agents/image-cards/PROFILE_TEMPLATE.md
+d72e15fbf2a836535427b6e3d211417f21440ce2008a6de0450148f8f8f34399  agents/image-cards/README.md
+3898a344362b07998a8ec0ce09f018b6cb428fc4a7c39f284b6039bdf7b06810  agents/live-mini/PROFILE_TEMPLATE.md
+991dfd192d2fd9a2c7f37b0d3dd155607648309c66c1fd29297d9700a7d42297  agents/live-mini/README.md
+2af9d23b3c8db9fbe068942edb9a904e27bbc629d28174e4fa280fae6bb01d1d  agents/master-orchestrator/PROFILE_TEMPLATE.md
+d4e5b1b6dae74946236c04665489094a377f13b81f299478adb0d6d13cbf137e  agents/master-orchestrator/README.md
+de32c1f43ae4dd499497e0f9419f4bc50f5c0e8b01ec30ae817bca6d59b39d14  agents/README.md
+a847c1b18fd16e7c603cb6bb8bb3ceddc74ed66090f9a14b83fb48353427c409  bridge/.env.example
+7b7f923cb67157dd073905f668663a79e66918b321ae13fc9c13ed6f21d7e514  bridge/.gitignore
+99c08d7c2b8d501806a73c39793b3c21592caa140c4302d06dcb46cb696d6afe  bridge/bun.lock
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  bridge/data/.gitkeep
+7e1a7a50341782d66b3141684b9a598463b0c341517f0bb07682b6a2dcafed3a  bridge/orchestrator-memory/APPS.md
+4684b8e12790d2d60b25631e587efbfafeeeb9d0b3cb77ba051d2199398c5a64  bridge/orchestrator-memory/ATTACHMENTS.md
+55351eeed3e102294dac2b95c0e61d00ab0c09f8f988a6dde54c828d3925e9f4  bridge/orchestrator-memory/AUDIO.md
+81718168ddda0dbe72bed8bcaa62f6d1503a3f86cf294474c0a2826153cc6e34  bridge/orchestrator-memory/bots/_TEMPLATE.md
+2ae6e0c7a72f3665f6010057e2d27981850f738b02e4af22b99f59884822c5c7  bridge/orchestrator-memory/bots/README.md
+631974ec08ecff52c9d3a0f8e18f2f44293503965861440f9a7871830e41eec3  bridge/orchestrator-memory/bots/ROLE_APP_SHEET.md
+bc5fd72cde5875c768ca198e5256d12f458ef8a29ed1f5631aab012b9b7dc8c5  bridge/orchestrator-memory/bots/ROLE_CREATOR.md
+3193fce93349345e8d313d31c5b9b875297b82dc70baf2c30f7578af6fc9c40a  bridge/orchestrator-memory/bots/ROLE_FEATURE_ADD.md
+4734834aec86e721130edc0356c30d9ce6fd5f3bdb64425e3042fdb9d8366731  bridge/orchestrator-memory/bots/ROLE_FRONT_DOOR.md
+6223477b061ad0ec9c7e549938553be538bc1adfedaffe4e5d36dd469868c5aa  bridge/orchestrator-memory/bots/ROLE_IMAGE_CARDS.md
+e4eebac70782a8e1835a8f4adb85cb7bfc019279f4c8afd8f2b5e0d72049e8e7  bridge/orchestrator-memory/bots/ROLE_ORCHESTRATOR.md
+f13f9b088b99e48213d43289b1e15a443501d6506f50b609da75146f857c70d7  bridge/orchestrator-memory/CHAT_VS_TASK.md
+cb64d57b300b9c11fae523fb1bec32d0ef573f543db28f7416572024bb6fe2a9  bridge/orchestrator-memory/CODING_AND_COMPUTER_ACCESS.md
+fb3fba9ab347546692a8a2e6f5d83097af43d0be0e5995c2e336552e8faf1b9c  bridge/orchestrator-memory/CONTEXT_LOADING.md
+f90440da735a0acea8fe26867fb5ae41b133f3266f5d0ce78fd9cdf604c44e70  bridge/orchestrator-memory/memory.md
+6ef5ceccdd2c6c232d73426fffa3534677dccab25b927e852037bfa2d403ee5a  bridge/orchestrator-memory/POLLS.md
+b188f91728a104150fc20bfdfdbbc4d9b2fb88b40f50fb504ef8b28605aba4a2  bridge/orchestrator-memory/REACTIONS_EFFECTS.md
+23c14204a4887c59a52bd5800c05b3031d0aaa66b6396b0584b397e2899260d9  bridge/orchestrator-memory/README.md
+50f2076fdeea03fe29030af4567a72e56e1852fe7a644c34adeecdc02a3d99c1  bridge/orchestrator-memory/REPLY_MODALITY.md
+88a24474130423812c4dfdb5b8ef8a1b212ffb0ed275078da5f3802ebc596d7e  bridge/orchestrator-memory/SPECTRUM_PROJECT_SWITCH.md
+f5b856c5c3e0e04584554401a04c80f3239e4aaf259f2e0ba6f5e3793fbb95cf  bridge/orchestrator-memory/sunset/log.md
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  bridge/orchestrator-memory/threads/.gitkeep
+22fdb7b56c62fbd8b6f15dfea234900fff3f49b902218aeb6e49c0285e29ed96  bridge/package.json
+df161a64485a06d171ad26312bfe7e9c5b2412e97bf2e7fdc99654d085fd9288  bridge/PHASE1.md
+de0c15cad4c52fe1beabf47e880cc734113deb6ccf829612207482038a50f4e1  bridge/prompts/voice-policy.md
+69047c3341ec550e14bb3824c31c7d15a230c5b7c72257bb7bf11d5a635a0ec6  bridge/README.md
+54c225be422d286085c77aad43b477267e66ea536f127eefc81edf8b93cb7750  bridge/scripts/check-instructions.ts
+0700944d85e8675df9335df48b765c8a0bc866ed059fde829e9187ba47a28812  bridge/scripts/find-recent-msg.mjs
+8fdbb32384d861daaddfe060eb3a68f6df0b256d539e1ec868dd95d0b68e73f9  bridge/scripts/fixture-reaction-option.mjs
+ddee0241277788270230b980b5eaeb4a38a5bfeb5d4b1f09fafa68735f4f7530  bridge/scripts/generate-role-instructions.ts
+ad517f876a122abb052b837e40421dee4a33a048fb24a5f8bc6abf39b8240b77  bridge/scripts/instruction-catalog.ts
+48339607a100843b21c1fd33c1752206fd719d6b9a7e42ca001981ce0957f6aa  bridge/scripts/refresh-manifests.ts
+e22f6e55bc849e89c8f6319de630157f169dbdc372eabfc3da505bc6b2e29127  bridge/scripts/start-runtime.sh
+697af2edc364cf9882a77f0770d9896597686174c7daeb53d20c383651a2b869  bridge/src/activity.test.ts
+2aa55e80372235f858d87c5a6b997d639bc751e81a19c77e457286fc9a9739cb  bridge/src/activity.ts
+ad512dd73efe1c9c966c69107592c7a87a97c366ce05a18c123bd640baea16c8  bridge/src/attachment-group.test.ts
+452d22e21349a7bb81018081174ce506284d6a1b8323a8f0ebd0f989ab18ebe8  bridge/src/authorization.ts
+0b611417bb0fd08f5f3e660e25b0e40134968575e496a38c6f7cb7ba7850e9e2  bridge/src/batch-claim.test.ts
+ff5bea6a0aef49858600301d666d57baf022c42a7dd893ac9e3d64cbb2dc1132  bridge/src/batch-claim.ts
+290b351db9c4e46aafac53ab9590ce997f3093b49e039f70496f560a8c17e768  bridge/src/batch-control.ts
+8299f32639b15025a8ef10fa3b890885b6151be324fe4a4a9f98adc9fe9ad3a3  bridge/src/cards-ready.test.ts
+b4d03fef4e15276925e4f79865d55d98c42ecf170532961c5bc2d55541a9ba02  bridge/src/cards-ready.ts
+f7b41ab63dae8d45eb0091efa398b89b189d4c82a7216afcbc53dc2a6c183c4d  bridge/src/config.ts
+f300faca5f97ecaad250fe52d1df6b3fd9ce082cfdd42b218ca42bdfd1ae5318  bridge/src/contracts.ts
+e4bf033b6c16882df58e29aa688a76a896f9b00d7acc32297c55f7445e96b744  bridge/src/control-errors.ts
+40776789ee647c2d4406b83251b695185a883b18d52803f7076c8cdb51dffd0f  bridge/src/db.ts
+c8511562cff7bdf601116fce90538d1f645d07c84460f8d948fda38f4ed9e7ae  bridge/src/delivery-fixture.ts
+b7da38041dab22b057b902da643df4791006ed7a61699f14aee5ce3abcadff56  bridge/src/delivery-process-fixture.ts
+ca01eaca3a31761dd74361ed17ab5557db5e2adaeac1d88fbfb038551028548b  bridge/src/delivery-process.test.ts
+2c98bb036b63e7b31b1bb8944d332db78c74547c886006e183dc1a32b5b8f6da  bridge/src/enqueue.ts
+eac7d30dee77f8900fb5d7caf1ec0a3c132044915fa7ee337794ba7944b30fde  bridge/src/export-instance.ts
+7e2459756a944a51bd4b8cd26331fd260ae0d42d1e3a78a1922df87a8e5281e8  bridge/src/greeting.test.ts
+17192cd31d7c16e6e030d163c04af3509e7fd27ee31d5299379c2e32aa893f06  bridge/src/greeting.ts
+cecf7e85deeef27222acc359d02ed07d8e50af4ef285bb4a36f7020dc3be4da5  bridge/src/inbound-attachment.test.ts
+7f2b4d83a44ac4bc3e3b6a8385e29087edb283b23280587a9fe24bfa010d83a1  bridge/src/inbound-attachment.ts
+74d910b9fe6cc69928f3492463ca096ec9034bbb58462fe317111abe502291ad  bridge/src/inbound-controller.test.ts
+6294ff088fbeda30dbe00d930cbcd4dc7fd748ab35f37d871b51ede206af952f  bridge/src/inbound-controller.ts
+de3a9475cdfce423fdc41fc17ef0a94082290599d4c3770348d53c196246bf3b  bridge/src/inbound-process.test.ts
+4e6a858ef4eb24ac1b4962af4d5fb235e23a73fe2f2785e016f392cab972ff74  bridge/src/inbound-stream.test.ts
+cd6dc6cdde7aa61bcc71fe97ae881d4a77ec65e49e6a174224a4c3b5a1df90c9  bridge/src/inbound.test.ts
+442d145c6bfabe306590fbc2f66d1a3d9c0cceb846546656764b3478a505a56d  bridge/src/inbound.ts
+c605eee5205261ae432a196fae9bed6e58babde216471fff383861ea29be6b98  bridge/src/index.ts
+f0e045da92490013d07e050422b73b21a54c91296b6171ad9965f75271c98980  bridge/src/instance-lock.test.ts
+7294a03122416c04382fc456f42c5b1f13098098468fcd49048cb3706a072eee  bridge/src/instance-lock.ts
+69a5d397da3f153288111641127bdca1ccf6e593daa1072ed7f41a29e75af39a  bridge/src/instruction-consistency.test.ts
+cc6ed751c933fc862f596cab281af13af2f798421669b4bd7e922b48371fc3da  bridge/src/job-loop.test.ts
+7a12406570dd0542fff7fd719010b055cb628021f6f62e36fe336223e893c8e2  bridge/src/job-loop.ts
+d136796f61c8bf218e75786099737c1251f580bffa61d44a2df2969954037aa9  bridge/src/media-worker.test.ts
+ed8bf3850b8e66cc0e27b0c6f7710bbccbb5c9fded0af89a3bb55a7a08db27e9  bridge/src/media-worker.ts
+e5b6f313274a69cd0af7fbeaabacbe7b1f33480de5875d665e9f16d3a03928ba  bridge/src/migrate-legacy-state.ts
+c042187ebcd8118fe436cb241976bd50842f392fbc1b835af96b34e6069c29c5  bridge/src/migrations/001-inbox-outbox.sql
+f034184849b08901b38464f47634be79f68141469e70d66a211fc12ee11a181b  bridge/src/migrations/002-task-continuations.sql
+2cd8e45f5b4b273d5f20636cbdf29346c088c47953be3d19006015f73228350c  bridge/src/onboarding.ts
+be7198e2e0e17c2f57a5b2392a2057b01029662b1a66fb36464aa69fae140311  bridge/src/outbound-app.test.ts
+c136033711e81308388334d95ca090fa5da64794e5d661ee2099c44dd1ae602b  bridge/src/outbound-app.ts
+31da0b2fa784b38c1dad8c3197bcd3ce7147bb805a173d7c0440a066dcb8cc92  bridge/src/outbound-dispatcher.test.ts
+c528cb56ab53910b5505fa095286f18a30120034848a6accdbb793763e00ee67  bridge/src/outbound-dispatcher.ts
+dd3e4bf3b1d7067ded549b2ef5938c3aeb653fa89b64b19635afbac873d63876  bridge/src/outbound-effect.test.ts
+9a3029a8cca7a2b3ae5e76c3830e9b0f219353f129e72cfb12775b0111763657  bridge/src/outbound-effect.ts
+ca2b432476e63d2882019fd9837dbd0aa233f64e238b628f7377dd744594e73f  bridge/src/outbound-jpeg.test.ts
+640be0e9b4fbca3061cf19cb098c62e1308d4b4824929c06c984e8de38f76811  bridge/src/outbound-jpeg.ts
+20983736bb145087fad27c9e66b8eaac79c236fd82dd9ae3cabe375fb2f66eff  bridge/src/outbound-poll.test.ts
+60b669851d8122f699a29680b146a38339c285a8e44273ab43f8fb0d62c13097  bridge/src/outbound-poll.ts
+4e0005b6f1d6f587a242f052502aa8748411551c81cc14d8d7bef1f092488bcf  bridge/src/outbound-status.ts
+dac60305ef6c268c1669c911002b8634cad3fe957cdf2fcb5225cef5748f7de3  bridge/src/outbound-text.test.ts
+b61aa924abde351bc218ec7502c289b3fc96148f8bc971d6a517375eb0f97677  bridge/src/outbound-text.ts
+a66474d4ee88ead9b7cc03cb07eb2c3f29a239bd5ccfaf4e35ceb79b297b017a  bridge/src/preflight.ts
+0acbcf8b6d83735de73bca2b27de43108f943ae3505b9c734e9a689fc5dc84c4  bridge/src/presentation-config.test.ts
+45d8fa4a0ced9693c111f634555dae909e83ebe060573eb81472aad0bf551853  bridge/src/presentation-control.ts
+94a5a30e965f0c963e003948f0f862e1fa328be5ca55a94ee085d75f886c7065  bridge/src/privacy.ts
+ba87475ad49378ca2db52ea304b2002be7116bcfdb3bd438e031287914dd3dcc  bridge/src/private-setup.test.ts
+8bf02446597dfc8dff924aaf4c6cb10d0abb0c82fd9b03dc62be8df8a5634194  bridge/src/private-storage.test.ts
+b0036d5d66945d0b942c952117522cc4bb2bc5265e4530249b625e31a5e322dc  bridge/src/provider-outcome.ts
+dba5dac70376af867dc0f8bfa6d91c5b843b6561eef0afc00116fca1c9fc1720  bridge/src/prune-instance.ts
+b9b9cbe364c9912929339a791ae052959b96c8a3cc98470838b53fb3601f8fc8  bridge/src/reaction-option.test.ts
+d4393bd3c085817e14495486193224ed95c65182896940e68d33acb8c375be36  bridge/src/reaction-option.ts
+aa8f8d1151c96260facfb87df083a17e3d885e4aa2bd4b1879aba0e0fc972c6c  bridge/src/read-batch.ts
+81ccfe031642786d2ccb379e6582e5d9f77e77aeda1fda72c19a886b6914287b  bridge/src/reply-fallback.test.ts
+23d734e90a0342f7ae04bc563273aaa10b7450757e0a742308704abaf5e72125  bridge/src/reply-fallback.ts
+b61642cce30c94743dd54e73fc75e04da0cc8d9e0149c0725c28378d5c156ca6  bridge/src/run-locked.ts
+50f21b88ac8d8236ccf2ea1868a27d8bbece7f6905bacd9e178fa3069f0644bd  bridge/src/runtime.test.ts
+27935e2a6d8a4eaeb2c15d6a16d45b0f166ad65ccf836b0fb8eee77850eb727d  bridge/src/runtime.ts
+b4314a3ebe1107a51ca65d0a5b2ece2606584de8d080718f886c74d2ca6c24d5  bridge/src/send-hello.ts
+707b9e12da7bd656308fd226dd25ef480e4966421cf0bb3ac23819dd5475c413  bridge/src/setup-confetti.test.ts
+c1be8ecded2cf3b842ccf5387642169262725551c8ed9527291af0739d92b908  bridge/src/setup-confetti.ts
+6efcecc63f62b7a225f88a72bd9b19939c3450ec0e8d18b5728e78e2b42d33b2  bridge/src/setup-state.ts
+ae8135133fabb97c2ddb403e3be587fe14fd5f9a5923298a24cf1fbaca9febf2  bridge/src/setup-verification.ts
+e66152107f6ae596c43867464d291d67fd731f3616f98b25cb56a08f2db3a642  bridge/src/storage-prepare.ts
+6b2558d06dd5ec452139fc622d039333fc46c0f377737aef9476ce2b178faeb8  bridge/src/storage.contract.ts
+c9a17257d7e12cd11709cf59d54e9fa4a941f880f49306fe8e27ec83ad7602bf  bridge/src/storage.ts
+69ef9bcbf06db362ac641173bb6c152a11eb244bc110292d4fc1b37417c1ff94  bridge/src/submit.test.ts
+9f406b2b71fb35725f75b4946cc0d74347b06c0dfb69188bd9858e0b5c57524b  bridge/src/submit.ts
+3c0aa0235187d8ea6d140b65400209d3801b4c79a9248835e19675365287646a  bridge/src/subprocess.test.ts
+cafb860001cdf06382cd80687f0676bdc0c955a79fcf867f6b8a35c98a0749b3  bridge/src/subprocess.ts
+3b51546e50fd54726d08fd33c5df62326a4b05094b45b33c3bfa8704ec3992e4  bridge/src/task-bindings.ts
+72112c9aa39e8402295aebbbc5e9a6df54727fb5398e8dd97743d79d33d80b40  bridge/src/tests/acceptance/agent-continuation-flow.test.ts
+480431a5e26f35a60d11250f065c323c5033b238022802c23c6ae2954c5d53b0  bridge/src/tests/acceptance/recovery-runbook.test.ts
+9ce565cb787f5b63fa2bbb7a9bbb086e89cc5487036125ce6d3a02854ab54e3e  bridge/src/tests/acceptance/review.test.ts
+ea39fef40df312d0d0bca70f255a72158649071ad2037e53b150063765f314f3  bridge/src/tests/control-errors.test.ts
+83270c6628406d42e45bfa06bbb6af47493e9231b99b097afe9fe5189334db69  bridge/src/tests/presentation-control.test.ts
+e591a9e6e6dcf358b17c6705f8f4ab5e7451a9376662d5cba715ee3b75e43fa5  bridge/src/tests/storage/fixture.ts
+1e5a95137269d868a0a8dc4196735acb4484308a01577fbe13922ac032992d6c  bridge/src/tests/storage/media-continuation.test.ts
+452e8aa1f544f6f878d146fd5e434c00e99affe992729eee7329d47544be69a7  bridge/src/tests/storage/media-integration.test.ts
+860d98d7f1aa64fe54762c2bacc455bdb5bd7c538c24c9fc3098f545ddbccd08  bridge/src/tests/storage/migration.test.ts
+b14cdb21e4607cd4fa6e6e86990eb6fb31d19be1c8e4c22f4d603a0f958dcd8b  bridge/src/tests/storage/operation-scope.test.ts
+78eef1a2cfcab3e001f5f21bb70d9d68bed84fb09eb87cc164deae2630eb3489  bridge/src/tests/storage/process-worker.ts
+5042ae7832fa4291154172db84d4003531fc4836e399f38a4767f8de85df57e9  bridge/src/tests/storage/process.test.ts
+86f18ec5ae22d50c3aca1698bb2e6e5b3448319e0b709b185fdb53cb087aa962  bridge/src/tests/storage/storage.test.ts
+f586c4018e6de7b4da71889827f93f4aa7d0709865ebb5130e30983832f0a13e  bridge/src/tests/storage/task-continuation.test.ts
+ba43b32e237b7c0124863efb36a29712e5d36f2f581c7aeb5b03271b2ee8789c  bridge/src/types.ts
+85b1db2fd9d215fda028b45425dda4619e136c66b61c57241bba49710df10da6  bridge/src/upgrade-store.ts
+59f0ce88bef0285941698e6546ddd43736e2a4417a9cdf29c671921f04e5981d  bridge/src/voice-stt.test.ts
+38038ec9974fa96f234ebbddd317c0933ad1c042ea0524d1418a20b0bbf6d875  bridge/src/voice-stt.ts
+3648ca294e27fe0de95d588b17602e41c0481141684bdf7b3aebd4b2e6be89a2  bridge/src/wake-dispatcher.test.ts
+289c7d25b27cf8d4456d0c11c5f04f5b62def7f587e3b6a5c78c426192819096  bridge/src/wake-dispatcher.ts
+0c4e6ee8de2cf1a046fef567537151882144e910eface1600fd596050bd2a8a9  bridge/tools/moonshine_stt.py
+ec7618d934016ec90a8ad0de3a5eb43fc9af9a93888de9c7b13a4d39b0895e26  bridge/tools/moonshine-model.json
+a08097d8c925d12e5a4ee193b69e5cb2cdea1ae28a3cc968a66d30e4628e174e  bridge/tools/moonshine-requirements.txt
+455960beffde82a07a297cc9a888a3c005e6628ece0d340a4bd722bc05764ee4  bridge/tools/moonshine-transcribe.py
+1d6602b746c76228188cd5da50775692675aa409a1f330fcd38fdf20a7f5bdce  bridge/tools/with-instance-lock.py
+d595d834ed19c0d8f9cbcf582f5471fabf4c7ad14ac324d5591144389cf83c8e  bridge/tsconfig.json
+4868b456c319c78d012c49183f6037ec2757f5d910b985a26d5467a369f9fe90  docs/product-repair/BASELINE.md
+ead42a99e16e017e90b286156a67cb9788bdac28cc666932ff11ca804eb18a77  docs/product-repair/CHANGED_FILES.txt
+2aba2d4f2b6966f3748ebfce54fa634f15b802e1fd50d3338977ff69d3777c19  docs/product-repair/CHECKPOINT.md
+c80d678af4f6f83634218fd2a742e3ae153400445b20edd52c31ba16099a52c8  docs/product-repair/CONTINUATION_REPAIR.md
+4bf6389d6b28e6a9732daa259b42ca35dbddb9060d9af7a62abb238987a19191  docs/product-repair/CONTRACTS.md
+27d286635b6e83ec0103723f4711b75f2892c7abdc39db998d9840df8266da5d  docs/product-repair/DEPLOYMENT_ROLLBACK.md
+7361af34fbfd99bd04d7d4ba68be0144757bf9fbe6be45636fe00929a613e3cf  docs/product-repair/evidence/f1-tests.txt
+06965adc6a972d345da5e316cb704ffb826789415ad2cfb0bf002c73489e25c9  docs/product-repair/evidence/f2-tests.json
+9c52ec0fb2b8a4eea8a2bc0a8e05302cc36b84146a82808bd57e1785eb520529  docs/product-repair/evidence/f3-tests.json
+148109e433f01d849c8ad76244376dbe529bc7968749159b2d5e55227f081ec8  docs/product-repair/evidence/final-checks.json
+2efcf321b7de356166f405a1ab437cb967b5f6090b8408739677d34b816144f5  docs/product-repair/evidence/final-integrated-tests.json
+5801583418299556c7831e50e6a53192bbc8e3948b2003628ca5397681948d7d  docs/product-repair/evidence/lane04-tests.txt
+f65fe362fe9fc357e27e6fef38664d5db08b54c8b92277d0c8e4491800a939c8  docs/product-repair/evidence/pre-f3-tests.json
+70e2fd0936e5808ac90736c4527a18df1047a3299a631f2f570201a3d2a3c40d  docs/product-repair/evidence/review-command-ledger.json
+d0ecca7ca075bac0be6452e047ff61d02cf1ee5616902bc01b31059c76c94046  docs/product-repair/evidence/review-export-fixed.json
+33fb9a3f89da74a260e6990686bbc5f9e56f957c845881c7fd9f21a8dcd26356  docs/product-repair/evidence/review-export-probe.json
+7214f15ded3ba82c72becbb66a67ccdcb0d2a040988c248de51d2784a615bb37  docs/product-repair/evidence/review-export-probe.ts.txt
+0b019a2ae8fbb134435edaf365a2322ef461c156a68e735afa9fd366ba06db74  docs/product-repair/evidence/review-followup-order-assertion.json
+80d474ee2f4d823721f9523ba0f23d1867026670cd8307676b30a4e7a2562fec  docs/product-repair/evidence/review-followup.json
+9f34b6979ff480cc174da878d24902709f24e7456e832c5d33acf1774564393c  docs/product-repair/evidence/review-full.json
+b54de21d35b4f345df677fd04d6c6ccfb7f281d3a83ce758628fae32cd581f19  docs/product-repair/evidence/review-security-delta.json
+4d11e289c8e0adbd350733c1468aecd327bc68c819ef7a08c8fe82178c2d2c69  docs/product-repair/evidence/review-security-scan.json
+689d89f3fae1935ff4f96e16bae2ad1c1676c70f31a3f16851274cd7131152b0  docs/product-repair/evidence/review-stress.json
+ef67b2bccfb8884136d3176f0f76f5104bb50cd2a51a54d7b03c6cbf366e1491  docs/product-repair/examples/cards-ready.json
+9d741d24bec51a0fab94c5bba8ea706dc61baa77e8f3f7d524cee3e257915d26  docs/product-repair/examples/final-submission.json
+b5341908407b1003ead8d816f06fea00c7a02b7ac41ab83891bbefdfcfcfd547  docs/product-repair/handoffs/lane-01.md
+393579c689cdd0e6b2147046b0cea31b40ae4f49d31bd1481e1c612d107f8844  docs/product-repair/handoffs/lane-05.md
+0d5a56d9f6f69f8bb8a7edbc053cb19520e7de764165e150a1a95c638ea310d2  docs/product-repair/handoffs/lane-08.md
+2e157db74e060c1f00e86d31b0b9e11c9364b41d8c6a46923f5e48e0e7437fd4  docs/product-repair/lanes/02.md
+9442d2f72f0934290f7c5fe9d0139bb2cc6b9d85ac650aafc0950fcd39efa9a2  docs/product-repair/lanes/03.md
+6e9e6ba26d1e5ae2ed3f48c178eadfe19f9aceb8f970a18e5bff3bd34aa966ac  docs/product-repair/lanes/04.md
+dded503e83eeda25163901078dbdac04ff174a0137964cc256f0a76f056ff0f5  docs/product-repair/lanes/06.md
+dfc9080a5f2c648ddb7ec57f4a13316584f141257cdccdd7d168b6ae141385e3  docs/product-repair/lanes/07.md
+9d8fa3ad7b9ccbbca263e58f22bc5a18eeb41202e5ecd073990455b0c79bb16f  docs/product-repair/MIGRATION.md
+28e6d9cd9899ed762129a9675d29ac7db004d0c0b65b26dc00a3f19a0064c166  docs/product-repair/OPERATING_CONTRACT.md
+0730299f6911983572815418354650ad3ea864739cc349cba3616251a76535fc  docs/product-repair/packet/FINDING_COVERAGE.json
+3f77828f4c503b0063e85af528e7fd71ccef3e688ce88a62772d74f6508d2177  docs/product-repair/packet/PRODUCT_CONTRACT.md
+1a8dc097c0d7d35374dcbb209e4a3be8d8d651e208b823e09d7744c8e29ae474  docs/product-repair/packet/REPLACEMENT_MAP.md
+4d84653efdec17d38a1ad72a5b7ce76699c4d691ca44bb9ded8e2b43470b5fcb  docs/product-repair/packet/SOURCES.md
+3a4bec986d64cda8af4bbaf64f7302c3fc1997439e343c6d79b9fa7ce0d87dfc  docs/product-repair/packet/TEST_MATRIX.md
+043f5ee9efcd6fccd9b819da124b324abc375b9f58fdd56d129e3867913c77cd  docs/product-repair/packet/VM_CHECK.md
+fcfd5ec1678cf2912e24c0effec008cc79bb45d208fd4aa3202e917f7f61bf73  docs/product-repair/packet/WORKPLAN.md
+656e78ce814ed70dee47dd4cfe2710ba668d296486b0f23339d0ac8e46eef4ba  docs/product-repair/PRIVACY.md
+af351db5f377b3b52ec6066856263d38e7348c3416c87994b675aef4986b845a  docs/product-repair/RESULTS.md
+89437120cd8b969f98d44d37c3dcf66af1e8829fa3ed11adeb0b86cb15172137  docs/product-repair/REVIEW_MATRIX.json
+9b2429ca8977a37011e2d40682968ef9760fc02d38ffff2e346193aee54fccde  docs/product-repair/REVIEW_MATRIX.md
+aebdca5ea453501e4129b47324a9f6f82437ed0c31edab8e391b9167906bccd5  docs/product-repair/SECURITY_REVIEW.md
+d453fd81ca287a6a60d03330703aa924796dfba61adfc7de322b17a9193f0f8c  docs/product-repair/UNVERIFIED.md
+92ddb6f76d9aefc0d11a4a48334b2ff484022fd96fcf2842c27b88309dde3633  docs/product-repair/VERIFIED_CONTRACTS.md
+dfbac21206d1e8316dd93febf97e4b7876dfb31122bd0791eb692da5bf43f877  live-mini/ARCHITECTURE.md
+b9142a1f39ef999b06c29b543d9c4b228e60c6273ada5fc2dba016a6d5aec361  live-mini/live-task-cards-handoff.tar.gz.sha256
+5e32116c4098eaa35f9f76371cae043b69c4c815876b729d92720fcfabe343de  live-mini/live-task-cards/.env.example
+fc0b8b990d330b62a08ca7bc49e7cd2805ad0b1a92dda81da2518aa0f9da5d18  live-mini/live-task-cards/.gitignore
+ff63b970a74ab3ed9677c5bf8fe963f654efeda17c2031df35db5d31f308bdc0  live-mini/live-task-cards/bin/live-card.mjs
+b9b39ca5adfa53edf6bb72be581118490cb39c1b94b5dab0dc10a1aacc790370  live-mini/live-task-cards/DESIGN.md
+65606a3d3f2563329870d9bbda9036816558893a31084d9d2cc2b1b429a7b987  live-mini/live-task-cards/docs/API.md
+474a27c10165714144d161046c259a9c7be2cc72a52482c3070101202df5e6ae  live-mini/live-task-cards/docs/CUSTOM_LOADERS.md
+002f4a2bdd0022122b95b91a343666beb547944695cefe0a3e9fe08026e876c6  live-mini/live-task-cards/docs/ICONS.md
+c63214862fc3688ba3b71dacb32636e4ac6e8ef5053776cd0ad6dcb6b81ace15  live-mini/live-task-cards/docs/INTEGRATION.md
+7aa02806277ecd741bddabb6968b8f7244d90d0ef424f21c26111ea909639ca5  live-mini/live-task-cards/docs/SECURITY.md
+e7801bc103303974895c9f63ffb3d6b60a00c5a754f90d088addecb58523c79f  live-mini/live-task-cards/docs/SOURCES.md
+ee2b7be79203736582b71a93a2ed1d3975629628bad9db39f8c9a3e144586043  live-mini/live-task-cards/evidence/build.txt
+c1229853c853871c5017473609ab6464384417600ac4f9a466e87222bc732e58  live-mini/live-task-cards/evidence/clean-install.txt
+e83e494735cb649cfc5223a2cdb05e49331f434442b92e47e3e043f9bcc98a62  live-mini/live-task-cards/evidence/HANDOFF_READINESS.md
+d353fc7f4089eb0542df0fa0d9792d198fe8d530543130d4f7523e877096d6bf  live-mini/live-task-cards/evidence/syntax-check.txt
+f567e4474b370b72ea2e21f65222eaae674a477e5a885b10d09ae244d740a915  live-mini/live-task-cards/evidence/TEST_REPORT.md
+fb3cc81d2cee8331ff97f8ce910ff14e339fe94bc627028214614f76b2fdca99  live-mini/live-task-cards/evidence/unit-tests.tap
+331fe7805ec70b11b50221c10c1e2f657409c95a500471d1a9ee01854d441557  live-mini/live-task-cards/examples/checks.json
+42dff3bd68fd8ac4cedeb29d11d6d09a40e4fabdd51fee94039b28932663244f  live-mini/live-task-cards/examples/complete-research.json
+409ed2c7131091551efe3df489843ce7724b652073d3d32e65d47deeb517f4f4  live-mini/live-task-cards/examples/existing-runtime.mjs
+34b21074a17174f29f9f1d0011223c1c1176d9b12cf4432c216931e7ffe0a49c  live-mini/live-task-cards/examples/loader-animation.json
+d66e0c0946c5eb5e3a9b7b82ddb195c36b49b957b0575d2a04f7008927d1ef9b  live-mini/live-task-cards/examples/loader-static.json
+938ca0ff31bb8d9ad1d6863a41cae0e86ad5e3ba140a055c27aec0a7757ebe73  live-mini/live-task-cards/examples/matrix.json
+9aeaef345b4d79b77d1c987ab76efbdaa1ebed39b17739174301bc7491786ff6  live-mini/live-task-cards/examples/research.json
+36bb6277d81c5fec7a7d6613067d2160c3bc75d3b8742d421d59133992817d86  live-mini/live-task-cards/examples/stages.json
+60589b888f151309d8499b92edec1bd86fe0acec0deb37623e31a44123f6829a  live-mini/live-task-cards/examples/update-research.json
+dc47f36a81658c448870f647cb8723a2deaceaffe1722b82b10391fbdd497f49  live-mini/live-task-cards/grokbot-matrix/dot-matrix.js
+19a438d582a4465704bef2b936784cb734e99201e16642af3ed64ef04997ecb2  live-mini/live-task-cards/grokbot-matrix/mini-card.css
+847f56bf21744837838ada86ab022909b5c1b59245f7aec996bb816463b3692c  live-mini/live-task-cards/grokbot-matrix/mini-card.js
+265d24092161d31e8046689fa9f36dbbe58679b0e04865ad90ff63b64ed46b97  live-mini/live-task-cards/grokbot-matrix/mini-core.js
+1a84ddb9935ef3375e7d743208537fb3845c404dea61d2f984f81247c4f38cac  live-mini/live-task-cards/grokbot-matrix/square-animation.js
+8d84b907b6356f1c1efc3256bdcfe92392ed691b4391eacf995c089cd3bd6011  live-mini/live-task-cards/HANDOFF.md
+ec3f4f42851d8e75df51fdcbabe0110928eb263273890ffdf7c8c75b8b2b2286  live-mini/live-task-cards/index.mjs
+86ddbf3846e9f5cbe49c32ab21ba2398f1be3ece7160968af8ff8042043753b3  live-mini/live-task-cards/INSTALL.md
+8dff0d40f99ded8a489e4408ee27976562e20bc8639fa26c61ad9f03a55d2701  live-mini/live-task-cards/MANIFEST.sha256.json
+f3b9d65faecb5b21dfb87a9ebd51729f509f8b8fcf906d9ca58fa992685fbc9c  live-mini/live-task-cards/package-lock.json
+78c69381abab2c1dfece1770b90f1bed881b62e073df9e3feccd4e9055f24a58  live-mini/live-task-cards/package.json
+6b010993ea073d6f9a9b28876be91aeb269379dc004ceb830376d709f762cd67  live-mini/live-task-cards/public/assets/hands.png
+2e0355dc598e5a4da095555f4e7228b2446f1ea682b13887af23c91b85236405  live-mini/live-task-cards/public/assets/study.png
+feaea42fd9f3ad8774bef9e816e0bbcb208d5e444bba6efa8050c58418794988  live-mini/live-task-cards/public/card-client.mjs
+2bccb15f0e6b056d8c57fd2fa7d71659bcb0b0127419f23c7e27b6165cb82c81  live-mini/live-task-cards/public/card-motion.mjs
+05e0c2cf16fb09fd9f986215702ad6f39104b5867569d0b5038474277b8456b8  live-mini/live-task-cards/public/card-template.mjs
+c2b257c5638fb940d12d1b28f27a2c5b8b49fb364bb3321a06eb2724d1a541e5  live-mini/live-task-cards/public/card-theme.mjs
+1ace8ddf181cefecb52cdb6e909c904345c3686cbb6b94b4ba6012340fe482d5  live-mini/live-task-cards/public/card.css
+d10a7641d888f4d0de3d84199a143df643e6a3e5021a4da8d670e21a50f6950e  live-mini/live-task-cards/public/demo-entry.mjs
+c7d6b748765c908ffed46dbd50a75dd280c7b4b9c49e24780f1ef65473e0a550  live-mini/live-task-cards/public/demo-playback.mjs
+9c0e351f3ee0c44d575c31c790d55736f1c1475db4f0316f04d4d17cc0834650  live-mini/live-task-cards/public/demo-variants-playback.mjs
+d4510e40900dff1dc375bdd49bc78b204aeea7c35df85cdbb4515d098e6263e6  live-mini/live-task-cards/public/dot-progress.mjs
+17208c67c6c0faf2638799dc1bddf7b9211be9622a8ba043969895372e30b6c3  live-mini/live-task-cards/public/gallery.css
+57f6ec2732d4eed9cb150cf99c2693a6b2493e03f0f4a47f4e756c939cab9f31  live-mini/live-task-cards/public/loader-animation.mjs
+2a7cac7090dbc04b21b24b809028fa6cc54ac2468c09f2ae16bebd70b631dbc2  live-mini/live-task-cards/public/matrix-demo-playback.mjs
+52fe9c91367eb1f3ae5a915590f7ea7cf1a02046f43b8e34ae65661aabad8be3  live-mini/live-task-cards/public/matrix-live.mjs
+02ae35e25cac822abb48aa5ea9ae296f6e54cc7a8534e4429058a0c6c4c58f57  live-mini/live-task-cards/public/matrix-presentation.mjs
+f8cc4dd18749d650d4803fd69e6ac9cd66267ae5d0c2a53b5812749c7114cc4b  live-mini/live-task-cards/public/task-matrix.css
+90a39889804969d9e825146bef0d75b68ce68616e4a8e34145a955f285485889  live-mini/live-task-cards/public/task-matrix.mjs
+73d97600ffbc2c45535efb53a0decc8945113655d2b4ac6b328687f1fd98b314  live-mini/live-task-cards/public/workflow-progress.mjs
+7bff446df7ff8c545b4e269e90e1bd79e3b9aac98a3bf1bd34d01e67a4e20dad  live-mini/live-task-cards/README.md
+b6f66020ece15d2efb07ea633e12438fe71ef9b460331cb43efe4a3aecbba8c3  live-mini/live-task-cards/references/01-dot-grid.png
+86dee4210d8166939cb95eb90071c5ed4dc584d17cf87ad23a8e5afa64ab5a3a  live-mini/live-task-cards/references/02-segments.png
+92512c59e9961aea1d2a70b04b218076097799f0b5efd030d8ff33bca1ff56ad  live-mini/live-task-cards/references/03-stages.png
+35be0f019150c0a3eae3eb084f714c1506d80e78231c4c5adc4190682384a70c  live-mini/live-task-cards/scripts/build.mjs
+01c60cd4edff0663cfea04fd574669156ccfc686c012b77b3cf3309ad6e62aa5  live-mini/live-task-cards/scripts/check.mjs
+fe0834f624d3c4cdad10fc6df43107b1d253c8e86aa8d91748610d2f24a8c71e  live-mini/live-task-cards/scripts/init.mjs
+2ad3cb4a52b74ec3e338f1617655b082479bcb9b6d06f0067c17421a560bfc8e  live-mini/live-task-cards/scripts/package-handoff.mjs
+b38cc0be146c606551eb252ba06cfd6da38cafa1b0c6c6f12d708f3ccd11e2fc  live-mini/live-task-cards/scripts/prepare-loader.mjs
+3af818cd15b69c554eaf399779d5a03165799196b7c94129a912faaa3b48a7c7  live-mini/live-task-cards/scripts/preview.mjs
+60e93679927b4d252878c0522c7501f7531ab27edf7e01b767382cab28e367a2  live-mini/live-task-cards/scripts/verify-handoff.mjs
+d1a829daaa75df4a05e2f15fc59feadc556757d72599ca1d086690ac8e7822fa  live-mini/live-task-cards/server.mjs
+53b7e1993fd6099907c27f98e56ebd7cfa2ddfd37e0569a5dddfce921ba9554a  live-mini/live-task-cards/SKILL.md
+fa3d160bde19cfce4f498033288ec96e78179f4d36d49913f9cb7d41b83e3f38  live-mini/live-task-cards/skills/dot-matrix-mini-app/agents/openai.yaml
+f981c57b329285dc73a6d4efd23156527471c2fb82a61dd79dfe21e450a6a273  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/compare.html
+d3220002c7c386b27b3545e0777f612254595dff6353e602103fe40ab84b13ed  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/dev/tap-core.test.mjs
+dc47f36a81658c448870f647cb8723a2deaceaffe1722b82b10391fbdd497f49  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/dot-matrix.js
+d01952bf054d0bc755207f95bd2b24bc64838785dcff077365f19fbbacfe28c5  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/index.html
+19a438d582a4465704bef2b936784cb734e99201e16642af3ed64ef04997ecb2  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/mini-card.css
+c62e9e734500fe7647bd991b0b45a582390647dfa602c73c748a354f6a027f4e  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/mini-card.js
+55040c4c5ae4a06c74a9c1fa5a095bb0af6f0d097dc3aa4c40fd3bc0248aac5a  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/mini-core.js
+6e1ee3896e1f4b33ae86cef2803258e92354879232d45b1a885516441230d0ff  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/mini-demo.js
+1a84ddb9935ef3375e7d743208537fb3845c404dea61d2f984f81247c4f38cac  live-mini/live-task-cards/skills/dot-matrix-mini-app/assets/starter/square-animation.js
+82c8e999c4703357ff02895c62944fb683401ca87ef1925fbafa756bf5314ff1  live-mini/live-task-cards/skills/dot-matrix-mini-app/references/card-contract.md
+17f06c40c9e8cb5c6d1cda76ad7cbace6cdd8a9dfff6f81c19f3b3464e1b219f  live-mini/live-task-cards/skills/dot-matrix-mini-app/references/photo-to-matrix.md
+c79f589508f6c84afb0a3c716465792a3ef475c844c122749ef7f043b48b2ce3  live-mini/live-task-cards/skills/dot-matrix-mini-app/references/reference-motion.md
+4c4271a2fd6a1384518676b9713fe49e88d86d4f17544beb92115d1de0c058e8  live-mini/live-task-cards/skills/dot-matrix-mini-app/scripts/scaffold.py
+fed7113aa4c24f30ecef9f0455d47f45cd01faeaffddcde415338bfc333d89b1  live-mini/live-task-cards/skills/dot-matrix-mini-app/SKILL.md
+b6ebb18505d54484bda7acd97fbaf24d4d1c6186321dbf6fbf088f3f9b59e3a5  live-mini/live-task-cards/src/blob-sdk.mjs
+5912b6ef9d2a737007f7e7c1ede7a1acc5533cc7f5253698b982e66f9831aff2  live-mini/live-task-cards/src/client.mjs
+4d8c42bf38add0acb6e98ab27f6467eff9f78de7e4f7d4cee883932645f5c54e  live-mini/live-task-cards/src/config.mjs
+29b5ec32831a66ea02fe2771d8986109cea07067de65d961ac7db1a1b5fc1560  live-mini/live-task-cards/src/demo.mjs
+f5114a6aa1c58a0f82dda833753baa9ebace530c8ecf1e5d2a402d21d469b044  live-mini/live-task-cards/src/errors.mjs
+3a9f9f858f9cf0c94616cac862362da8f3074715eb8a0a6d43cdab885c83d133  live-mini/live-task-cards/src/http.mjs
+f211070971226fe8a885bffaeda9514f58159c2f6e3d81fe910af370c0f6c624  live-mini/live-task-cards/src/loaders.mjs
+f6a848af7473852eea46af27af038abfe60f4b0934478b881abef7615acb0b64  live-mini/live-task-cards/src/model.mjs
+611e38535734f248f8d713ac810e96589de9e17295f8ade631327560be6d1519  live-mini/live-task-cards/src/service.mjs
+df58c4647aa034f112a8bff35979e531a1cb4ad1db6be2133746fbedf2a0000e  live-mini/live-task-cards/src/spectrum-presenter.mjs
+90fbc56803711efc402880056e08b6724a322868be1239154d2097bbdc25486f  live-mini/live-task-cards/src/store.mjs
+f2cb29f4e566aa8715876bbd74164ff7c54c6d17ebaa9ba389debce40adbbe67  live-mini/live-task-cards/src/types.d.ts
+f9a9b4f8951910e66e8766a02209dd661ff8d35808ad5122d14c4b7491ce4f48  live-mini/live-task-cards/src/vercel-blob-lite.mjs
+3ecb15e9a9f9c420f7b4aa9f688afc86400a31f4d396c08cf957c6ad2cecffd7  live-mini/live-task-cards/tests/blob.test.mjs
+d187b57c4ea53e81eee49d2c2d59f6bf67936a2d3c8800e8ef5c6bec96fda8ec  live-mini/live-task-cards/tests/build-runtime.test.mjs
+a9728ea755051d6327684b819306a0b5b90731ee4ad99facde8fc857b9b711b5  live-mini/live-task-cards/tests/card-motion.test.mjs
+60541a6e5ec61121408e7fd430a863bd26dc5af6096fcb12031350a0689d5833  live-mini/live-task-cards/tests/custom-loader-browser.mjs
+66f8ef873153f17d2bb33a36a18308677ed75293b80cdd3980c8ebd3cb6b6c4a  live-mini/live-task-cards/tests/helpers.mjs
+e031d7e07ecd992922e1ca0b41c95eb5cb4dd3666aa617d13a33df994dfb25eb  live-mini/live-task-cards/tests/http.test.mjs
+e3b1b81b94e4c28c2d30f6697c84551440e6750e234eb2d82f5d1a150535b3b6  live-mini/live-task-cards/tests/loaders.test.mjs
+3e053a0d00096abad13524ce1c14180333fcda71970a80d9c57665c4073274ab  live-mini/live-task-cards/tests/matrix-plan.test.mjs
+9f6b93961b869ad03d1a0f70e83a80623da5cadabadb42d13a3129494960c41c  live-mini/live-task-cards/tests/model.test.mjs
+1f7a79ed78651cd35533facad7e7e918c3e4e8ecf501a17c766cc53349927b98  live-mini/live-task-cards/tests/presenter.test.mjs
+4ed3358b6e6a62f7808afe2e803ce17f415470bb0e3908722ed7decf6ebdb5af  live-mini/live-task-cards/tests/redis.test.mjs
+92e073d7d98f98db198742452f80d326a61b7ad0835d91c768b9a42edf4b79ad  live-mini/live-task-cards/tests/render.test.mjs
+3452dda543dd0ca754ec2b689827df97cc052161daabd0b73273a26ee7b93ec8  live-mini/live-task-cards/tests/service.test.mjs
+1159830ad4d026682e782eb6878bb856838c5ba468d9f2239209d34061a09459  live-mini/live-task-cards/tests/workflow-progress.test.mjs
+a389d09d013ee3cde913538812ecc7af780f91d9dc874c6b102fc505b29b2569  live-mini/live-task-cards/vercel.json
+7cbdd9a6e9a6f9b2f7b5a8b88ee7460e670fcdf78a72505aae3b365d09962176  live-mini/migration/BLOB-CAS.md
+0c43f2e6bf9706fd85f407b24bb0130f9fe1706aafcd708c5c032ec21fa08c06  live-mini/migration/DEPLOY-NOTES.md
+4a39f73b0224e153cf866f8cf9470487a7d56989ce1819fb401db010241a8811  live-mini/README.md
+b6e39e60ed718780d0a78a51e2e60c3c471e303a818831f03a7e6765b13635b3  live-mini/runtime/context-lock.py
+96ed78cd4dc2586ba77be0764617ae851375fa75ba986a7d6a5dd2684409e467  live-mini/runtime/live-card-milestones.mjs
+6027903ba2ad9ff69bcdefaf5e793aafe86aa45a7f45087e12069a8d0b9964e0  live-mini/runtime/live-card-milestones.test.mjs
+df55cd0a2db72bf0014fc9a581e408d1a88c857fe5a2682cc530e62a8ed97bbb  live-mini/runtime/README.md
+942ca00c3a6500c6ad1b309d3b0a76dd65b9f4ceb9460045a9744417ea984955  orchestrator-memory/README.md
+b4ce442bfccb595d7e1978ea35de7551f062662c2ddbe7d4222a2a507f9b1012  photon-skills/imessage/references/hosted-v2.md
+a43412c9233fc756a21ed52efb446bf7ee8b653aee59ed3ab810be5d9e9f5ac2  photon-skills/imessage/references/legacy-and-tools.md
+6643ace934f9e82f12f4cd7f52944b1d990a15913787bfde0478a771a0ef039f  photon-skills/imessage/references/local-v3.md
+f74ec658d398e5f97dfe9938a6eb17316cd1bd676938d59c216984dbd9087878  photon-skills/imessage/references/spectrum.md
+193282f18a1f7238ef042967d293495a1d5670812a1b750deeb06103549d9915  photon-skills/imessage/SKILL.md
+8571c794bdd6bf12bb955d4dfe0c27cfac57b3a0c1934ee0968de10cd317bf66  photon-skills/photon-cli/commands.md
+ebd47a8c4a62aa07001ec62162ff0683ce6ee244fcb104d0a45df069a83f75c4  photon-skills/photon-cli/environment.md
+7f5986a2ada5bd11cf3d146e84f54ff98f764a43da7dd815d68a68fc1ba0455c  photon-skills/photon-cli/getting-started.md
+8ae21002d3be416efd9aff9828d59675422b16cd6625ee2f187c0fe7ee49fbd8  photon-skills/photon-cli/SKILL.md
+bda05c8ebddd373ff71fa7d636b9f732d8dcd8706f938d63e2a7120520859a8c  photon-skills/photon-cli/spectrum.md
+b8fbb4a7dbf5402714a97f6f36b7ba6cb92df83301006e4aad13239aecc671fa  photon-skills/photon-cli/workflows.md
+e162feaf16bdba338cc626d481b4b8ddcc93121435b77072d1585aaa9046a83a  photon-skills/README.md
+fd0535f3babd1ee764d67132b11a97f39255104648ef1aad8173b2a33b305eb0  photon-skills/spectrum/best-practices.md
+7451fec93c937bf92238e916f6e811ce4e41ddd5459a2211950b0efdda471fe5  photon-skills/spectrum/capability-semantics.md
+ed0e8721f13ebcca590dc09c74eb228164e967ea8e048412dda57d7e28116e7c  photon-skills/spectrum/content.md
+9a235b18b194f87f93b60cd6f9d11b2181e5ce34eec812fa521a057b08096c18  photon-skills/spectrum/custom-events-and-lifecycle.md
+e56f390a127abfffb15f20785f571a1f4c32c6a0b5404e0cabfad8cb3277426e  photon-skills/spectrum/custom-platforms.md
+b9315bad8dba9e8ec364ffb975ae80d4878ce769632aae61f39a39a79db5ea63  photon-skills/spectrum/getting-started.md
+129c6d7c8e6a3d65f8bb1a6c89dcc1d66f17e412a5c3eebaa0be59bbd0f3ef8f  photon-skills/spectrum/messages.md
+5c92b185543411e20fc7ca5d3b30392b96925591faa0066b7c5391186ef19bb9  photon-skills/spectrum/platform-narrowing.md
+7ea0c9898684001060b16feea25e7c5877ef3830456033ef65f4254208192480  photon-skills/spectrum/providers/imessage.md
+2e2fa8a01ed1d4b8b6e6669aeeb499ef2e03529bc13f9f6fff81bd29fda7f187  photon-skills/spectrum/providers/terminal.md
+339076719d35996c98f4180b2a15ac4b8f9a0b26047acc20e5c076d67b5a0c61  photon-skills/spectrum/providers/whatsapp-business.md
+86ab9c07c9ed66c924a3d20c0ae9e898d587d6e862415f327c7a57790f43dc9e  photon-skills/spectrum/reactions-and-replies.md
+0a5efcf42345008c7c6493ae54f63b6fea717598478199840a0ed274d02db541  photon-skills/spectrum/SKILL.md
+b5cb561e3521e31a2baaa2c5a9f890143c4a1559823e56137b081cb6eb5702c8  photon-skills/spectrum/spaces-and-users.md
+9a823d98b42d59565280c23ebb1de8ea18009e190f40b7bf741c131948027678  README.md
+2c13ac7e0980aa9c880e659e7dbe6cd5ab42fcb73d1c6a478be8401c066db996  routines/photon-imessage-wake.REDACTED.json
+adb0c1ac3afdbf4bcdbd4114796fb62983d8635d0b9d6035c2c542821d938df3  routines/README.md
+c751b28213fd367ccf745686ffcb9115c7984c546e1c9d1a9f2df55b2acbf6b1  scripts/test-product.mjs
+1ecba2063434766323c646905d08947ff3e8da6d95c6aad5cb054322e0f19d53  shared/bridge-control-errors.d.mts
+bf0310830c9e4c9ccb544b23ecb7a3d134eee9194743b0074a337db4aa1be7b9  shared/bridge-control-errors.mjs
+de477c5047d35ffb8b1f9d5078e677fe723fbe94de99ac589d5a47446bfc3a0c  shared/instance-paths.d.mts
+e0b741db875aa075336c51579251b336fd8c43f77cfbf16def72df8875d99560  shared/instance-paths.mjs
+b86f75d62fb26ed0260e5b6b412473612daf41b42a2fb9627ee6db3679b6024a  skills/getting-started/SKILL.md
+bce25e73f9007dae46b34ed1d58cdb8ad643b9b09c2d8b7588c159dcd446d3a1  skills/imessage-creator/SKILL.md
+82aedbf1c029f6ea72c710c67e0d5826f49b3f25453d966b0c18398fe78e87f5  skills/imessage-feature-add/SKILL.md
+f820cadb7ecbb91e2f9bcd01c99794c87a8f522135062ab02eaa894f34963ced  skills/imessage-front-door-wake/SKILL.md
+455c47662035fb6257189e19bdf8f415f3b13ed5f92c8d2a65bc98d6fcb849fc  skills/imessage-master-orchestrator/SKILL.md
+a6c81c77ba43625f857e2d20b8149b7f9747c2eee45d428c081fe798f6f92f41  skills/live-mini-enable/SKILL.md
+229f0648353f201145298703f7387e2b6d8a7839e686831dfb07587d6817b6f5  skills/photon-demo-image-overlay/SKILL.md
+d7bba7c24e1b365516c6d390e7b9ccb9b86cf602301f566318d8a1883cab6e7a  skills/photon-image-card-delivery/SKILL.md
+11dc638bec8f1fb4f7352fa4161811bd3b42f41b2d4d68c5d2d61c99c693ceb2  skills/README.md
+60a84cd87f20dcbd3cfe67e97f748fadc1c694e3218ade0777ac351a8ebc83a0  skills/spectrum-imessage-apps-nudge/SKILL.md
+c01277ef10d392a049284113cae83984e2aa343367f6dfc02d6676bc9644898c  stt/INSTALL.md

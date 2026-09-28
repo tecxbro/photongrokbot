@@ -1,0 +1,192 @@
+$ npm ci
+exit=0
+
+added 33 packages, and audited 34 packages in 1s
+
+8 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+$ npm test
+exit=0
+
+> grokbot-live-task-cards@1.0.0 test
+> node --test tests/*.test.mjs
+
+✔ L01 deterministic simultaneous absent reads preserve both slot claims (23.108792ms)
+✔ L02 reject unusable validator undefined (1.359ms)
+✔ L02 reject unusable validator "" (0.567958ms)
+✔ L02 reject unusable validator "W/\"abc\"" (0.217916ms)
+✔ L02 reject unusable validator "abc" (0.500583ms)
+✔ L02 reject unusable validator "\"bad\nvalue\"" (0.169166ms)
+✔ L03 existing ETag conflict bounded reread preserves concurrent state (45.432167ms)
+✔ L04 timeout after commit reconciles original request identity (37.29ms)
+✔ L05 corrupt/cache/error response fails closed 304undefined (0.882541ms)
+✔ L05 corrupt/cache/error response fails closed 500undefined (0.72325ms)
+✔ L05 corrupt/cache/error response fails closed 200 (0.329167ms)
+✔ L05 corrupt/cache/error response fails closed 200{bad (0.062875ms)
+✔ L06 bounds streaming read and write; cancellation does not print secrets (6.501166ms)
+✔ L04 existing conditional write lost response is uncertain until same request replay (1.840709ms)
+✔ B01 B02 deployed artifact imports bundled SDK and serves local assets without checkout or credentials (917.3635ms)
+✔ small and large batches always settle within 620ms (0.822917ms)
+✔ initial snapshot renders the confirmed meter immediately, including fractional batches (9.309292ms)
+✔ HTTP create, read page and update round trip uses actual file store (197.794459ms)
+✔ matrix page serves live component assets and saved activity, not demo fixture (52.244917ms)
+✔ public health does not imply iMessage verification (9.800292ms)
+✔ publisher API rejects absent or view-only credentials (75.899708ms)
+✔ no button action or callback endpoint exists (51.949042ms)
+✔ private pages have no-store, no-referrer and restricted CSP (16.239541ms)
+✔ bad view token and wrong slot cannot read another card (24.063542ms)
+✔ private JSON view omits task/conversation and publisher credentials (21.880167ms)
+✔ text injection is escaped in both HTML and JSON bootstrap (52.711417ms)
+✔ reading a card cannot change revision or slot state (29.689ms)
+✔ malformed JSON and oversized requests rejected (14.301833ms)
+✔ Build Output API rewritten path is dispatched to the same router (5.311333ms)
+✔ examples are optional and have no task side effects (10.767125ms)
+✔ requested theme changes saved content at the exact same URL (62.478958ms)
+✔ loader validation accepts separate still/loop formats and rejects scripts, dimensions and invalid loops (4.928375ms)
+✔ loader replacement is owner-scoped, keeps URLs/task clocks, persists and applies to future cards (123.411125ms)
+✔ reset restores Grokbot for active/future cards but preserves terminal and archived loader history (206.723334ms)
+✔ loader writes are idempotent, reject stale revisions and cannot overwrite a newer milestone (83.302042ms)
+✔ unreferenced assets are collected; preferences and retained final cards keep theirs (87.689417ms)
+✔ old registries and cards without owners retain Grokbot; owner identity is absent from public data (57.519167ms)
+✔ loader HTTP API rejects unauthenticated/view-only writes and exposes only the selected asset (95.838ms)
+✔ loader upload accepts bounded larger assets without increasing the ordinary card body limit (37.704375ms)
+✔ runtime requires explicit replace/reset authorization; attachments and wrong actions cause no write (50.246583ms)
+✔ runtime derives owner from trusted context, applies loader and blocks cross-owner task access (79.367792ms)
+✔ personalization stays disabled when runtime authorization hooks are absent (6.82125ms)
+✔ variable lattices preserve transition position/velocity and agree across 30/60/120fps (68.008ms)
+✔ concurrent personalization cannot silently overwrite another request for the same owner (23.037625ms)
+✔ custom static and authored loop samples remain bounded through four cycles at 30/60/120fps (39.908792ms)
+✔ queue promotes the same planned step only after saved stage advancement (9.520167ms)
+✔ waiting preserves the upcoming plan; terminal states remove it (3.333375ms)
+✔ queued work labels future intent instead of claiming it has started (4.336041ms)
+✔ valid research example (11.18625ms)
+✔ valid checks example (2.64925ms)
+✔ valid stages example (3.599458ms)
+✔ valid matrix example (79.091875ms)
+✔ matrix validates the planned steps against stage identity and supported icons (8.605625ms)
+✔ legacy matrix history is readable but is never reinterpreted as a plan (10.648708ms)
+✔ reject HTML/action/style contract extensions (18.859167ms)
+✔ unknown totals produce no invented fraction (1.516292ms)
+✔ reject invalid counters and percentages (6.02125ms)
+✔ four named stages do not imply 25 percent increments (1.598375ms)
+✔ reject two active stages (1.009542ms)
+✔ reject contradictory complete-but-unsent stage state (1.586542ms)
+✔ waiting uses a blocked marker rather than active working animation (4.014667ms)
+✔ stage IDs unique; label length bounded (0.677584ms)
+✔ allow two to four stages with arbitrary valid labels (0.799208ms)
+✔ title length and control characters bounded (6.725875ms)
+✔ header assets are allowlisted, never arbitrary remote URLs (4.894875ms)
+✔ create retains opaque original conversation ID (1.396208ms)
+✔ update requires exact integer revision (2.617916ms)
+✔ empty slot registry has exactly ten names (0.168666ms)
+✔ corrupt state does not reset silently (0.083709ms)
+✔ production configuration refuses file persistence (0.351833ms)
+✔ configuration requires distinct strong secrets (0.679416ms)
+✔ no HTTP public production origin (0.696958ms)
+✔ theme defaults to dark and accepts only the two approved palettes (2.098334ms)
+✔ start sends once; milestone writes never edit or resend (260.403917ms)
+✔ update does not require a provider edit return (133.787334ms)
+✔ repeat sync does not resend already presented revision (109.050166ms)
+✔ confirmed terminal update releases slot and leaves original final page (96.105375ms)
+✔ missing original session after restart still permits saved updates without replacement send (72.261334ms)
+✔ wrong conversation rejects before a provider send or record creation (2.491875ms)
+✔ provider failure becomes unknown and is not auto retried (62.801042ms)
+✔ lost acknowledgment returns reconciliation data, not another SDK send (56.706375ms)
+✔ terminal release clears optional uptime-only target mapping (87.776083ms)
+✔ requested light palette updates the same card without a Spectrum operation (52.750333ms)
+✔ Redis REST adapter uses one atomic EVAL rather than plain SET (12.236583ms)
+✔ CAS retry resolves concurrent updates without lost slots (112.690792ms)
+✔ storage/network failure remains an error, not a fresh empty pool (1.994583ms)
+✔ upstream error body cannot be mistaken for success (0.298666ms)
+✔ conflicts exhaust a bounded retry budget (27.13675ms)
+✔ 27 of 50 is exactly 27 filled dots and 23 pending dots (0.643667ms)
+✔ large batch uses bounded proportional dot display (0.126375ms)
+✔ 74 percent is seven full segments, one 40 percent segment, two empty (0.377125ms)
+✔ stage tracker does not show an invented percent (23.219ms)
+✔ unknown progress falls back to stages instead of 0 or fake 60 percent (6.718292ms)
+✔ completed and waiting states have no working activity ring (15.989125ms)
+✔ layout contains no controls or external assets (5.044709ms)
+✔ code palette contains only approved flat navy, white and gray tokens (2.372792ms)
+✔ header disabled produces no blank image strip (0.910875ms)
+✔ text stays text, not script or HTML (4.297625ms)
+✔ concurrent creates claim at most ten distinct slots (315.560958ms)
+✔ identical create retries return one identity (91.774416ms)
+✔ conflicting create idempotency key is rejected (23.682708ms)
+✔ same task cannot get another retained card (28.672417ms)
+✔ update changes data and revision, not identity or slot (42.892459ms)
+✔ a complete record snapshot can be reused as the next update payload (32.488333ms)
+✔ stale updates cannot overwrite new progress (38.830208ms)
+✔ updates keep the original template so mounted assets remain valid (20.977625ms)
+✔ retry after an update response is lost is idempotent (51.884209ms)
+✔ presentation claims serialize same-card provider operations (49.089334ms)
+✔ confirmed milestone can be saved during an unresolved initial send (44.252834ms)
+✔ unknown outcomes retain occupancy and cannot be resent (39.684833ms)
+✔ unknown can be explicitly reconciled with actual message reference (40.29525ms)
+✔ accepted settlement retries do not create new references (28.239625ms)
+✔ wrong initial attempt is rejected and accepted send cannot be repeated (38.063625ms)
+✔ pre-migration edit claim can be reconciled without replacing original message (36.280792ms)
+✔ release requires terminal state and reconciled initial send (38.36825ms)
+✔ terminal milestone can precede reconciliation, then release without final edit (39.497708ms)
+✔ old URL remains bound to old card after slot reuse (44.315333ms)
+✔ archived and terminal cards reject late worker changes (34.050125ms)
+✔ restart preserves slots, progress and unresolved claims (15.950792ms)
+✔ only unsent, unambiguous draft can be discarded (15.353084ms)
+✔ read token is scoped to exact card and slot (8.167292ms)
+✔ public view omits internal identities and delivery/session state (6.64ms)
+✔ archive read expiry does not release active tasks by elapsed time (41.7425ms)
+✔ corrupt file rejected without overwrite (1.443333ms)
+✔ stale local lock fails closed instead of stealing ownership (18.117792ms)
+✔ whole-workflow estimates stay within weighted caps and never advance stages (2.789084ms)
+✔ only confirmed completion reaches 100, including last-stage and failed cases (1.394459ms)
+✔ workflow weights require a complete ordered positive 100-point budget (1.416667ms)
+✔ saved clock survives theme updates, pauses and reopening; estimate causes no writes (147.1345ms)
+✔ workflow budgets and confirmed stages cannot be rewritten backward (32.491333ms)
+ℹ tests 130
+ℹ suites 0
+ℹ pass 130
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1598.857541
+
+$ npm run test:skill
+exit=0
+
+> grokbot-live-task-cards@1.0.0 test:skill
+> node --test skills/dot-matrix-mini-app/assets/starter/dev/tap-core.test.mjs
+
+✔ physical progress brightness matches the measured fraction (0.74025ms)
+✔ analytic springs agree across 30, 60 and 120fps (10.040584ms)
+✔ A staggers center-out and reverses order; B starts simultaneously (1.013333ms)
+✔ repeated retargeting preserves position and velocity and remains bounded (6.753958ms)
+✔ confirmed progress fills monotonically without the former three pulses (3.650375ms)
+✔ zero-motion updates settle immediately for reduced motion (0.236542ms)
+✔ loops the measured source cycle without an added fade or endpoint hold (73.206ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 155.289125
+
+$ npm run check
+exit=0
+
+> grokbot-live-task-cards@1.0.0 check
+> node scripts/check.mjs
+
+Checked 61 JavaScript modules, four task examples, and two loader assets.
+
+$ npm run build
+exit=0
+
+> grokbot-live-task-cards@1.0.0 build
+> node scripts/build.mjs
+
+Built .vercel/output with bundled official Blob SDK and verified committed assets.

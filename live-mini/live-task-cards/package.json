@@ -18,5 +18,11 @@
     "card": "node --env-file=.env bin/live-card.mjs",
     "package:handoff": "node scripts/package-handoff.mjs",
     "verify:handoff": "node scripts/verify-handoff.mjs"
+  },
+  "dependencies": {
+    "@vercel/blob": "2.8.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
   }
 }

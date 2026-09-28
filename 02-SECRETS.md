@@ -1,56 +1,19 @@
-# Secrets — key names (bot obtains values)
+# Secrets and private configuration
 
-**Do not** ask the adopter to hand-edit `.env` as the primary path. The imported bot fills these via Photon CLI outputs, CreateRoutine results, and one phone ask when needed. **Never** commit real values into a share pack or git repo.
+The bot obtains credentials from authorized CLI/native-tool outputs and writes them privately. Never ask the user to paste project secrets, webhook bearers, publisher tokens or authorization headers into chat. Device-login verification URL and short user code are the intended human approval surface, not bridge credentials.
 
-## Bridge `.env` (from `bridge/.env.example`)
+The resolver selects a private `/workspace` instance outside code. `secrets/bridge.env` is authoritative and replaces stale shell values for its allowlisted configuration. Parsing accepts one literal key=value per line: no shell evaluation, duplicate keys, unknown keys or unresolved values. Do not source the file or print process environments.
 
-| Key | What it is | How the **bot** obtains it |
-|---|---|---|
-| `SPECTRUM_PROJECT_ID` | Spectrum Cloud project id | `photon projects create --name "grokbot" --spectrum` (or `grokbot-A`…`Z`) then `photon projects show --json` / `export PHOTON_PROJECT_ID=…` |
-| `SPECTRUM_PROJECT_SECRET` | Project secret (Basic auth for `spectrum-ts`) | Shown on create / `photon projects show`; rotate with `photon projects regenerate-secret` if needed. **Not** the Photon CLI device token (`PHOTON_TOKEN` / `photon login`). |
-| `AUTHORIZED_SENDER_ID` | Exact `message.sender.id` allowed through | Prefer number already visible after CLI login (`photon whoami`, `photon spectrum users ls`, `photon spectrum lines ls`). Else ask adopter once in E.164, e.g. `+19876543210`. Register as Spectrum **user** (`photon spectrum users add`). |
-| `GROK_ORCHESTRATOR_WEBHOOK_URL` | Front Door wake webhook URL | Bot creates Front Door routine **Photon iMessage wake**; copies URL ending `/webhook/{{PHOTON_WAKE_ROUTINE_ID}}`. |
-| `GROK_ORCHESTRATOR_WEBHOOK_KEY` | Bearer for that POST | Same routine’s webhook secret. Runtime sends `Authorization: Bearer <key>` with body `{"batchId":"..."}` only. |
+| Key | Origin |
+| --- | --- |
+| SPECTRUM_PROJECT_ID / SPECTRUM_PROJECT_SECRET | Verified selected Photon project; the project secret is not the CLI login token. |
+| AUTHORIZED_SENDER_ID | Exact authorized incoming sender identity; different from the hosted line users text. |
+| GROK_ORCHESTRATOR_WEBHOOK_URL / GROK_ORCHESTRATOR_WEBHOOK_KEY | Actual Front Door routine-create/read result; URL and bearer remain private. |
 
-```bash
-cd "{{BRIDGE_ROOT}}"   # bot-chosen path after copying pack bridge/
-cp .env.example .env
-chmod 0600 .env
-# bot writes values from CLI / routine — never paste secrets into adopter chat
-```
+Use `bun run setup-state -- write-bridge-env --json-stdin` from `bridge/`, with a bounded JSON object `{ "text": "the complete literal environment text" }` from the secure setup executor. Existing credentials are preserved; a normal rerun must not rotate or overwrite them. This placeholder describes a tool input, not a token to paste. Provider create intents/receipts are recorded before and after actual authorized operations; uncertain creation must be reconciled before another attempt.
 
-`./scripts/start-runtime.sh` loads only the keys above from `.env` and **unsets** any shell-exported Spectrum vars that could override the file.
+Explicitly enabled Live Mini uses `secrets/live-mini.env` for `PUBLIC_BASE_URL` and `PUBLISHER_TOKEN`. The host's Blob token and distinct view-signing secret stay in its authorized deployment environment. Configure through `bun run setup-state -- write-live-env --json-stdin` with the same text envelope after `authorize-live-mini --authorized`. Environment revision precedes deployment. Preserve existing keys, project, storage namespace and historical URLs.
 
-## Webhook routine secrets
+Private directories are 0700 and files 0600 (immutable migration evidence may be stricter). Symlinks, traversal, checkout state and conflicting path overrides are refused. Ignore rules prevent future accidental additions; they do not remove tracked files or invalidate already exposed credentials. If exposure is discovered, report it privately and follow an explicitly authorized incident response. Do not rotate credentials during an ordinary repair or setup retry.
 
-In `routines/photon-imessage-wake.REDACTED.json`:
-
-- `webhookUrl` → `REDACTED` until CreateRoutine
-- `webhookBearer` → `REDACTED` (bot pastes into `GROK_ORCHESTRATOR_WEBHOOK_KEY`)
-
-## Optional Live Mini host (only if deploying `live-mini/`)
-
-Set on the **Vercel** project (and optionally a local chmod-600 env file) — never in chat or this pack:
-
-| Key | Purpose |
-|---|---|
-| `PUBLIC_BASE_URL` | Stable production origin for card URLs |
-| `STORE` | `blob` (recommended) or `redis` |
-| `BLOB_READ_WRITE_TOKEN` | Private Vercel Blob read-write token |
-| `BLOB_PATHNAME` | Registry key, e.g. `live-task-cards:v1:{{SETUP_NAME}}.json` |
-| `PUBLISHER_TOKEN` | Writer secret (≥32 chars) |
-| `VIEW_SIGNING_SECRET` | Per-card read capability signing (≥32 chars) |
-
-Photon / Spectrum credentials stay in the bridge `.env` only — not on the card host.
-
-## Intentionally not included anywhere in this pack
-
-- Live `.env` values
-- Bearer / project secret / webhook key material
-- Runtime queues, inbound attachments, logs, pids
-- STT `.ort` / `tokenizer.bin` (bot downloads per `stt/INSTALL.md`)
-- `node_modules/`, `.venv-moonshine/`
-- Personal phone numbers, Apple IDs, real spaceIds
-- Live Mini Blob / publisher / view tokens and migration upload JSON
-
-Placeholders like `{{WEBHOOK_BEARER}}` are intentional — substitute only in the private `.env` on the agent VM.
+See [privacy](docs/product-repair/PRIVACY.md), [setup](skills/getting-started/SKILL.md) and [configuration example](bridge/.env.example). No production credential or private environment was inspected in this repair.

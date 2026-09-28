@@ -1,0 +1,211 @@
+import { test, expect } from "bun:test";
+import { deliveryFixture } from "./delivery-fixture.ts";
+import { batch } from "./tests/storage/fixture.ts";
+import { openStore } from "./storage.ts";
+import { submitOutbound } from "./submit.ts";
+import { createOutboundDispatcher, type DispatchSpace } from "./outbound-dispatcher.ts";
+import { buildAttachmentGroupParts } from "./reaction-option.ts";
+const space = (id: string, send: DispatchSpace["send"]): DispatchSpace => ({ id, phone: "line-1", send, getMessage: async (id) => ({ id, reply: async () => ({ id: "reply-ref" }), react: async () => ({ id: "reaction-ref" }) }), startTyping: async () => { }, stopTyping: async () => { } });
+test("O01 two dispatcher instances and overlapping ticks claim once", async () => { const f = deliveryFixture(); const other = openStore({ paths: f.paths }); try {
+    const ids = await submitOutbound(f.submission({ spaceId: f.destination.spaceId, text: "one" }), f);
+    let calls = 0;
+    const resolveSpace = async () => space(f.destination.spaceId, async () => { calls++; await Bun.sleep(15); return { id: "sent" }; });
+    const a = createOutboundDispatcher({ store: f.store, paths: f.paths, resolveSpace }), b = createOutboundDispatcher({ store: other, paths: f.paths, resolveSpace });
+    a.notify();
+    a.notify();
+    b.notify();
+    await Promise.all([a.drain(), b.drain()]);
+    expect(calls).toBe(1);
+    expect(f.store.outboundStatus(ids[0]!.id)?.state).toBe("accepted");
+    await a.stop();
+    await b.stop();
+}
+finally {
+    other.close();
+    f.cleanup();
+} });
+test("O02 timeout or throw after acceptance is unknown and never resent", async () => { for (const timeout of [true, false]) {
+    const f = deliveryFixture();
+    try {
+        const ids = await submitOutbound(f.submission({ spaceId: f.destination.spaceId, text: "one" }), f);
+        let calls = 0;
+        const worker = createOutboundDispatcher({ store: f.store, paths: f.paths, timeoutMs: 20, resolveSpace: async () => space(f.destination.spaceId, async () => { calls++; if (timeout) {
+                await Bun.sleep(60);
+                return { id: "late-ref" };
+            } throw new Error("accepted then connection lost"); }) });
+        worker.notify();
+        await worker.drain();
+        expect(f.store.outboundStatus(ids[0]!.id)?.state).toBe("unknown");
+        worker.notify();
+        await worker.drain();
+        expect(calls).toBe(1);
+        if (timeout) {
+            await Bun.sleep(70);
+            expect(f.store.getMetadata("provider-late-reference", ids[0]!.id)).toBeDefined();
+        }
+        await worker.stop();
+    }
+    finally {
+        f.cleanup();
+    }
+} });
+test("O03 settlement failure preserves sending and exact evidence; restart unknown", async () => { let reject = false; const f = deliveryFixture({ fault(point) { if (reject && point === "settle_outbound:before_commit")
+        throw new Error("disk fault"); } }); try {
+    const ids = await submitOutbound(f.submission({ spaceId: f.destination.spaceId, text: "one" }), f);
+    reject = true;
+    let sends = 0;
+    const worker = createOutboundDispatcher({ store: f.store, paths: f.paths, resolveSpace: async () => space(f.destination.spaceId, async () => { sends++; return { id: "accepted-ref" }; }) });
+    worker.notify();
+    await worker.drain();
+    expect(sends).toBe(1);
+    expect(f.store.outboundStatus(ids[0]!.id)?.state).toBe("sending");
+    expect(f.store.getMetadata("provider-unsettled-reference", ids[0]!.id)).toBeDefined();
+    reject = false;
+    f.store.recoverSending();
+    expect(f.store.outboundStatus(ids[0]!.id)?.state).toBe("unknown");
+    worker.notify();
+    await worker.drain();
+    expect(sends).toBe(1);
+    await worker.stop();
+}
+finally {
+    f.cleanup();
+} });
+test("O07 same conversation bubbles stay ordered while another conversation progresses", async () => { const f = deliveryFixture(); try {
+    await submitOutbound(f.submission({ spaceId: f.destination.spaceId, text: "first\n\nsecond" }), f);
+    const b = batch(f.store, "space-2");
+    f.store.enqueue({ spaceId: "space-2", text: "other" }, { claim: b.claim, destination: b.destination, purpose: "final", actionKey: "other" });
+    const calls: string[] = [];
+    const worker = createOutboundDispatcher({ store: f.store, paths: f.paths, resolveSpace: async (dest) => space(dest.spaceId, async (payload) => { calls.push(String(payload)); if (payload === "first")
+            throw new Error("uncertain"); return { id: "other-ref" }; }) });
+    worker.notify();
+    await worker.drain();
+    expect(calls).toEqual(["first", "other"]);
+    expect(Object.fromEntries(f.store.listOutbound().map(x => [(x as {
+            text: string;
+        }).text, x.status]))).toEqual({ first: "unknown", second: "queued", other: "accepted" });
+    await worker.stop();
+}
+finally {
+    f.cleanup();
+} });
+test("O08 preflight retries bounded and destination mismatch never sends", async () => { const f = deliveryFixture(); try {
+    const ids = await submitOutbound(f.submission({ spaceId: f.destination.spaceId, text: "one" }), f);
+    let calls = 0;
+    const worker = createOutboundDispatcher({ store: f.store, paths: f.paths, maxAttempts: 1, resolveSpace: async () => { throw new Error("read unavailable"); } });
+    worker.notify();
+    await worker.drain();
+    expect(f.store.outboundStatus(ids[0]!.id)?.state).toBe("failed");
+    const next = await submitOutbound(f.submission({ spaceId: f.destination.spaceId, text: "two" }), f);
+    const wrong = createOutboundDispatcher({ store: f.store, paths: f.paths, resolveSpace: async () => ({ ...space(f.destination.spaceId, async () => { calls++; return { id: "wrong" }; }), phone: "wrong-line" }) });
+    wrong.notify();
+    await wrong.drain();
+    expect(f.store.outboundStatus(next[0]!.id)?.state).toBe("failed");
+    expect(calls).toBe(0);
+    await worker.stop();
+    await wrong.stop();
+}
+finally {
+    f.cleanup();
+} });
+test("O06/O09 all content modalities preserve refs, control evidence stays distinct, progress does not stop typing", async () => { const f = deliveryFixture(); try {
+    const target = f.batch.messages[0]!.id;
+    const path = f.asset();
+    const inputs = [{ kind: "text", text: "progress", effect: "confetti" }, { kind: "text", text: "caption", attachmentPath: path }, { kind: "reply", targetMessageId: target, text: "reply" }, { kind: "react", targetMessageId: target, emoji: "👎" }, { kind: "poll", title: "Pick", options: ["A", "B"] }, { kind: "voice", audioPath: path }, { kind: "app", url: "https://example.test/static", live: true }, { kind: "attachment_group", attachmentPaths: [path, path, path, path, path], batchId: f.batch.batchId, cards: Array.from({ length: 5 }, (_, i) => ({ title: `Option ${i}`, ...(i === 2 ? { price: "$20" } : {}) })) }] as const;
+    let seq = 0, stops = 0;
+    const targetSpace = space(f.destination.spaceId, async () => ({ id: `message-${++seq}` }));
+    targetSpace.stopTyping = async () => { stops++; };
+    const worker = createOutboundDispatcher({ store: f.store, paths: f.paths, resolveSpace: async () => targetSpace });
+    for (const input of inputs) {
+        const ids = await submitOutbound(f.submission({ ...input, spaceId: f.destination.spaceId } as never, crypto.randomUUID(), "progress"), f);
+        worker.notify();
+        await worker.drain();
+        const status = f.store.outboundStatus(ids[0]!.id)!;
+        expect(status.state).toBe("accepted");
+        expect(status.reference?.messageId).toBeDefined();
+        if (input.kind === "attachment_group")
+            expect(status.reference?.parts).toHaveLength(5);
+    }
+    expect(stops).toBe(0);
+    const ctrl = await submitOutbound(f.submission({ kind: "typing", spaceId: f.destination.spaceId, state: "stop" }, "stop", "control"), f);
+    worker.notify();
+    await worker.drain();
+    expect(stops).toBe(1);
+    expect(f.store.outboundStatus(ctrl[0]!.id)?.state).toBe("accepted");
+    await worker.stop();
+}
+finally {
+    f.cleanup();
+} });
+test("app edit requires complete original session, accepts resolved locked path and preserves refreshed session", async () => {
+    const f = deliveryFixture();
+    try {
+        const initial = await submitOutbound(f.submission({ kind: "app", spaceId: f.destination.spaceId, url: "https://example.test/static", live: true }), f);
+        const original = { chatGuid: f.destination.spaceId, messageGuid: "original-guid", sessionId: "session-1", targetMessageGuid: "original-guid" };
+        const refreshed = { ...original, sessionId: "session-2" };
+        let sent = 0;
+        const target = { id: "original-guid", miniAppCardSession: original, reply: async () => undefined, react: async () => undefined };
+        const worker = createOutboundDispatcher({ store: f.store, paths: f.paths, resolveSpace: async () => ({ ...space(f.destination.spaceId, async (content) => { sent++; if (sent === 1)
+                    return { id: "original-guid", miniAppCardSession: original }; target.miniAppCardSession = refreshed; return undefined; }), getMessage: async () => target }) });
+        worker.notify();
+        await worker.drain();
+        expect(f.store.outboundStatus(initial[0]!.id)?.reference?.miniAppCardSession).toEqual(original);
+        const edited = await submitOutbound(f.submission({ kind: "app_update", spaceId: f.destination.spaceId, targetMessageId: "original-guid", url: "https://example.test/static", live: true }), f);
+        worker.notify();
+        await worker.drain();
+        expect(f.store.outboundStatus(edited[0]!.id)?.state).toBe("accepted");
+        expect(f.store.outboundStatus(edited[0]!.id)?.reference?.miniAppCardSession).toEqual(refreshed);
+        f.store.deleteMetadata("app-session", "original-guid");
+        const missing = await submitOutbound(f.submission({ kind: "app_update", spaceId: f.destination.spaceId, targetMessageId: "original-guid", url: "https://example.test/static" }), f);
+        worker.notify();
+        await worker.drain();
+        expect(f.store.outboundStatus(missing[0]!.id)?.state).toBe("failed");
+        expect(sent).toBe(2);
+        await worker.stop();
+    }
+    finally {
+        f.cleanup();
+    }
+});
+test("unsupported content is skipped; missing typing capability is skipped", async () => { const f = deliveryFixture(); try {
+    const content = await submitOutbound(f.submission({ kind: "poll", spaceId: f.destination.spaceId, title: "Question", options: ["A", "B"] }), f);
+    const typing = await submitOutbound(f.submission({ kind: "typing", spaceId: f.destination.spaceId, state: "start" }, "typing", "control"), f);
+    const worker = createOutboundDispatcher({ store: f.store, paths: f.paths, resolveSpace: async () => ({ id: f.destination.spaceId, phone: f.destination.lineId, getMessage: async () => undefined, send: async () => undefined }) });
+    worker.notify();
+    await worker.drain();
+    expect(f.store.outboundStatus(content[0]!.id)?.state).toBe("skipped");
+    expect(f.store.outboundStatus(typing[0]!.id)?.state).toBe("skipped");
+    await worker.stop();
+}
+finally {
+    f.cleanup();
+} });
+test("W03 preflight deadline is definite non-application and late lookup cannot send", async () => { const f = deliveryFixture(); try {
+    const ids = await submitOutbound(f.submission({ spaceId: f.destination.spaceId, text: "one" }), f);
+    let sends = 0;
+    const worker = createOutboundDispatcher({ store: f.store, paths: f.paths, timeoutMs: 15, random: () => 0, resolveSpace: async () => { await Bun.sleep(60); return space(f.destination.spaceId, async () => { sends++; return { id: "must-not-send" }; }); } });
+    worker.notify();
+    await worker.drain();
+    expect(f.store.outboundStatus(ids[0]!.id)?.state).toBe("retry_wait");
+    await worker.stop();
+    await Bun.sleep(65);
+    expect(sends).toBe(0);
+}
+finally {
+    f.cleanup();
+} });
+test("W04 stopping a hung dispatched operation is bounded and preserves uncertainty", async () => { const f = deliveryFixture(); try {
+    const ids = await submitOutbound(f.submission({ spaceId: f.destination.spaceId, text: "one" }), f);
+    let dispatched = false;
+    const worker = createOutboundDispatcher({ store: f.store, paths: f.paths, timeoutMs: 10000, resolveSpace: async () => space(f.destination.spaceId, async () => { dispatched = true; return await new Promise(() => { }); }) });
+    worker.notify();
+    for (let i = 0; i < 10 && !dispatched; i++)
+        await Bun.sleep(2);
+    const started = Date.now();
+    await worker.stop();
+    expect(Date.now() - started).toBeLessThan(1000);
+    expect(f.store.outboundStatus(ids[0]!.id)?.state).toBe("unknown");
+}
+finally {
+    f.cleanup();
+} });

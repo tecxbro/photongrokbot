@@ -8,7 +8,7 @@ export type ContentLike = {
   markdown?: string;
   content?: ContentLike;
   emoji?: string;
-  target?: { id?: string };
+  target?: { id?: string; space?: { id?: string; phone?: string } };
   title?: string;
   selected?: boolean;
   option?: { title?: string };
@@ -20,11 +20,13 @@ export type ContentLike = {
   size?: number;
   duration?: number;
   read?: () => Promise<Buffer | Uint8Array>;
+  stream?: () => Promise<ReadableStream<Uint8Array>> | ReadableStream<Uint8Array>;
 };
 
 export type ShapedInbound = {
   kind: "text" | "reaction" | "poll_vote" | "attachment" | "voice";
   text: string;
+  replyToMessageId?: string;
   emoji?: string;
   targetMessageId?: string;
   pollTitle?: string;
@@ -34,7 +36,7 @@ export type ShapedInbound = {
   attachmentName?: string;
   attachmentMimeType?: string;
   attachmentBytes?: number;
-  /** True when content has a .read() we can download. */
+  /** True when the locked SDK exposes a stream or buffered reader. */
   hasReadableBytes?: boolean;
   attachmentDuration?: number;
 };
@@ -46,7 +48,9 @@ export type ShapedInbound = {
  */
 export function shapeInboundContent(
   content: ContentLike | undefined,
+  depth = 0,
 ): ShapedInbound | null {
+  if (depth > 8) return null;
   if (!content) return null;
 
   if (content.type === "text" && typeof content.text === "string") {
@@ -56,7 +60,9 @@ export function shapeInboundContent(
     return { kind: "text", text: content.markdown };
   }
   if (content.type === "reply") {
-    return shapeInboundContent(content.content);
+    const shaped = shapeInboundContent(content.content, depth + 1);
+    if (!shaped) return null;
+    return { ...shaped, ...(typeof content.target?.id === "string" && content.target.id ? { replyToMessageId: content.target.id } : {}) };
   }
   if (content.type === "reaction") {
     const emoji =
@@ -113,11 +119,11 @@ export function shapeInboundContent(
           ? "audio/mp4"
           : "application/octet-stream";
     const size =
-      typeof content.size === "number" && content.size >= 0
+      typeof content.size === "number" && Number.isFinite(content.size) && content.size >= 0
         ? content.size
         : undefined;
     const duration =
-      typeof content.duration === "number" && content.duration >= 0
+      typeof content.duration === "number" && Number.isFinite(content.duration) && content.duration >= 0
         ? content.duration
         : undefined;
     const label = isVoice
@@ -133,7 +139,7 @@ export function shapeInboundContent(
         : {}),
       ...(size !== undefined ? { attachmentBytes: size } : {}),
       ...(duration !== undefined ? { attachmentDuration: duration } : {}),
-      hasReadableBytes: typeof content.read === "function",
+      hasReadableBytes: typeof content.stream === "function" || typeof content.read === "function",
     };
   }
   // Echo of a poll we (or someone) created — not a user reply; ignore for wake.
@@ -155,6 +161,10 @@ export function toInboundRecord(
     senderId: string;
     timestamp: string;
     receivedAt: string;
+    lineId?: string;
+    pollMessageId?: string;
+    pollOptionId?: string;
+    reactionSelected?: boolean;
   },
   extras?: {
     attachmentPath?: string;
@@ -172,6 +182,11 @@ export function toInboundRecord(
     timestamp: meta.timestamp,
     receivedAt: meta.receivedAt,
     kind: shaped.kind,
+    ...(meta.lineId ? { lineId: meta.lineId } : {}),
+    ...(shaped.replyToMessageId ? { replyToMessageId: shaped.replyToMessageId } : {}),
+    ...(meta.pollMessageId ? { pollMessageId: meta.pollMessageId } : {}),
+    ...(meta.pollOptionId ? { pollOptionId: meta.pollOptionId } : {}),
+    ...(meta.reactionSelected !== undefined ? { reactionSelected: meta.reactionSelected } : {}),
     ...(shaped.emoji ? { emoji: shaped.emoji } : {}),
     ...(shaped.targetMessageId
       ? { targetMessageId: shaped.targetMessageId }
@@ -205,4 +220,55 @@ export function toInboundRecord(
       : {}),
     ...(extras?.transcript ? { transcript: extras.transcript } : {}),
   };
+}
+
+/** Narrow the real SDK Content union at the boundary; unsupported content is never cast into a media shape. */
+export function snapshotInboundContent(value: unknown, depth = 0): ContentLike | undefined {
+  if (!value || typeof value !== 'object' || depth > 8) return;
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.type !== 'string' || !['text', 'markdown', 'reply', 'reaction', 'poll_option', 'attachment', 'voice'].includes(raw.type)) return;
+  const content: ContentLike = { type: raw.type };
+  for (const key of ['text', 'markdown', 'emoji', 'title', 'id', 'name', 'mimeType'] as const) {
+    if (raw[key] !== undefined) { if (typeof raw[key] !== 'string') return; content[key] = raw[key]; }
+  }
+  for (const key of ['size', 'duration'] as const) {
+    if (raw[key] !== undefined) { if (typeof raw[key] !== 'number' || !Number.isFinite(raw[key]) || raw[key] < 0) return; content[key] = raw[key]; }
+  }
+  if (raw.selected !== undefined) { if (typeof raw.selected !== 'boolean') return; content.selected = raw.selected; }
+  if (raw.read !== undefined) {
+    if (typeof raw.read !== 'function') return;
+    content.read = raw.read.bind(value) as () => Promise<Buffer | Uint8Array>;
+  }
+  if (raw.stream !== undefined) {
+    if (typeof raw.stream !== 'function') return;
+    content.stream = raw.stream.bind(value) as NonNullable<ContentLike['stream']>;
+  }
+  if (raw.target !== undefined) {
+    if (!raw.target || typeof raw.target !== 'object') return;
+    const target = raw.target as Record<string, unknown>;
+    if (typeof target.id !== 'string') return;
+    content.target = { id: target.id };
+    if (target.space !== undefined) {
+      if (!target.space || typeof target.space !== 'object') return;
+      const space = target.space as Record<string, unknown>;
+      if (typeof space.id !== 'string' || (space.phone !== undefined && typeof space.phone !== 'string')) return;
+      content.target.space = { id: space.id, ...(typeof space.phone === 'string' ? { phone: space.phone } : {}) };
+    }
+  }
+  if (raw.type === 'reply') {
+    const nested = snapshotInboundContent(raw.content, depth + 1); if (!nested) return; content.content = nested;
+  }
+  if (raw.type === 'poll_option') {
+    if (raw.option !== undefined) {
+      if (!raw.option || typeof raw.option !== 'object' || typeof (raw.option as Record<string, unknown>).title !== 'string') return;
+      content.option = { title: (raw.option as { title: string }).title };
+    }
+    if (raw.poll !== undefined) {
+      if (!raw.poll || typeof raw.poll !== 'object') return;
+      const poll = raw.poll as Record<string, unknown>;
+      if (typeof poll.title !== 'string') return;
+      content.poll = { type: 'poll', title: poll.title };
+    }
+  }
+  return content;
 }

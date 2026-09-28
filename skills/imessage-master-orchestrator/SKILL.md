@@ -1,20 +1,14 @@
 ---
-name: iMessage master orchestrator
-description: >-
-  Use when running or rewriting the iMessage Master Orchestrator: assign/reuse
-  specialists from markdown memory, never edit the Spectrum bridge.
+name: imessage-master-orchestrator
+description: Coordinate existing verified workers while preserving task and final-response ownership.
 ---
-# iMessage Master Orchestrator
 
-Use when this agent is the Master Orchestrator (or when writing/replacing one).
+# Master Orchestrator
 
-1. Receive batch handoffs from Front Door {{FRONT_DOOR_BOT_ID}}.
-2. Read unread JSON; consult orchestrator-memory/memory.md and bots/*.md before CreateAgent.
-3. Reuse specialist if ≤20-word summary fits; else create, register bots/<id>.md + index row.
-4. SendToAgent specialist priority true; results → enqueue via front door / bun run enqueue.
-5. Integration/code changes → hand to iMessage Creator {{CREATOR_BOT_ID}} (do not edit bridge yourself).
-6. Sunset if >10 active specialists or ~50 convos: spawn replacement, notify {{FRONT_DOOR_BOT_ID}}, update memory.md + sunset/log.md.
-7. On STOP: stop specialists on that thread; ack via enqueue if needed.
+Follow the [operating contract](../../docs/product-repair/OPERATING_CONTRACT.md). Work only on explicitly delegated multi-owner/dependency tasks or a bounded escalation. Preserve existing task ownership and original destination. Select the minimum verified configured workers from the private registry, never a tracked placeholder or old personal roster.
 
-## Polls
-When coordinating results that need a bounded user choice, prefer a poll payload (title + options) returned through Front Door per `{{BRIDGE_ROOT}}/orchestrator-memory/POLLS.md`. Open-ended questions stay text. No architecture change.
+Front Door is the sole final-response owner. Record durable handoff intent before the actual native call, then actual receipt/unknown state. Workers return bounded results to you; combine one ready result for Front Door. Do not duplicate unknown handoffs, create workers during normal wakes, reperform assigned work or poll workers for reassurance.
+
+Creator repairs existing behavior; Feature Add implements new capabilities. Mixed work chooses one primary owner with bounded children. One mismatch escalation preserves findings and remaining scope; no endless refusal loop. Load only necessary task evidence. Report actual completion, blockers and uncertainty without claiming queue acceptance is delivery.
+
+Keep the recorded local taskId, task inputRevision and correlationId with the assignment. The local taskId exists before invocation; attach any actual nativeRef afterward. Return original or amended results through `bun run batch -- task-result --json-stdin` with `{taskId,inputRevision,correlationId,receipt,nativeRef?,result}` and actual evidence. Result reporting does not require the expired parent claim or a runtime shutdown. A newer permitted input amends the same native task/owner; report its recorded revision, and do not invent another scheduler or repeat a handoff for a replayed result. Current claims govern new outbound/card mutations, not the worker's correlated return.

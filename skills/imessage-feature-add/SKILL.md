@@ -1,31 +1,14 @@
 ---
-name: iMessage feature add
-description: >-
-  Use when adding new Photon Spectrum iMessage bridge capabilities on the VM;
-  Feature Add owns new features, Creator owns bugfixes, Front Door talks to the
-  user.
+name: imessage-feature-add
+description: Add new bridge capabilities while retaining supported architecture and delivery controls.
 ---
-# iMessage Feature Add
 
-Use when this agent is Feature Add ({{FEATURE_ADD_BOT_ID}}) or when Front Door/Orchestrator assigns a **new feature** on the bridge.
+# Feature Add: new capabilities
 
-1. Scope: `{{BRIDGE_ROOT}}` only.
-2. Own **net-new capabilities**. Hand **bugfixes/regressions** to Creator `{{CREATOR_BOT_ID}}`.
-3. Extend Bun + spectrum-ts; one feature at a time unless asked otherwise.
-4. After code changes: run unit tests; restart Spectrum runtime when the new behavior must go live.
-5. Never chat with the owner in the app — return ready-to-send results to Front Door `{{FRONT_DOOR_BOT_ID}}` (direct enqueue not verified).
-6. Never put Spectrum secrets in chat; never require Supermemory until the owner enables it.
-7. Update orchestrator-memory when a new integration contract lands.
+Feature Add owns new capabilities. Creator owns repairs/regressions. Follow the [operating contract](../../docs/product-repair/OPERATING_CONTRACT.md) and [computer-access boundary](../../bridge/orchestrator-memory/CODING_AND_COMPUTER_ACCESS.md).
 
-## Polls
-Bridge poll enqueue/inbound is live. Usage policy for all bots: `{{BRIDGE_ROOT}}/orchestrator-memory/POLLS.md` (bounded selection only). Do not change Step 2/3 owners when documenting or extending poll helpers.
+Preserve existing ownership. Mixed work has one primary owner and explicit bounded children; do not bounce refusals. Inspect actual locked SDK source and official documentation before using unknown behavior. Implement code, meaningful tests and existing instruction updates together. Retain one Spectrum connection and every existing messaging capability.
 
-## Reactions & effects
-Outbound tapbacks (`--react`) and message effects (`--effect`) are live. Policy: `{{BRIDGE_ROOT}}/orchestrator-memory/REACTIONS_EFFECTS.md`. First-setup Confetti helper: `src/setup-confetti.ts`. Do not change Step 2/3 owners.
+Return ready results and exact local/provider/device evidence to Front Door, the sole final-response owner. Normal work does not grant deployment, credential rotation or another recipient. Keep claims, operation identities and unknown-result reconciliation intact.
 
-## Coding + computer access
-Contract: `{{BRIDGE_ROOT}}/orchestrator-memory/CODING_AND_COMPUTER_ACCESS.md` (general — not incident-specific).
-- **Coding-specific tasks** (repo/bridge implementation, PRs, non-trivial code edits): use **Cursor on the web** (cloud agent / Origin). Do **not** drive Cursor on the owner's computer.
-- **Never access the owner's registered computers** (`machineId`, CopyFromBox/CopyToBox involving their disk, local tools on their machine) unless he **explicitly asks** in that turn.
-- Shared agent box under `{{BRIDGE_ROOT}}` (runtime, markers, tests, restarts) is allowed for feature landings; that is not the owner's personal computer.
-
+Keep the recorded local taskId, task inputRevision and correlationId with the assignment. The local taskId exists before invocation; attach any actual nativeRef afterward. Return original or amended results through `bun run batch -- task-result --json-stdin` with `{taskId,inputRevision,correlationId,receipt,nativeRef?,result}` and actual evidence. Result reporting does not require the expired parent claim or a runtime shutdown. A newer permitted input amends the same native task/owner; report its recorded revision, and do not invent another scheduler or repeat a handoff for a replayed result. Current claims govern new outbound/card mutations, not the worker's correlated return.

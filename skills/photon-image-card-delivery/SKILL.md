@@ -1,144 +1,26 @@
 ---
-name: Photon Image Card Delivery
-description: >-
-  Use when delivering Photon demo image cards over iMessage via the bridge
-  enqueue/runtime path ({{BRIDGE_ROOT}}). Ensures separate PNGs are sent as Spectrum group() batches
-  (iMessage sendMultipart), not as one-by-one attachment sends.
+name: photon-image-card-delivery
+description: Deliver complete option cards through one canonical grouped operation.
 ---
 
-# Photon Image Card Delivery
+# Option card delivery
 
-## Rule
+Follow the [operating contract](../../docs/product-repair/OPERATING_CONTRACT.md). Image Cards creates assets and returns them to Front Door. Front Door is the sole final-response owner. Do not open another Spectrum client or send each image while generating.
 
-Generate separate card PNGs (overlay skill unchanged). **Wait until the batch is complete**, then enqueue **one** grouped send.
+For a visual choice with N >= 4 options, stage every card privately and submit all N in one attachment_group, including five/seven. Preserve parallel paths and cards metadata: optionId, title, details/caption, known price/priceQualifier, direct URL. Missing price stays absent. Do not pad a smaller set or split a possibly accepted group.
 
-## Enqueue (preferred)
+The strict cards-ready command, from bridge/, is:
 
-```bash
-bun run enqueue -- --space-id "<spaceId>" \
-  --attachment /abs/card-1.png \
-  --attachment /abs/card-2.png \
-  --attachment /abs/card-3.png \
-  --attachment /abs/card-4.png
+```sh
+bun run enqueue -- --cards-ready --json-stdin
 ```
 
-Or:
+Input is `{ "submission": <canonical Submission>, "expectedCount": N, "revision": "v1", "readyAt": "ISO timestamp" }`. Submission uses purpose final, the current fenced claim and consumed inputRevision, recorded option-set batch/destination and actionKey `cards:<batchId>:<revision>`. Its payload is attachment_group with the same batchId, all private attachmentPaths and aligned cards. See the [tested envelope](../../docs/product-repair/examples/cards-ready.json); replace every template identifier from actual state, never by guessing.
 
-```ts
-await enqueueOutbound({
-  kind: "attachment_group",
-  spaceId,
-  attachmentPaths: [p1, p2, p3, p4],
-});
-```
+The command records readiness; it does not prove delivery. Foreground submission and watchdog reuse this exact key/payload, source work revision and option-set revision. The bridge derives the trusted scope; never use a renewed claim generation as a new option set. A duplicate can refresh the current valid claim/ready time, not change the result. Do not create handwritten marker files or infer acceptance by matching filenames. After send, canonical storage retains actual provider parent/part references for option resolution.
 
-## What the runtime does
+Any added emoji on a known option returns the exact existing details, known price and direct URL without asking whether details are wanted or using sentiment routing. One ambiguous target gets one clarification. Reactions do not authorize purchases/bookings. Preserve all unknown provider outcomes until reconciled; no new group identity to test delivery.
 
-```ts
-await space.send(group(
-  attachment(p1),
-  attachment(p2),
-  attachment(p3),
-  attachment(p4),
-));
-```
+Queue acceptance, provider acceptance and physical Photos-style stack observation are separate. If asset generation fails, return verified text/links and its limitation to Front Door; never mark incomplete assets ready.
 
-Installed Spectrum iMessage provider maps `group` of attachments → upload each → one `messages.sendMultipart(chat.guid, parts)` with `attachmentGuid` parts (not local paths).
-
-## Do not
-
-- Enqueue/send each image as it finishes
-- `Promise.all` of individual attachment sends
-- `space.send(attachment, attachment, …)` without `group()` (N separate messages)
-- Collage multiple cards into one PNG to fake a stack
-- Open a second native iMessage SDK connection alongside Spectrum
-
-## Batch sizes
-
-| Cards | Sends |
-|------:|-------|
-| 4–N | **1 group of all N** (the owner: 4 or more together) |
-| only if Spectrum rejects a large group | split into chunks of **≥4** each — never 4+1 / lone leftover |
-
-Do **not** send 5 as “group of 4 + single.”
-
-## Verify
-
-Queue `kind: "attachment_group"` with **all** paths on one item. After send, confirm the Photos-style stack in iMessage — enqueue/API success alone is not enough.
-
-## Cards-ready callback (mandatory — do not skip)
-
-Front Door releases after handoff; **you must not leave PNGs on disk with no enqueue**.
-
-When the full batch is complete (≥4, all options):
-
-1. Write marker (atomic JSON). The `cards[]` array is mandatory and aligned 1:1 with `attachmentPaths`; each typed entry has `nn`, `slug`, `title`, exactly one `rent` or `price`, `url`, and `caption`:
-
-```json
-{
-  "batchId": "<batchId>",
-  "spaceId": "<spaceId>",
-  "attachmentPaths": [
-    "{{BRIDGE_ROOT}}/data/outbound-assets/<batchId>-01-<slug-1>.png",
-    "{{BRIDGE_ROOT}}/data/outbound-assets/<batchId>-02-<slug-2>.png",
-    "{{BRIDGE_ROOT}}/data/outbound-assets/<batchId>-03-<slug-3>.png",
-    "{{BRIDGE_ROOT}}/data/outbound-assets/<batchId>-04-<slug-4>.png",
-    "{{BRIDGE_ROOT}}/data/outbound-assets/<batchId>-05-<slug-5>.png"
-  ],
-  "cards": [
-    {
-      "nn": 1,
-      "slug": "<slug-1>",
-      "title": "<title-1>",
-      "price": "<price-1>",
-      "url": "<url-1>",
-      "caption": "<caption-1>"
-    },
-    {
-      "nn": 2,
-      "slug": "<slug-2>",
-      "title": "<title-2>",
-      "price": "<price-2>",
-      "url": "<url-2>",
-      "caption": "<caption-2>"
-    },
-    {
-      "nn": 3,
-      "slug": "<slug-3>",
-      "title": "<title-3>",
-      "price": "<price-3>",
-      "url": "<url-3>",
-      "caption": "<caption-3>"
-    },
-    {
-      "nn": 4,
-      "slug": "<slug-4>",
-      "title": "<title-4>",
-      "price": "<price-4>",
-      "url": "<url-4>",
-      "caption": "<caption-4>"
-    },
-    {
-      "nn": 5,
-      "slug": "<slug-5>",
-      "title": "<title-5>",
-      "price": "<price-5>",
-      "url": "<url-5>",
-      "caption": "<caption-5>"
-    }
-  ],
-  "expectedCount": 5,
-  "readyAt": "<ISO-8601>",
-  "source": "{{IMAGE_CARDS_BOT_ID}}",
-  "enqueueOwner": "front-door"
-}
-```
-
-Path: `{{BRIDGE_ROOT}}/data/cards-ready/<batchId>.json`
-
-2. **WakeParent / `SendToAgent` Front Door `{{FRONT_DOOR_BOT_ID}}`** (priority true) with RESULT: batchId, spaceId, paths, expectedCount. Ask FD to final-enqueue one `attachment_group` of **all** paths.
-
-3. **Do not** `bun run enqueue` yourself (specialist direct-enqueue not verified). Runtime watchdog will final-enqueue from the marker if FD wake is delayed — that is the durable backup, not a license to self-send.
-
-4. Naming: `data/outbound-assets/<batchId>-NN-slug.png` with `NN` = `01`, `02`, … matching `expectedCount`. Image Cards must include `cards[]`, aligned to `attachmentPaths` order, so part order matches the attachment paths. The bridge attaches `partIndex` mapping after send for Tapback resolution.
-
+Keep the recorded local taskId, task inputRevision and correlationId with the assignment. The local taskId exists before invocation; attach any actual nativeRef afterward. Return original or amended results through `bun run batch -- task-result --json-stdin` with `{taskId,inputRevision,correlationId,receipt,nativeRef?,result}` and actual evidence. Result reporting does not require the expired parent claim or a runtime shutdown. A newer permitted input amends the same native task/owner; report its recorded revision, and do not invent another scheduler or repeat a handoff for a replayed result. Current claims govern new outbound/card mutations, not the worker's correlated return.

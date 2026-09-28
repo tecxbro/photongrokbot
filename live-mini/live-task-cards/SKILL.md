@@ -23,27 +23,9 @@ V1 is read-only. No approval, purchase, cancellation, retry or other button. Ope
 
 ## What to invoke
 
-Use the installed existing-runtime hook from `examples/existing-runtime.mjs`, registered through that runtime's already-validated invocation mechanism. Its returned object has:
+For this product use only the [canonical VM helper](../runtime/README.md), with a durable original task binding and current claim. It coordinates host presentation and the bridge outbox. Do not install a separate Spectrum sender or use raw app URLs to bypass that ledger. Front Door is the sole final-response owner. Ordinary progress is same-URL hosted JSON.
 
-```js
-await liveCards.start(createRequest, originalAuthorizedSpace);
-await liveCards.update(cardId, updateRequest, originalAuthorizedSpace);
-await liveCards.sync(cardId, originalAuthorizedSpace);
-```
-
-These are real exports in this package, not pre-existing Grokbot commands. Installation wires them once. They use the existing Spectrum `app` builder for the initial send and do not start a second messaging connection.
-
-For page publishing/inspection only, the included CLI is:
-
-```sh
-node --env-file=.env bin/live-card.mjs create examples/research.json
-node --env-file=.env bin/live-card.mjs get <card-id>
-node --env-file=.env bin/live-card.mjs update <card-id> update.json
-node --env-file=.env bin/live-card.mjs slots
-node --env-file=.env bin/live-card.mjs doctor
-```
-
-The CLI does not send the iMessage bubble. Use the runtime hook for the initial send. Do not invent enqueue flags or assume page publication is message delivery.
+Deployment requires explicit enablement; a connected account alone is not authority. Reuse existing host/resources/keys. Commands, required context and retry journals are in the helper guide. A standalone package adapter is reference code, not a parallel production route.
 
 ## Selecting the template
 
@@ -93,7 +75,7 @@ Update at meaningful milestones: a new stage, a useful count increase, a blocker
 
 The runtime helper saves state. The hosted page refreshes while visible. Do not send another bubble for each milestone, rewrite source files, commit code or redeploy just to change progress.
 
-Keep the original URL byte-for-byte unchanged, including its path and query. Updating a URL means changing the content served there, not changing the URL string: C becomes D at the same address. Never append refresh/version parameters or call Spectrum `send`/`edit` for a content update. The only Spectrum send is the initial card creation; `liveCards.update` writes the hosted JSON. Explicit design changes deploy to the same host and route.
+Keep the original URL byte-for-byte unchanged, including its path and query. Updating a URL means changing the content served there, not changing the URL string: C becomes D at the same address. Never append refresh/version parameters or call Spectrum `send`/`edit` for a content update. The only Spectrum send is the initial card creation; `updateMilestone` writes the hosted JSON. Explicit design changes deploy to the same host and route.
 
 ## Complete and free the slot
 
@@ -105,7 +87,7 @@ If the task needs an additional ordinary reply or final artifact, use the existi
 
 ## Hosting and local server cleanup
 
-Use the existing authorized Vercel deployment for persistent card URLs. Keep each bubble's exact URL stable; update the record or publish an explicitly requested design change at that address. A local preview server or tunnel is temporary development tooling, not the completed card's host.
+Use the explicitly authorized existing Vercel deployment for persistent card URLs. Keep each bubble's exact URL stable; update the record or publish an explicitly requested design change at that address. A local preview server or tunnel is temporary development tooling, not the completed card's host.
 
 When starting temporary tooling, record its working directory, command, port, process ID and terminal/tool session handle in the task context. Once the task and its checks are finished, stop only the preview/dev servers and tunnels started for that task. If the user says to keep a preview open or not to stop it yet, defer cleanup until that review is finished or the user releases it. Do not stop a shared server still needed by another active task.
 
