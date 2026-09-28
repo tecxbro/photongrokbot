@@ -274,6 +274,8 @@ For each row, create the agent, paste `PROFILE_TEMPLATE.md` as the profile body 
 | `agents/feature-add/` | `imessage-feature-add` |
 | `agents/image-cards/` | `photon-demo-image-overlay`, `photon-image-card-delivery` |
 | `agents/app-sheet/` | `spectrum-imessage-apps-nudge` |
+| `agents/live-mini/` (optional 7th — **only** when Step 6b auto-enable runs) | `live-mini-enable` + `live-mini/live-task-cards/SKILL.md` |
+
 
 **Which bots to create depends on who you are:**
 
@@ -283,11 +285,17 @@ For each row, create the agent, paste `PROFILE_TEMPLATE.md` as the profile body 
 **After each create, record and substitute:**
 
 1. Real `serverId` / agent UUID for that bot.
-2. Replace placeholders everywhere they appear: `{{FRONT_DOOR_BOT_ID}}`, `{{MASTER_ORCHESTRATOR_BOT_ID}}`, `{{CREATOR_BOT_ID}}`, `{{FEATURE_ADD_BOT_ID}}`, `{{IMAGE_CARDS_BOT_ID}}`, `{{APP_SHEET_BOT_ID}}`, matching `{{*_AGENT_UUID}}`, and `{{BRIDGE_ROOT}}` / `{{PACK_ROOT}}`.
+2. Replace placeholders everywhere they appear: `{{FRONT_DOOR_BOT_ID}}`, `{{MASTER_ORCHESTRATOR_BOT_ID}}`, `{{CREATOR_BOT_ID}}`, `{{FEATURE_ADD_BOT_ID}}`, `{{IMAGE_CARDS_BOT_ID}}`, `{{APP_SHEET_BOT_ID}}` (and `{{LIVE_MINI_BOT_ID}}` when Step 6b runs), matching `{{*_AGENT_UUID}}`, and `{{BRIDGE_ROOT}}` / `{{PACK_ROOT}}`.
 3. Write bot cards: `bridge/orchestrator-memory/bots/<serverId>.md` from `_TEMPLATE.md` + the matching `ROLE_*.md`; update `bridge/orchestrator-memory/memory.md` with the live roster.
 4. Prefer creating **Front Door first** when you are bootstrap, then Master Orchestrator, then Creator / Feature Add / Image Cards / App Sheet.
 
-Live Mini (`agents/live-mini/` + `live-mini/`) is optional — skip unless the adopter asks for it.
+### Step 6b — Live Mini auto-enable when Vercel is ready
+
+After the core six bots exist: if the **Vercel connector is already available** for this setup (authorized / list projects works), run `skills/live-mini-enable` **deploy-all** (create Live Mini bot + deploy `live-mini/live-task-cards` host with `STORE=blob` + Blob + generated secrets) **without** a questionnaire. Do **not** gate on Spectrum Apps — you cannot detect whether it is installed; mention it only in brief human-facing copy after deploy if useful. Brief them on what you deployed.
+
+If Vercel is **not** connected, **skip silently** during getting-started — do not block hi proof / first-text confetti. Live Mini is **not** required for first-text confetti.
+
+When auto-enable runs, Live Mini is an optional **seventh** sibling (see table note below). Otherwise leave `{{LIVE_MINI_BOT_ID}}` unsubstituted until a live-mini-fit request later triggers the offer path in `live-mini-enable` / `spectrum-imessage-apps-nudge`.
 
 ### Handoff — when bootstrap created Front Door (SendToAgent)
 

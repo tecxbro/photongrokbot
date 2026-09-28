@@ -96,7 +96,7 @@ Verify `$AGENT_SKILLS_DIR/photon-cli/SKILL.md`, read that installed skill, and t
 | Live Mini (optional) | `{{LIVE_MINI_BOT_ID}}` | `{{LIVE_MINI_AGENT_UUID}}` | `agents/live-mini/` + `live-mini/` |
 | Wake routine | — | `{{PHOTON_WAKE_ROUTINE_ID}}` | `routines/` |
 
-**Live Mini** is optional. Core path is six agents + bridge + mandatory STT.
+**Live Mini** auto-deploys when the **Vercel connector** is already ready (`skills/live-mini-enable` deploy-all, no questionnaire); otherwise it is offered on fitting live-mini requests (human-facing Spectrum Apps + Vercel pitch — never a Spectrum install machine check). Core path is six agents + bridge + mandatory STT; Live Mini is an optional seventh when auto-enable runs.
 
 ---
 
@@ -119,7 +119,8 @@ skills/imessage-front-door-wake/  (+ other workflow skills)
 agents/{front-door,…}/
 routines/photon-imessage-wake.REDACTED.json
 stt/INSTALL.md               ← mandatory Moonshine download (bot runs)
-live-mini/                   ← OPTIONAL rebuild host
+live-mini/                   ← live-task-cards host (auto-deploy when Vercel ready)
+skills/live-mini-enable/     ← deploy-all / offer path for Live Mini
 ```
 
 ## Intentionally omitted

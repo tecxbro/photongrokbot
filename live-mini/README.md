@@ -51,6 +51,15 @@ live-mini/
     live-card-milestones.mjs  ← optional VM publisher + one-shot send helper
 ```
 
+
+## Bot deploy-all (when Vercel authorized)
+
+When the adopter’s Grok Bot **Vercel connector** is authorized, the bot follows `skills/live-mini-enable` and **deploys without asking** — defaults `STORE=blob`, generates publisher/view secrets via the connector (never pastes into chat), creates/reuses a project such as `live-task-cards` / `grokbot-live-cards`, sets `PUBLIC_BASE_URL` after deploy, creates Live Mini Bot if missing, smokes `/health` + doctor. See `migration/DEPLOY-NOTES.md`.
+
+Do **not** gate deploy-all on Spectrum Apps install (undetectable). Spectrum Apps appears only in human-facing pitch/guide text when offering live cards or after deploy.
+
+If Vercel is not connected: skip silently during getting-started; on a live-mini-fit request, offer once (Spectrum Apps + Vercel), then guide+deploy-all if they say yes.
+
 ## Quick start (local preview, no accounts)
 
 ```bash
@@ -62,12 +71,14 @@ npm run preview  # http://127.0.0.1:3000
 
 Authenticated local publish: `npm run init` then `npm run dev` (creates local `.env` — never commit).
 
-## Production rebuild (adopter)
+## Production rebuild
 
-1. Deploy `live-task-cards/` to your Vercel project per `INSTALL.md` + `migration/DEPLOY-NOTES.md` (`STORE=blob`, private Blob, distinct publisher/view secrets).
+**Preferred:** bot **deploy-all** via `skills/live-mini-enable` when Vercel is authorized (no human questionnaire). Manual path if needed:
+
+1. Deploy `live-task-cards/` to your Vercel project per `INSTALL.md` + `migration/DEPLOY-NOTES.md` (`STORE=blob`, private Blob, distinct publisher/view secrets) — prefer setting env via the Vercel connector, not chat pastes.
 2. Wire `examples/existing-runtime.mjs` (or `runtime/live-card-milestones.mjs`) into `{{BRIDGE_ROOT}}`.
-3. Optionally CreateAgent from `../agents/live-mini/PROFILE_TEMPLATE.md`; substitute `{{LIVE_MINI_BOT_ID}}`.
-4. Smoke: one live send + two same-URL JSON updates; no Spectrum `edit` for ordinary milestones.
+3. CreateAgent from `../agents/live-mini/PROFILE_TEMPLATE.md` if missing; substitute `{{LIVE_MINI_BOT_ID}}`.
+4. Smoke: `/health` + doctor; one live send + two same-URL JSON updates; no Spectrum `edit` for ordinary milestones.
 
 ## Intentionally excluded here
 

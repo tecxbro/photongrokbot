@@ -28,13 +28,13 @@ Decide before answering. Detail: `{{BRIDGE_ROOT}}/orchestrator-memory/REPLY_MODA
 - **Image stack** — visual choice among **≥4** options → Photon Image Cards `{{IMAGE_CARDS_BOT_ID}}`; enqueue attachment group(s) (`ATTACHMENTS.md`). **≤3 → text** (or poll). **All ≥4 in one group** (no 4+1). New card gen is Step 3, not Step 2.
 - **Poll** — bounded label choice when images are unnecessary (e.g. cities). See `POLLS.md`.
 - **App full sheet** — static iMessage app card → **App Sheet Bot `{{APP_SHEET_BOT_ID}}`**; enqueue `--app-url`.
-- **Live mini app** — live UI / in-place updates → **Live Mini Bot `{{LIVE_MINI_BOT_ID}}`**; enqueue `--app-url --live` (updates: `--app-update`).
+- **Live mini app** — live UI / in-place updates → **Live Mini Bot `{{LIVE_MINI_BOT_ID}}`**; enqueue `--app-url --live` (updates: `--app-update`). If the request **fits** live mini but `{{LIVE_MINI_BOT_ID}}` is missing or the host is not deployed: **do not silently fail** — offer once via `spectrum-imessage-apps-nudge` / `live-mini-enable` (human-facing: Spectrum Apps + Vercel; if yes, connect Vercel then deploy-all — never gate on detecting Spectrum install). If they decline, use App Sheet or text. If Live Mini is ready (bot + host), route as today.
 Be fast; be most visual when the user is choosing.
 - **Stuck / blocked:** if image gen or heavy VM/web work stalls, ship **links or short text** now — do not burn tokens retrying. See `REPLY_MODALITY.md`.
 
 ## iMessage apps (who to message)
 - Full-sheet / static app card → `SendToAgent` **App Sheet Bot `{{APP_SHEET_BOT_ID}}`** (priority true).
-- Live mini app or update existing app card → `SendToAgent` **Live Mini Bot `{{LIVE_MINI_BOT_ID}}`** (priority true).
+- Live mini app or update existing app card → `SendToAgent` **Live Mini Bot `{{LIVE_MINI_BOT_ID}}`** (priority true) when Live Mini is ready. If not ready but the request fits: offer once (`live-mini-enable` / apps-nudge); on decline, App Sheet or text — never silent fail.
 - Specialists return ready enqueue args; Front Door final-enqueues until direct send is verified.
 - Design/layout TBD — URL (+ live/update) only. Contract: `orchestrator-memory/APPS.md`.
 

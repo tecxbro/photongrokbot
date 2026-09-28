@@ -6,6 +6,20 @@ Teaching notes distilled from a successful full-host + matrix deploy. **No produ
 
 Deploy the handoff source so the host accepts all four templates (`dots|segments|stages|matrix`) with `STORE=blob` and strong-ETag CAS. Preserve any existing Blob registry pathname; do **not** wipe cards/slots. Do not touch Redis/Upstash unless you intentionally run `STORE=redis`.
 
+
+## Bot deploy-all
+
+When Vercel is **authorized** for this Grok Bot setup (connector works / list projects succeeds), the bot **deploys without asking** the human which store, which env keys, or to paste tokens. Defaults:
+
+- `STORE=blob` (do not quiz Redis vs blob)
+- Generate `PUBLISHER_TOKEN` + `VIEW_SIGNING_SECRET`; set via Vercel connector
+- Create/reuse project e.g. `live-task-cards` or `grokbot-live-cards`
+- Private Blob + `BLOB_PATHNAME`; set `PUBLIC_BASE_URL` to the production host after deploy
+- Create Live Mini Bot if missing; wire publisher into bridge-accessible VM env (not chat)
+- Smoke `GET /health` and authenticated `GET /api/doctor`
+
+Skill: `skills/live-mini-enable`. Never paste Blob/publisher/view secrets into chat. Never gate on detecting Spectrum Apps install.
+
 ## Recommended path
 
 1. Configure the authorized Vercel project (framework none / Other; Node 22; build `npm run build`).

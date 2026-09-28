@@ -29,7 +29,7 @@ Exporting one Grok bot profile without the bridge, webhook, memory contracts, si
 | Bot cards + `memory.md` | Fill real serverIds after creation |
 | First live proof (**last**) | Ready checklist passes → bot gives hosted line number → adopter texts **anything** (suggest `hi`) → “it’s grokbot here” + **confetti** once |
 | Domain specialists | Optional — create your own later. **Not** shipped. |
-| Live Mini host | Optional — deploy `live-mini/live-task-cards/` only if wanted |
+| Live Mini host | Auto-deploy via `live-mini-enable` when Vercel connected; else offer on fit (Spectrum Apps pitch is human-facing only) |
 
 ## Explicitly excluded from this pack
 
@@ -49,7 +49,7 @@ Exporting one Grok bot profile without the bridge, webhook, memory contracts, si
 - **Bot writes `.env` webhook keys** — never instruct the human to paste webhook URL, bearer, Authorization header, or POST body.
 - **Bot does setup** — adopter-facing docs keep the proof to one action: text the bot’s hosted line (any first message; suggest `hi`) **only after** the ready checklist.
 - **STT mandatory** — Moonshine download is part of getting-started; weights stay out of the tarball.
-- **Live Mini optional** — pack ships scrubbed `live-mini/` source + `agents/live-mini/` templates. Static App Sheet remains the default shipped specialist for `--app-url`.
+- **Live Mini auto-deploy when Vercel ready** — pack ships scrubbed `live-mini/` source + `agents/live-mini/` + `skills/live-mini-enable` (deploy-all, no questionnaire; Spectrum Apps only in pitch text). Static App Sheet remains the default shipped specialist for static `--app-url`.
 - **Personal specialists omitted** — adopters/bots create their own; `_TEMPLATE.md` + generic `memory.md` remain.
 - **SoT for memory** — `bridge/orchestrator-memory/` (top-level folder is a pointer).
 - **Placeholders** — `{{FRONT_DOOR_BOT_ID}}`, `{{BRIDGE_ROOT}}`, `{{PHOTON_WAKE_ROUTINE_ID}}`, etc., used everywhere instead of the original deployment’s ids.

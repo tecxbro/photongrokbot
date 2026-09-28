@@ -2,6 +2,13 @@
 
 **Status:** retired upstream as an active bot; included here as a **reusable template** so adopters can recreate the role when rebuilding the live-task-cards host.
 
+
+## Deploy-all when Vercel is connected
+
+If the Grok Bot **Vercel connector** is already authorized for this setup, the bot runs **deploy-all** via `skills/live-mini-enable` — create this agent if missing, deploy `live-mini/live-task-cards` with `STORE=blob` + Blob + generated secrets, wire publisher, smoke `/health` + doctor — **without** a human questionnaire (no Redis-vs-blob quiz, no paste-env asks). Do **not** gate on detecting Spectrum Apps install (you cannot know); mention Spectrum Apps only in brief human-facing copy.
+
+If Vercel is not connected and a request fits live mini: offer once (Spectrum Apps + Vercel pitch); on yes, guide Vercel connect then deploy-all; on no, App Sheet or text.
+
 ## How to create
 
 1. Deploy / preview the host under `../../live-mini/live-task-cards/` first (or you will have nothing to point `--app-url` at).

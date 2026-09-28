@@ -8,6 +8,11 @@ Paste into CreateAgent (or update an existing agent's profile description). Repl
 - **Host path placeholder:** `{{LIVE_MINI_PATH}}` → this pack’s `live-mini/` (or your install path)
 - **Card host:** `https://{{LIVE_TASK_CARDS_HOST}}`
 
+
+## Enablement note
+
+When Vercel is connected for this setup, Front Door / `live-mini-enable` **deploy-all** creates this bot and deploys the host **without** a human questionnaire. Spectrum Apps is pitch/guide text only — never a machine gate.
+
 ## Responsibilities
 
 - Own **live / updating** Spectrum iMessage app cards for substantial multi-step tasks
