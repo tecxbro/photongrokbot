@@ -1,16 +1,15 @@
 # Coordinator checkpoint
 
 Packet root: /Users/darshan/Downloads/photongrokbot-product-repair
-Clone: repo (main, clean audit base). Integration: 00-integration, repair/product-integrated. Base: 8c710413c99a6fd8022727326ca682d267393953. F0 is the commit containing this record; F1/F2/F3 pending. Desktop create_worktree returned Not a git repository from packet task cwd; manual linked Git worktrees are used as fallback. No attached or existing worktree was replaced.
+Clone: repo (main, clean base 8c710413c99a6fd8022727326ca682d267393953).
+Integration: 00-integration, repair/product-integrated. Requested remote identity: tecxbro/photongrokbot. No remote mutations.
 
-Next: start 01/02/03 from F0, then 04 as capacity permits. Coordinator owns types/runtime/packages/test orchestration. No agent touches runtime.ts. Native provider/device/VM gates remain unexecuted by scope. No live secrets, sends, deployment, pushes or remote mutations permitted.
+F0: 91dbcac. F1: commit containing this checkpoint. First wave integrated through 520dd0a: lane01 ceef54a, lane02 05bec25/895ac6b/520dd0a, lane03 128c2e5, lane04 8bb2d0e. Coordinator shared contracts/loops/scripts are also integrated. F2 and F3 pending. F1 is a dependency checkpoint, not release approval.
 
-## Active wave checkpoint
+Managed desktop worktree creation failed Not a git repository from packet cwd; verified manual linked worktrees are the fallback. Worktree parent is the packet root outside tracked source. Existing lanes: 01-private (private_setup, clean completed),02-state (state, clean completed),03-media (media, clean completed),04-host (coordinator, completed). Next create 05-inbound and06-delivery from this F1 commit. No worker edits runtime.ts; coordinator assembles it once. State agent remains API support until reassigned07 afterF2. Instructions08 starts afterF2; independent09 afterF3.
 
-F0 91dbcac; shared toolchain/types/paths updates 4008a20,96af5a9,b386050. Integration HEAD 8bb2d0e after host lane81573d4. Worktrees under packet root: 01-private (private_setup),02-state (state),03-media (media),04-host (coordinator lane04, commit81573d4 integrated). All first-wave lanes are active except04, which has host unit/build verification. Next: finish/integrate01/02/03 into F1; then create fresh05/06 worktrees from F1. Do not start downstream from audit base.
+Fresh integrated F1 check:115 tests passed,550 assertions,14 files, exit0; evidence/f1-tests.txt. Covers all first-wave tests plus lock/loops/activity. Typecheck exit2 has only16 legacy runtime/enqueue/test references to removed JSON mutation APIs; those are assigned00/06 next. Do not restore unsafe compatibility writers. Original baseline failures and changed expectations are recorded in BASELINE.md. Host lane04:130 tests plus7 skill tests/build/check passed on development Node23; final targetNode22 still required.
 
-Coordinator-owned changes pending commit: types UnreadBatch.media; scripts/test-product.mjs test harness (not executed until all code imports integrated). Every test file runs in its own explicit synthetic instance, max3 concurrent child suites. Original test failures tracked in BASELINE.md. Missing old /tmp PNG fixture must be replaced by lane06, not assumed present.
+Tool executables: /Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun (1.4.2), same directory node (22.23.3). TypeScript6.0.3, spectrum-ts12.8.0, @vercel/blob2.8.0. Bun SQLite3.54.0 Apple source verified locally; actual VM remains an external gate.
 
-Selected tools: /Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun 1.4.2; Node23.11 currently; TypeScript6.0.3. Need final Node22 target test. Host baseline115 tests passed; repaired host130+7 skill tests/build/check pass (isolated lane04 evidence).
-
-Remaining: runtime sole integration; outbound/media/inbound pipelines; helpers/instructions F2/F3; independent reviewer09; frozen full checks; exact closure/results/changed-file/runbook artifacts. No claim of product completion.
+Next concrete work:05 inbound acceptance/wakes and06 authorization/dispatch/card mapping in isolated F1 worktrees; coordinator runtime wiring + integration tests. Then F2:07 helper and08 operating instructions. F3:independent09 review, exact finding table/results/changed files, full frozen regression on testedSHA and deployment/rollback runbook. Preserve one Spectrum connection, six roles, mandatory initial Moonshine, first greeting+confetti and all modalities. No live VM, secrets, iMessages, deployment, rotation, Marketplace or remote push/merge.

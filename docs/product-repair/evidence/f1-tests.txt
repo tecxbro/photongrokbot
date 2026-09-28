@@ -1,0 +1,149 @@
+bun test v1.4.2 (744846f84)
+
+src/job-loop.test.ts:
+(pass) W03 W04: timer cannot overlap an in-flight task and stop joins it [20.16ms]
+(pass) job errors are redacted through error callback and continue until stop [10.83ms]
+
+src/private-setup.test.ts:
+(pass) P01-P05 canonical private boundaries > P01/P02/P03 repository rules ignore private forms, keep examples, and identify separately tracked secrets [240.55ms]
+(pass) P01-P05 canonical private boundaries > P04 private root and file modes; resolution is side-effect free; path spaces work [2.58ms]
+(pass) P01-P05 canonical private boundaries > P05 rejects traversal, symlinks, checkout paths, conflicting instances, default/live test paths and missing guard [4.06ms]
+(pass) S01-S05 resumable setup > S02 private file wins stale exports; parsing never mutates env or chmods diagnostic reads [4.73ms]
+(pass) S01-S05 resumable setup > S02 missing/duplicate/arbitrary fields fail with redacted codes [0.11ms]
+(pass) S01-S05 resumable setup > S01 interruption after every core creation reconciles original identity without duplicate creation or key rotation [41.64ms]
+(pass) S01-S05 resumable setup > S01 intent-only crash refuses blind recreation; setup lock excludes a separate process [21.50ms]
+(pass) S01-S05 resumable setup > S04 Live Mini requires explicit enablement and deployment requires the recorded environment revision [5.83ms]
+(pass) S01-S05 resumable setup > S05 all six roles and mandatory Moonshine; later media failure preserves working text [12.23ms]
+(pass) P06-P08 privacy and R01-R02 recovery > P06 diagnostics and inspections omit seeded secret, bodies and capability URL [3.90ms]
+(pass) P06-P08 privacy and R01-R02 recovery > P07/P08 retention previews first, keeps backups by default, uses store eligibility, and applies only matching plan [5.35ms]
+(pass) P06-P08 privacy and R01-R02 recovery > P08 scope mismatch and symlinks reject before any data mutation [6.48ms]
+(pass) P06-P08 privacy and R01-R02 recovery > P08 export is explicit, private, excludes credentials, and reports no raw private content [6.51ms]
+(pass) P06-P08 privacy and R01-R02 recovery > R01 identity survives restart and missing established identity fails closed [5.21ms]
+(pass) P06-P08 privacy and R01-R02 recovery > R02 missing persistent instance and unsupported SQLite fail closed [2.08ms]
+(pass) setup and privacy recovery edges > S01 setup JSON stdin is bounded while reading, cancels overflow and accepts split chunks [0.51ms]
+(pass) setup and privacy recovery edges > S01 SIGKILL leaves setup lock; explicit dead-owner preview recovers without touching checkpoint [23.61ms]
+(pass) setup and privacy recovery edges > S04 Live Mini env preserves keys and public URL, has no implicit enable, detects changed environment [6.24ms]
+(pass) setup and privacy recovery edges > P08 explicit delete-resolved keeps unresolved rows and backup policy is whole-snapshot rotation [8.42ms]
+
+src/voice-stt.test.ts:
+(pass) voice display preserves duration/transcript; model paths are instance-owned [0.08ms]
+(pass) valid mono PCM WAV reused regardless of extension; unrelated note.wav ignored [2.38ms]
+(pass) stereo and non-16k WAV are decoded; different inputs never share an output [328.75ms]
+(pass) malformed, truncated or decoder-invalid WAV never becomes ready [107.36ms]
+(pass) hung FFmpeg is reaped and partial output removed [63.72ms]
+(pass) STT structured success; failed and empty transcripts are explicit degradation [152.08ms]
+(pass) Python helper uses verified batch API and closes transcriber on empty output [89.36ms]
+
+src/outbound-jpeg.test.ts:
+(pass) outbound normalization permits only staged private files and outputs private JPEGs [110.96ms]
+(pass) hung or corrupt outbound decoder leaves no final output [269.90ms]
+
+src/subprocess.test.ts:
+(pass) stdout and stderr are concurrently drained under pipe pressure [19.50ms]
+(pass) oversized output kills child without retaining unlimited output [18.17ms]
+(pass) hung process ignoring TERM is KILLed and reaped by deadline [184.70ms]
+(pass) caller abort kills and reaps process; child environment omits secrets [56.77ms]
+
+src/activity.test.ts:
+(pass) W04 typing remains through progress and stops when active work ends [0.52ms]
+(pass) W04 typing expires once and cannot renew itself forever [0.10ms]
+
+src/private-storage.test.ts:
+(pass) R01 setup initializes DB once, uses DB checkpoint after bootstrap, preserves identity across restart [31.98ms]
+(pass) R01 initialized DB loss refuses recreation even with explicit setup rerun [16.29ms]
+(pass) P07 actual SQLite prunes resolved data, retains unknown bodies/assets and dedupe identities [26.22ms]
+(pass) P07 cleanup after DB commit interruption recovers same pending asset instead of orphaning it [23.48ms]
+(pass) P07 expired owned crash intermediates use 7-day policy; arbitrary private assets remain [19.47ms]
+(pass) S03 private setup, doctor, prune and export entrypoints share the explicit instance with leading separator [139.26ms]
+(pass) S05 runtime gates first setup on six roles and Moonshine proof, later media failure leaves text ready [21.25ms]
+
+src/batch-claim.test.ts:
+(pass) claim facade requires run token, never resumes by bot identity [7.63ms]
+(pass) claim facade rejects path traversal [10.25ms]
+
+src/inbound-attachment.test.ts:
+(pass) display and atomic private save preserve metadata; jobs cannot collide [4.40ms]
+(pass) declared, streamed and buffered oversize fail; stream is cancelled [0.33ms]
+(pass) stalled stream gets a deadline and cancellation [20.70ms]
+(pass) bounded buffer fallback remains supported; empty download fails [2.52ms]
+(pass) unsafe dot names and symlinked private directory are rejected [2.32ms]
+(pass) interrupted atomic write never publishes a ready output [6.52ms]
+(pass) failed isolated HEIF conversion retains original with degraded status [43.65ms]
+
+src/instance-lock.test.ts:
+(pass) W04: separate owner cannot steal lifetime lock; SIGKILL releases it [85.39ms]
+
+src/media-worker.test.ts:
+(pass) stalled media leaves receive/text synchronous and correlated completion patches once [2.84ms]
+(pass) worker concurrency bounded; abort cancels in-flight resolution [92.87ms]
+(pass) restart without exact attachment GUID reports unavailable, never guesses [0.21ms]
+(pass) exact restart reference includes original line; mismatched GUID rejected [0.23ms]
+(pass) remembered reader is optional; failed STT preserves audio and later text [2.32ms]
+
+src/tests/storage/process.test.ts:
+(pass) D01 real concurrent enqueue and settlement processes preserve every acknowledged child [98.28ms]
+(pass) C01 separate processes with same bot claim one invocation winner [41.05ms]
+(pass) D02 crash before_commit input/onboarding transition remains atomic [31.46ms]
+(pass) D03 crash before_commit batch/wake transition keeps recoverable input [48.08ms]
+(pass) crash before_commit fenced claim cannot produce two valid owners [37.37ms]
+(pass) D06 crash before_commit multi-bubble commit has all or no children [45.45ms]
+(pass) crash before_commit dispatch attempt is queued or unknown, never automatically repeated [35.40ms]
+(pass) crash before_commit settlement preserves reference/evidence together [40.38ms]
+(pass) crash before_commit task reservation cannot blindly duplicate handoff [37.80ms]
+(pass) crash before_commit wake acknowledgement leaves batch actionable [91.18ms]
+(pass) crash before_commit media enrichment remains correlated to same batch [69.03ms]
+(pass) D02 crash after_commit input/onboarding transition remains atomic [37.74ms]
+(pass) D03 crash after_commit batch/wake transition keeps recoverable input [46.48ms]
+(pass) crash after_commit fenced claim cannot produce two valid owners [34.49ms]
+(pass) D06 crash after_commit multi-bubble commit has all or no children [36.45ms]
+(pass) crash after_commit dispatch attempt is queued or unknown, never automatically repeated [39.11ms]
+(pass) crash after_commit settlement preserves reference/evidence together [62.64ms]
+(pass) crash after_commit task reservation cannot blindly duplicate handoff [67.84ms]
+(pass) crash after_commit wake acknowledgement leaves batch actionable [44.65ms]
+(pass) crash after_commit media enrichment remains correlated to same batch [55.80ms]
+(pass) D08 separate writer lock contention fails within bounded busy timeout [2056.10ms]
+
+src/tests/storage/migration.test.ts:
+(pass) M01 dry-run changes neither source nor target [13.68ms]
+(pass) M02 same source imported once; changed inputs require reconciliation [216.05ms]
+(pass) M03 poll/full session/ordered presentation metadata and conversation preserved [77.27ms]
+(pass) M04 queued becomes unknown; sent no ID preserves legacy acceptance [51.17ms]
+(pass) M05 legacy confetti provenance prevents automatic second celebration [50.48ms]
+(pass) M06 running legacy writer refuses; cutover does not drain copied queues [120.28ms]
+(pass) D04 malformed/unreadable legacy files never replace with empty state [10.03ms]
+(pass) legacy delegated record stays review-needed rather than replaying task [61.19ms]
+(pass) committed migration repairs missing cutover marker without reimporting work [95.43ms]
+(pass) legacy task helper prevents replay even without orchestrator handled record [53.61ms]
+
+src/tests/storage/storage.test.ts:
+(pass) transactional store > ordinary open cannot create storage; identity is immutable [6.48ms]
+(pass) transactional store > patched SQLite floor and FULL/local WAL evidence [5.39ms]
+(pass) transactional store > corrupt database is rejected without overwriting [6.28ms]
+(pass) transactional store > input duplicate and first greeting onboarding one atomic intent [6.70ms]
+(pass) transactional store > substantive first input is batched and onboarding commits together [6.15ms]
+(pass) transactional store > failure anywhere during acceptance rolls back input and greeting [7.30ms]
+(pass) transactional store > conversation and line batch boundaries; missing/path traversal rejected [6.35ms]
+(pass) transactional store > wake acknowledgement retains work; active claim prevents additional wakes [9.37ms]
+(pass) transactional store > same bot is never same run; stale owner cannot renew/complete/enqueue [10.08ms]
+(pass) transactional store > same action same payload ids; conflicting payload rejected [8.69ms]
+(pass) transactional store > all child bubbles roll back on injected child insertion failure [10.86ms]
+(pass) transactional store > unknown blocks later conversation content but permits cleanup and other chat [10.38ms]
+(pass) transactional store > sending recovery never fresh sends and old attempt cannot settle [9.94ms]
+(pass) transactional store > provider reference/poll/session/mapping settlement commits atomically [9.65ms]
+(pass) transactional store > unknown native handoff reserves work and cannot create second task [8.27ms]
+(pass) transactional store > media remains same event/batch and stale completion is fenced [10.20ms]
+(pass) transactional store > retention preserves unresolved/active records; prunes resolved bodies only [12.75ms]
+(pass) transactional store > backup includes committed WAL content and read diagnostics bounded [8.62ms]
+(pass) read-only inspection refuses bad modes without repairs or content writes [7.67ms]
+(pass) unused intermediate cleanup survives process loss between redaction and unlink [6.89ms]
+(pass) acknowledged wake can be retried for unclaimed work after the handoff grace period [7.81ms]
+(pass) progress completion preserves typing until final completion or lease expiry [9.94ms]
+(pass) bounded control input rejects oversized stream before EOF [1.83ms]
+(pass) D07 eligible operation reads use indexed outbox after retained history [7.09ms]
+(pass) offline evidence resolution never retries uncertain operation and requires provider reference [9.07ms]
+(pass) expired unknown native task can only resume original binding from explicit receipt [8.84ms]
+
+ 115 pass
+ 0 fail
+ 550 expect() calls
+Ran 115 tests across 14 files. [6.47s]

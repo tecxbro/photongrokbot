@@ -11,7 +11,11 @@
     "typecheck": "tsc --noEmit",
     "batch": "bun run src/batch-control.ts",
     "outbound-status": "bun run src/outbound-status.ts",
-    "migrate": "bun run src/migrate-legacy-state.ts"
+    "migrate": "bun run src/migrate-legacy-state.ts",
+    "setup-state": "bun run src/setup-state.ts",
+    "preflight": "bun run src/preflight.ts",
+    "prune-instance": "bun run src/prune-instance.ts",
+    "export-instance": "bun run src/export-instance.ts"
   },
   "dependencies": {
     "heif2jpeg": "0.1.6",
