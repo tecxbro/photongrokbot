@@ -43,6 +43,36 @@ describe('bounded durable native wake dispatch', () => {
     await wake.drain(); expect(accepted).toBe(1); expect(aborted).toBe(1);
     const row = store.db.query('SELECT state,code,next_at FROM wakes WHERE batch_id=?').get(batch.batchId) as any; expect(row.state).toBe('retry_wait'); expect(row.code).toBe('WAKE_TIMEOUT'); expect(row.next_at).toBeGreaterThan(Date.now()); expect(store.claimSnapshot(batch.batchId).state).toBe('pending');
   });
+  test('W03 ignored abort excludes the same batch while another conversation wakes; late ack does not overwrite timeout', async () => {
+    const { store, batch } = setup(); let clock = Date.now(), resolveLate!: (response: Response) => void, cancelled = 0;
+    const calls: string[] = [];
+    const wake = dispatcher(store, fakeFetch(async (_input, init) => {
+      const { batchId } = JSON.parse(init!.body as string); calls.push(batchId);
+      if (batchId === batch.batchId) return new Promise(resolve => { resolveLate = resolve; });
+      return new Response(null, { status: 202 });
+    }), { timeoutMs: 5, clock: () => clock });
+    await wake.drain(); clock += 10000;
+    for (let i = 0; i < 10; i++) { wake.notify(); await wake.drain(); }
+    expect(calls).toEqual([batch.batchId]);
+    store.accept({ eventKey: 'other-wake', record: record('other-wake', 'other-space'), destination: { spaceId: 'other-space', lineId: 'line-1' } });
+    const other = store.formBatches()[0]!; await wake.drain(); expect(calls).toEqual([batch.batchId, other.batchId]);
+    const before = store.db.query('SELECT state,code,attempts FROM wakes WHERE batch_id=?').get(batch.batchId);
+    expect(before).toEqual({ state: 'retry_wait', code: 'WAKE_TIMEOUT', attempts: 1 });
+    resolveLate(new Response(new ReadableStream({ cancel() { cancelled++; } }), { status: 202 }));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(cancelled).toBe(1); expect(store.db.query('SELECT state,code,attempts FROM wakes WHERE batch_id=?').get(batch.batchId)).toEqual(before);
+    await wake.stop();
+  });
+  test('W03 no more than four raw transports remain pending even when every fetch ignores abort', async () => {
+    const { store } = setup(); let clock = Date.now(), calls = 0; const releases: ((response: Response) => void)[] = [];
+    for (let i = 0; i < 5; i++) store.accept({ eventKey: `other-${i}`, record: record(`other-${i}`, `space-${i + 2}`), destination: { spaceId: `space-${i + 2}`, lineId: 'line-1' } });
+    store.formBatches();
+    const wake = dispatcher(store, fakeFetch(async () => { calls++; return new Promise(resolve => { releases.push(resolve); }); }), { timeoutMs: 5, clock: () => clock });
+    await wake.drain(); expect(calls).toBe(4); clock += 10000;
+    for (let i = 0; i < 10; i++) { wake.notify(); await wake.drain(); }
+    expect(calls).toBe(4); expect(store.db.query("SELECT COUNT(*) AS n FROM wakes WHERE state='pending'").get()).toEqual({ n: 2 });
+    await wake.stop(); for (const release of releases) release(new Response(null, { status: 202 }));
+  });
   test('W03 permanent rejection never retries and transient attempts exhaust', async () => {
     const first = setup(); let permanentCalls = 0;
     const rejected = dispatcher(first.store, fakeFetch(async () => { permanentCalls++; return new Response('secret remote body', { status: 403 }); })); await rejected.drain(); await rejected.drain(); expect(permanentCalls).toBe(1); expect(first.store.claimWake(Date.now() + 9999999)).toBeUndefined();
@@ -55,6 +85,14 @@ describe('bounded durable native wake dispatch', () => {
     const wake = dispatcher(store, fakeFetch(async (_input, init) => { calls++; entered(); return new Promise((_resolve, reject) => init!.signal!.addEventListener('abort', () => reject(new Error('aborted')))); }));
     const running = wake.drain(); await barrier; await wake.stop(); await running; wake.notify(); await wake.drain(); expect(calls).toBe(1);
     expect(store.db.query('SELECT state,code FROM wakes WHERE batch_id=?').get(batch.batchId)).toEqual({ state: 'retry_wait', code: 'WAKE_SHUTDOWN' });
+  });
+  test('W04 stop remains bounded when the raw transport ignores cancellation', async () => {
+    const { store, batch } = setup(); let entered!: () => void, finish!: (response: Response) => void; const barrier = new Promise<void>(resolve => { entered = resolve; });
+    const wake = dispatcher(store, fakeFetch(async () => { entered(); return new Promise(resolve => { finish = resolve; }); }), { timeoutMs: 25000 });
+    const running = wake.drain(); await barrier;
+    await Promise.race([wake.stop(), new Promise((_, reject) => setTimeout(() => reject(new Error('STOP_DID_NOT_FINISH')), 250))]);
+    await running; expect(store.db.query('SELECT state,code FROM wakes WHERE batch_id=?').get(batch.batchId)).toEqual({ state: 'retry_wait', code: 'WAKE_SHUTDOWN' });
+    finish(new Response(null, { status: 202 }));
   });
   test('W02 local settlement failure after HTTP response preserves sending until startup recovery', async () => {
     const { store, batch } = setup(); let requests = 0;
