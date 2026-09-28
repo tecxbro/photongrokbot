@@ -19,6 +19,7 @@ import {
 } from "../../shared/instance-paths.mjs";
 import { PublisherClient } from "../live-task-cards/src/client.mjs";
 import { CardError, assert } from "../live-task-cards/src/errors.mjs";
+import { parseBridgeControlError } from "../../shared/bridge-control-errors.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BRIDGE_ROOT = resolve(HERE, "../../bridge");
@@ -120,7 +121,7 @@ export function resolvePublisherConfig(
   return { baseUrl, token };
 }
 
-/** No shell, bounded stdin/stdout/stderr, finite execution deadline, generic errors. */
+/** No shell, bounded stdin/stdout/stderr, finite deadline and a fixed safe error vocabulary. */
 export function runBridgeControl({
   command,
   body,
@@ -150,7 +151,7 @@ export function runBridgeControl({
       env,
       stdio: ["pipe", "pipe", "pipe"],
     });
-    let output = "",
+    let output = "", errorOutput = "",
       bytes = 0,
       settled = false;
     const finish = (error, value) => {
@@ -159,7 +160,10 @@ export function runBridgeControl({
       clearTimeout(timer);
       if (error) {
         child.kill("SIGKILL");
-        reject(new CardError(error, error, 502));
+        const safe = typeof error === "string" ? { code: error } : error;
+        const failure = new CardError(safe.code, safe.code, 502);
+        if (safe.recovery) failure.recovery = safe.recovery;
+        reject(failure);
       } else resolveResult(value);
     };
     const timer = setTimeout(
@@ -174,11 +178,12 @@ export function runBridgeControl({
     child.stderr.on("data", (chunk) => {
       bytes += chunk.length;
       if (bytes > LIMIT) finish("BRIDGE_RESPONSE_TOO_LARGE");
+      else errorOutput += chunk.toString();
     });
     child.on("error", () => finish("BRIDGE_UNAVAILABLE"));
     child.stdin.on("error", () => finish("BRIDGE_RESPONSE_UNKNOWN"));
     child.on("close", (code) => {
-      if (code !== 0) return finish("BRIDGE_REJECTED");
+      if (code !== 0) return finish(parseBridgeControlError(errorOutput) ?? "BRIDGE_REJECTED");
       try {
         finish(null, JSON.parse(output));
       } catch {
@@ -276,11 +281,18 @@ export function createLiveCardMilestones(opts = {}) {
     readFileSync(assertPrivateFile(paths.configPath, paths.root), "utf8"),
   ).installationId;
   identifier(installationId);
-  const task = opts.taskContext;
-  if (!task || !task.claim) fail("CONTEXT_REQUIRED");
-  identifier(task.taskId);
-  identifier(task.batchId);
-  if (task.claim.batchId !== task.batchId) fail("CONTEXT_MISMATCH");
+  let task = opts.taskContext;
+  if (!task) fail("CONTEXT_REQUIRED");
+  const taskId = identifier(task.taskId);
+  function validateTask(value) {
+    if (!value || value.taskId !== taskId) fail("CONTEXT_MISMATCH");
+    identifier(value.batchId);
+    if (value.claim && value.claim.batchId !== value.batchId) fail("CONTEXT_MISMATCH");
+    for (const revision of [value.inputRevision, value.taskInputRevision])
+      if (revision !== undefined && (!Number.isSafeInteger(revision) || revision < 1)) fail("CONTEXT_MISMATCH");
+    return { ...value, ...(value.claim ? { claim: { ...value.claim } } : {}) };
+  }
+  task = validateTask(task);
   const { baseUrl, token } = resolvePublisherConfig(opts, paths);
   const client = new PublisherClient({
     baseUrl,
@@ -297,17 +309,24 @@ export function createLiveCardMilestones(opts = {}) {
         bun: opts.bun,
         env: { ...process.env, PHOTON_INSTANCE_DIR: paths.root },
       }));
-  async function binding() {
+  async function binding(authority, write = false) {
+    if (write && !authority.claim) fail("CLAIM_REQUIRED");
     const result = await control("task-context", {
-      taskId: task.taskId,
-      batchId: task.batchId,
+      taskId,
+      batchId: authority.batchId,
+      inputRevision: authority.inputRevision,
+      taskInputRevision: authority.taskInputRevision,
+      ...(write ? { claim: authority.claim } : {}),
     });
     if (
-      result.taskId !== task.taskId ||
-      result.batchId !== task.batchId ||
+      result.taskId !== taskId ||
+      result.batchId !== authority.batchId ||
       result.origin !== new URL(baseUrl).origin
     )
       fail("CONTEXT_MISMATCH");
+    identifier(result.originalBatchId);
+    for (const revision of [result.inputRevision, result.taskInputRevision])
+      if (!Number.isSafeInteger(revision) || revision < 1) fail("CONTEXT_MISMATCH");
     for (const value of [
       result.destination?.spaceId,
       result.destination?.lineId,
@@ -329,11 +348,14 @@ export function createLiveCardMilestones(opts = {}) {
       taskKey.includes("\0")
     )
       fail("CONTEXT_REQUIRED");
-    const bound = await binding();
+    const current = validateTask(opts.getTaskContext ? await opts.getTaskContext() : task);
+    const bound = await binding(current);
+    const authority = { ...current, inputRevision: bound.inputRevision, taskInputRevision: bound.taskInputRevision };
     const identity = {
       installationId,
-      taskId: task.taskId,
-      batchId: task.batchId,
+      taskId,
+      // Preserve the existing context hash across follow-up processing batches.
+      batchId: bound.originalBatchId,
       destination: bound.destination,
       taskKey,
     };
@@ -363,13 +385,14 @@ export function createLiveCardMilestones(opts = {}) {
         if (!ctx?.cardId || !ctx.viewUrl) fail("CONTEXT_REQUIRED");
         return ctx;
       };
-      return action({ load, save, required, check, identity, digest, path });
+      return action({ load, save, required, check, identity, digest, path, authority,
+        validateAuthority: () => binding(authority, true) });
     });
   }
   function verifyRecord(ctx, record) {
     if (
       !record ||
-      record.taskId !== task.taskId ||
+      record.taskId !== taskId ||
       record.conversationRef !== ctx.identity.destination.spaceId ||
       (ctx.cardId && record.id !== ctx.cardId)
     )
@@ -393,15 +416,18 @@ export function createLiveCardMilestones(opts = {}) {
   }
   const presentationContext = (ctx) => ({
     cardId: ctx.cardId,
-    taskId: task.taskId,
-    batchId: task.batchId,
+    taskId,
+    batchId: ctx.identity.batchId,
     destination: ctx.identity.destination,
     viewUrl: ctx.viewUrl,
   });
-  async function status(ctx) {
+  async function status(ctx, authority) {
     const result = await control("operation-status", {
-      taskId: task.taskId,
-      batchId: task.batchId,
+      taskId,
+      batchId: authority.batchId,
+      inputRevision: authority.inputRevision,
+      taskInputRevision: authority.taskInputRevision,
+      cardId: ctx.cardId,
       actionKey: ctx.actionKey,
     });
     if (!Array.isArray(result.items) || result.items.length > 1)
@@ -409,9 +435,9 @@ export function createLiveCardMilestones(opts = {}) {
     return result.items[0];
   }
   async function createCard(payload, taskKey) {
-    return scoped(taskKey, async ({ load, save, identity, digest, check }) => {
+    return scoped(taskKey, async ({ load, save, identity, digest, check, authority, validateAuthority }) => {
       if (
-        payload.taskId !== task.taskId ||
+        payload.taskId !== taskId ||
         payload.conversationRef !== identity.destination.spaceId
       )
         fail("CONTEXT_MISMATCH");
@@ -422,11 +448,7 @@ export function createLiveCardMilestones(opts = {}) {
       if (ctx && serialize(ctx.creation) !== serialize(payload))
         fail("IDEMPOTENCY_CONFLICT");
       if (!ctx?.cardId) {
-        await control("task-context", {
-          taskId: task.taskId,
-          batchId: task.batchId,
-          claim: task.claim,
-        });
+        await validateAuthority();
       }
       if (!ctx) {
         ctx = save({
@@ -454,14 +476,16 @@ export function createLiveCardMilestones(opts = {}) {
       });
       check();
       await control("register", {
-        claim: task.claim,
+        claim: authority.claim,
+        inputRevision: authority.inputRevision,
+        taskInputRevision: authority.taskInputRevision,
         context: presentationContext(ctx),
       });
       return { record, context: ctx };
     });
   }
   async function sendOnce(spaceId, viewUrl, taskKey) {
-    return scoped(taskKey, async ({ required, save, check }) => {
+    return scoped(taskKey, async ({ required, save, check, authority, validateAuthority }) => {
       let ctx = required();
       if (
         spaceId !== ctx.identity.destination.spaceId ||
@@ -469,15 +493,18 @@ export function createLiveCardMilestones(opts = {}) {
       )
         fail("CONTEXT_MISMATCH");
       let record = verifyRecord(ctx, await client.get(ctx.cardId));
-      let outcome = await status(ctx);
+      let outcome = await status(ctx, authority);
       if (!ctx.attemptId && !ctx.beginIntent && record.activeAttempt)
         fail("PRESENTATION_PENDING");
       if (!ctx.attemptId && record.delivery.messageRef)
         fail("PRESENTATION_EVIDENCE_REQUIRED");
       if (!ctx.attemptId) {
         check();
+        await validateAuthority();
         await control("register", {
-          claim: task.claim,
+          claim: authority.claim,
+          inputRevision: authority.inputRevision,
+          taskInputRevision: authority.taskInputRevision,
           context: presentationContext(ctx),
         });
         if (!ctx.beginIntent)
@@ -524,15 +551,17 @@ export function createLiveCardMilestones(opts = {}) {
           fail("PRESENTATION_UNKNOWN");
         const submission = {
           version: 1,
-          batchId: task.batchId,
-          taskId: task.taskId,
-          claim: task.claim,
+          batchId: authority.batchId,
+          taskId,
+          claim: authority.claim,
+          inputRevision: authority.inputRevision,
+          taskInputRevision: authority.taskInputRevision,
           actionKey: ctx.actionKey,
           purpose: "presentation",
           payload: { kind: "app", spaceId, url: viewUrl, live: true },
           presentation: {
             cardId: ctx.cardId,
-            taskId: task.taskId,
+            taskId,
             viewUrl,
             claimId: ctx.attemptId,
           },
@@ -556,7 +585,7 @@ export function createLiveCardMilestones(opts = {}) {
           setTimeout(resolveWait, opts.pollMs ?? 250),
         );
         check();
-        outcome = await status(ctx);
+        outcome = await status(ctx, authority);
         if (!outcome || outcome.id !== ctx.outboundId)
           fail("OUTBOUND_STATUS_INVALID");
       }
@@ -608,7 +637,7 @@ export function createLiveCardMilestones(opts = {}) {
     });
   }
   async function updateMilestone(cardId, updateBody, taskKey) {
-    return scoped(taskKey, async ({ required, save, check, path }) => {
+    return scoped(taskKey, async ({ required, save, check, path, validateAuthority }) => {
       const ctx = required();
       if (
         cardId !== ctx.cardId ||
@@ -636,11 +665,7 @@ export function createLiveCardMilestones(opts = {}) {
       )
         fail("IDEMPOTENCY_CONFLICT");
       // Reject stale workers before they can leave an unsent journal blocking a successor.
-      await control("task-context", {
-        taskId: task.taskId,
-        batchId: task.batchId,
-        claim: task.claim,
-      });
+      await validateAuthority();
       // Journal separately: changed URL/conflict cannot overwrite the prior card context.
       check();
       atomicPrivateWrite(
@@ -682,11 +707,11 @@ export function createLiveCardMilestones(opts = {}) {
   }
   async function completeAndRelease(cardId, taskKey, terminalUpdate) {
     if (terminalUpdate) await updateMilestone(cardId, terminalUpdate, taskKey);
-    return scoped(taskKey, async ({ required, save, check }) => {
+    return scoped(taskKey, async ({ required, save, check, authority, validateAuthority }) => {
       const ctx = required();
       if (cardId !== ctx.cardId) fail("CONTEXT_MISMATCH");
       let record = verifyRecord(ctx, await client.get(cardId));
-      const outcome = await status(ctx);
+      const outcome = await status(ctx, authority);
       if (
         !ctx.spectrumMessageId ||
         outcome?.state !== "accepted" ||
@@ -698,6 +723,7 @@ export function createLiveCardMilestones(opts = {}) {
       if (!terminal.has(record.content.status)) fail("TASK_NOT_FINISHED");
       if (!record.archivedAt) {
         check();
+        await validateAuthority();
         record = verifyRecord(
           ctx,
           await client.release(cardId, record.revision),
@@ -719,6 +745,7 @@ export function createLiveCardMilestones(opts = {}) {
     sendOnce,
     updateMilestone,
     completeAndRelease,
+    setTaskContext: (context) => { task = validateTask(context); },
     loadContext: (taskKey) => scoped(taskKey, ({ load }) => load()),
     doctor: () => client.doctor(),
     slots: () => client.slots(),

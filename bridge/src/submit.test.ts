@@ -3,9 +3,10 @@ import { writeFileSync, symlinkSync, mkdirSync, mkdtempSync, realpathSync, readF
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { deliveryFixture } from "./delivery-fixture.ts";
-import { submitOutbound, parseSubmission } from "./submit.ts";
+import { submitOutbound, parseSubmission, type SubmitOptions } from "./submit.ts";
 import { parseLegacyArgs } from "./enqueue.ts";
 import { stageOutboundFile } from "./authorization.ts";
+import { batch as createClaimedBatch } from "./tests/storage/fixture.ts";
 test("X01/X02 stored destination, claim generation and target gate submission", async () => {
     const f = deliveryFixture();
     try {
@@ -40,6 +41,32 @@ test("X03 every original staged path validated before any conversion", async () 
 finally {
     f.cleanup();
 } });
+test("source and task revision mismatches reject before attachment normalization can create side effects", async () => {
+    const f = deliveryFixture();
+    try {
+        let conversions = 0;
+        const options: SubmitOptions = { ...f, normalize: async (input) => { conversions++; return input; } };
+        const original = f.submission({ kind: "attachment_group", spaceId: f.destination.spaceId, attachmentPaths: [f.asset(), f.asset()] }, "revision-boundary");
+        const revision = f.store.readBatch(f.batch.batchId).inputRevision!;
+        await expect(submitOutbound({ ...original, inputRevision: revision + 1 }, options)).rejects.toThrow("STALE_INPUT_REVISION");
+        const task = { taskId: "local-revision-boundary", batchId: f.batch.batchId, destination: f.destination, owner: "worker", finalOwner: "front-door", state: "intent" as const };
+        f.store.bindTask(f.claim, task);
+        f.store.bindTask(f.claim, { ...task, state: "accepted", nativeRef: "native-after-intent", receipt: "native invocation accepted" });
+        const taskInputRevision = f.store.getTask(task.taskId)!.inputs![0]!.inputRevision;
+        const permitted = { ...original, inputRevision: revision, taskId: task.taskId, taskInputRevision };
+        await expect(submitOutbound({ ...permitted, taskInputRevision: taskInputRevision + 1 }, options)).rejects.toThrow("TASK_CONTEXT_MISMATCH");
+        await expect(submitOutbound({ ...original, taskInputRevision }, options)).rejects.toThrow("TASK_CONTEXT_MISMATCH");
+        const unrelated = createClaimedBatch(f.store, f.destination.spaceId);
+        await expect(submitOutbound({ ...permitted, batchId: unrelated.batch.batchId, claim: unrelated.claim }, options)).rejects.toThrow("TASK_CONTEXT_MISMATCH");
+        await expect(submitOutbound({ ...permitted, claim: unrelated.claim }, options)).rejects.toThrow("CLAIM_BATCH_MISMATCH");
+        await expect(submitOutbound({ ...permitted, scope: "caller-authored-scope" }, options)).rejects.toThrow("UNKNOWN_FIELD");
+        expect(conversions).toBe(0);
+        expect(f.store.listOutbound()).toHaveLength(0);
+        expect(await submitOutbound(permitted, options)).toHaveLength(1);
+        expect(conversions).toBe(1);
+    }
+    finally { f.cleanup(); }
+});
 test("X04/X05 strict JSON and legacy context preserve shell text as data", async () => {
     const f = deliveryFixture();
     try {

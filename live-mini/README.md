@@ -1,6 +1,6 @@
 # Optional Live Mini task cards
 
-Live Mini adds read-only progress for substantial existing tasks. It is optional, explicitly enabled, and uses the account's one Spectrum runtime. Vercel connection alone authorizes no deployment. See [enablement](../skills/live-mini-enable/SKILL.md) and the [operating contract](../docs/product-repair/OPERATING_CONTRACT.md).
+Live Mini adds read-only progress for substantial existing tasks. It is optional, enabled by the initial full-feature setup scope or a later request, and uses the account's one Spectrum runtime. Vercel connection alone authorizes no deployment. See [enablement](../skills/live-mini-enable/SKILL.md) and the [operating contract](../docs/product-repair/OPERATING_CONTRACT.md).
 
 The Vercel host serves the mini-app/API and durable card registry. The [canonical VM helper](runtime/README.md) binds original task/context and initial host presentation to the bridge outbox. Normal milestones update JSON at the exact same URL; no Spectrum edit, new bubble or redeploy. Front Door remains final-response owner. Ten logical slots are reused without reassigning historical card URLs; unknown initial sends retain their slots until reconciled.
 

@@ -125,11 +125,11 @@ export function openDatabase(
     assertPatchedSQLite(evidence.version, evidence.source);
     db.exec("PRAGMA busy_timeout=2000; PRAGMA foreign_keys=ON;");
     if (!readonly) db.exec("PRAGMA synchronous=FULL;");
-    const version = (
+    let version = (
       db.query("PRAGMA user_version").get() as { user_version: number }
     ).user_version;
-    if (version !== 1) {
-      if (version !== 0 || !create || readonly)
+    if (version === 0) {
+      if (!create || readonly)
         throw new Error("STORE_SCHEMA_UNSUPPORTED");
       const tables = db
         .query("SELECT name FROM sqlite_master WHERE type='table'")
@@ -152,6 +152,7 @@ export function openDatabase(
           config.installationId,
         );
         db.exec("PRAGMA user_version=1");
+        version = 1;
       }).immediate();
     }
     const identity = db
@@ -159,6 +160,24 @@ export function openDatabase(
       .get() as { installation_id: string } | null;
     if (identity?.installation_id !== config.installationId)
       throw new Error("INSTANCE_ID_MISMATCH");
+    if (version === 1) {
+      if (readonly) throw new Error("STORE_UPGRADE_REQUIRED");
+      // Foreign keys must be disabled outside the transaction only for the
+      // operations-table rebuild. Validate all references before committing.
+      db.exec("PRAGMA foreign_keys=OFF");
+      try {
+        db.transaction(() => {
+          const current = (db.query("PRAGMA user_version").get() as {user_version:number}).user_version;
+          if (current === 1) {
+            db.exec(readFileSync(new URL("./migrations/002-task-continuations.sql", import.meta.url), "utf8"));
+            if (db.query("PRAGMA foreign_key_check").all().length) throw new Error("STORE_MIGRATION_REFERENCES_INVALID");
+            db.exec("PRAGMA user_version=2");
+          } else if (current !== 2) throw new Error("STORE_SCHEMA_UNSUPPORTED");
+        }).immediate();
+      } finally { db.exec("PRAGMA foreign_keys=ON"); }
+      version = 2;
+    }
+    if (version !== 2) throw new Error("STORE_SCHEMA_UNSUPPORTED");
     if (
       options.verifyIntegrity === true &&
       (db.query("PRAGMA quick_check").get() as { quick_check: string })

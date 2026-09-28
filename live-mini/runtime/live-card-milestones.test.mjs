@@ -416,6 +416,78 @@ test("H08 bounded Node child controls ignore raw legacy queue and redact rejecte
   );
   assert.equal(await f.settle(), 1);
 });
+test("Node control preserves supported errors and discards raw private error text", async (t) => {
+  const f = await setup(t);
+  const script = join(f.root, "safe-error-child");
+  for (const [body, expected] of [
+    [{ ok: false, error: { code: "STALE_CLAIM", recovery: ["private-secret"] } }, "STALE_CLAIM"],
+    [{ ok: false, error: { code: "ACTION_PAYLOAD_CONFLICT" } }, "ACTION_PAYLOAD_CONFLICT"],
+    [{ ok: false, error: { code: "private-secret" } }, "BRIDGE_REJECTED"],
+  ]) {
+    writeFileSync(script, `#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '${JSON.stringify(body)}' >&2\nexit 1\n`, { mode: 0o700 });
+    await assert.rejects(runBridgeControl({ command: "register", body: {}, bridgeRoot, bun: script }),
+      (error) => error.code === expected && !JSON.stringify(error).includes("private-secret") &&
+        (expected !== "STALE_CLAIM" || error.recovery.includes("claim")));
+  }
+});
+
+test("task amendment reuses the original private context, signed URL and presentation", async (t) => {
+  const f = await setup(t), { helper, record } = await started(f);
+  const sent = await helper.sendOnce(f.task.destination.spaceId, record.viewUrl, key);
+  const original = await helper.loadContext(key);
+  const authority = await bunCode(
+    `import {getStore} from './src/storage.ts';import {batch} from './src/tests/storage/fixture.ts';const s=getStore();const next=batch(s);const input=s.associateTask(next.claim,'task-1',1);s.bindTask(next.claim,{...s.getTask('task-1'),state:'accepted',receipt:'native amendment'});console.log(JSON.stringify({taskId:'task-1',batchId:next.batch.batchId,claim:next.claim,inputRevision:1,taskInputRevision:input.inputRevision}));s.close();`,
+    f.root,
+  );
+  await assert.rejects(helper.updateMilestone(record.id, {
+    requestId: "old-worker", expectedRevision: 1, content: f.create.content,
+  }, key), { code: "SUPERSEDED_TASK_INPUT" });
+  helper.setTaskContext(authority);
+  assert.deepEqual((await helper.loadContext(key)).identity, original.identity);
+  const repeated = await helper.sendOnce(f.task.destination.spaceId, record.viewUrl, key);
+  assert.equal(repeated.outboundId, sent.outboundId);
+  const updated = await helper.updateMilestone(record.id, {
+    requestId: "amendment-cats", expectedRevision: 1,
+    content: { ...f.create.content, title: "Dogs and cats" },
+  }, key);
+  assert.equal(updated.record.viewUrl, record.viewUrl);
+  assert.equal(updated.record.content.title, "Dogs and cats");
+  const successor = f.make({ getTaskContext: async () => authority });
+  assert.equal((await successor.loadContext(key)).cardId, record.id);
+  assert.equal(await f.settle(), 1);
+  assert.equal(f.commands.filter((c) => c.command === "enqueue").length, 1);
+  assert.equal(readdirSync(f.paths.liveMiniContextDir).filter((name) => /^[a-f0-9]{64}\.json$/.test(name)).length, 1);
+});
+
+test("native result after expiry grants current authority for the existing card without another presentation", async (t) => {
+  const f = await setup(t), { helper, record } = await started(f);
+  const sent = await helper.sendOnce(f.task.destination.spaceId, record.viewUrl, key);
+  const resumed = await bunCode(
+    `import {getStore} from './src/storage.ts';const s=getStore();s.db.query('UPDATE batches SET lease_until=0').run();const input=s.getTask('task-1').inputs[0];const body={taskId:'task-1',inputRevision:input.inputRevision,correlationId:input.correlationId,receipt:'verified native completion',result:{done:true}};const result=s.ingestTaskResult(body);const replay=s.ingestTaskResult(body);const resumed=s.resumeTask('task-1',input.inputRevision);console.log(JSON.stringify({result,replay,resumed}));s.close();`,
+    f.root,
+  );
+  assert.equal(resumed.result.resultId, resumed.replay.resultId);
+  assert.equal(resumed.resumed.status, "acquired");
+  assert.equal(resumed.resumed.inputRevision, 2);
+  await assert.rejects(helper.updateMilestone(record.id, {
+    requestId: "expired-parent", expectedRevision: 1, content: f.create.content,
+  }, key), { code: "STALE_CLAIM" });
+  helper.setTaskContext({
+    taskId: f.task.taskId, batchId: resumed.resumed.token.batchId,
+    claim: resumed.resumed.token, inputRevision: resumed.resumed.inputRevision,
+    taskInputRevision: resumed.result.inputRevision,
+  });
+  const updated = await helper.updateMilestone(record.id, {
+    requestId: "native-result", expectedRevision: 1, content: finished(f.create.content),
+  }, key);
+  assert.equal(updated.record.viewUrl, record.viewUrl);
+  const replay = await helper.sendOnce(f.task.destination.spaceId, record.viewUrl, key);
+  assert.equal(replay.outboundId, sent.outboundId);
+  const released = await helper.completeAndRelease(record.id, key);
+  assert.ok(released.record.archivedAt);
+  assert.equal(await f.settle(), 1);
+  assert.equal(f.commands.filter((c) => c.command === "enqueue").length, 1);
+});
 test("hashed identity avoids lossy task-key collision; initialized context and secrets stay private", async (t) => {
   const f = await setup(t),
     helper = f.make();
@@ -665,7 +737,7 @@ test("expired saved create intent cannot allocate a host card and cannot overwri
     f.root,
   );
   await assert.rejects(f.make().createCard(f.create, key), {
-    code: "BRIDGE_REJECTED",
+    code: "STALE_CLAIM",
   });
   assert.equal(f.traffic.length, 0);
   assert.equal(readFileSync(path, "utf8"), before);
@@ -697,7 +769,7 @@ test("expired update cannot create an unsent journal blocking a newly fenced suc
       },
       key,
     ),
-    { code: "BRIDGE_REJECTED" },
+    { code: "STALE_CLAIM" },
   );
   assert.equal(f.traffic.filter((call) => call.method === "PUT").length, 0);
   assert.equal(existsSync(`${path}.update.json`), false);

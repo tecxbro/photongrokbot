@@ -11,7 +11,7 @@ test("K01 concurrent Front Door/watchdog inserts one logical grouped operation",
     expect(front.outboundIds).toHaveLength(1);
     expect(f.store.listOutbound()).toHaveLength(1);
     expect(await findReadyImageStacks(f)).toHaveLength(0);
-    expect(f.store.operationStatus(f.destination, "final", m.submission.actionKey)[0]!.id).toBe(front.outboundIds[0]!);
+    expect(f.store.operationStatus(f.destination, "final", m.submission.actionKey, {batchId: f.batch.batchId, inputRevision: 1, optionSetRevision: "v1"})[0]!.id).toBe(front.outboundIds[0]!);
 }
 finally {
     f.cleanup();
@@ -123,5 +123,26 @@ test("semantic marker replay refreshes current claim and time but rejects change
         if (originalPayload.kind !== "attachment_group") throw new Error("fixture");
         expect(() => writeCardsReadyMarker({ ...refreshed, submission: { ...refreshed.submission, payload: { ...originalPayload, text: "changed" } } }, f.store)).toThrow("CARD_MARKER_CONFLICT");
         expect(await drainCardsReady(f)).toBe(1);
+    } finally { f.cleanup(); }
+});
+
+test("preserved v1 pending card marker acquires its trusted scope and drains once", async () => {
+    const f = deliveryFixture();
+    try {
+        const legacy = marker(f);
+        // Schema v1 persisted this shape; the migration preserves metadata.
+        expect(legacy.submission.inputRevision).toBeUndefined();
+        expect(legacy.submission.optionSetRevision).toBeUndefined();
+        const key = JSON.stringify([f.destination.spaceId, f.destination.lineId, legacy.submission.actionKey]);
+        f.store.setMetadata("cards-ready-pending", key, legacy);
+        expect(await drainCardsReady(f)).toBe(1);
+        const original = f.store.listOutbound()[0]!;
+        expect(outboundAlreadyCoversBatch(f.store, f.destination, f.batch.batchId, "v1").map(item => item.id)).toEqual([original.id]);
+        // A producer with the old envelope still replays the migrated operation.
+        const replay = await finalEnqueueReadyStack(legacy, f);
+        expect(replay.outboundIds).toEqual([original.id]);
+        expect(await drainCardsReady(f)).toBe(1);
+        expect(f.store.listOutbound()).toHaveLength(1);
+        expect(f.store.listMetadata("cards-ready-pending")).toEqual([]);
     } finally { f.cleanup(); }
 });

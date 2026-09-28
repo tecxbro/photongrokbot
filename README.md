@@ -1,14 +1,14 @@
-# Photon ↔ Grokbot iMessage
+# Photon ↔ Grokbot iMessage build/setup kit
 
-This product connects one Photon Spectrum hosted iMessage connection to six core Grokbot roles on the account's shared VM. Ask Front Door to set it up; the bot handles the technical work. You approve device login and provide your sender identity if it is not already known. After setup passes, text the bot's hosted line from that authorized identity. The first supported message gets one greeting with confetti; a real question also reaches Front Door.
+This is a Grokbot build/setup kit for connecting one Photon Spectrum hosted iMessage connection to six core Grokbot roles on the account's shared VM. Give Grokbot the [getting-started entry point](skills/getting-started/SKILL.md) and the desired setup scope. Grokbot reuses the kit, adapts the native integration, discovers account-specific configuration and verifies the installation; the human does not perform the technical setup. You approve device login and provide your sender identity if it is not already known. After setup passes, text the bot's hosted line from that authorized identity. The first supported message gets one greeting with confetti; a real question also reaches Front Door.
 
-Start with [getting started](skills/getting-started/SKILL.md). The [operating contract](docs/product-repair/OPERATING_CONTRACT.md) governs setup, claims, routing and delivery. [Architecture](01-ARCHITECTURE.md), [privacy](docs/product-repair/PRIVACY.md), [migration](docs/product-repair/MIGRATION.md), and [secret handling](02-SECRETS.md) describe the implementation boundaries.
+The [operating contract](docs/product-repair/OPERATING_CONTRACT.md) governs setup, claims, routing and delivery. [Architecture](01-ARCHITECTURE.md), [privacy](docs/product-repair/PRIVACY.md), [migration](docs/product-repair/MIGRATION.md), and [secret handling](02-SECRETS.md) describe the implementation boundaries.
 
 The six required roles are Front Door, Master Orchestrator, Creator, Feature Add, Image Cards and App Sheet. Creator repairs existing behavior; Feature Add implements new capabilities. Front Door owns final user-facing responses. Roles share files and credentials on the same account VM; role names do not provide Unix isolation. Active identities come from the private verified setup registry, never from these templates.
 
-Moonshine setup is mandatory before first readiness. Models and private state are installed outside this checkout. If transcription later fails, accepted voice metadata remains durable and text continues. The bot reports the media failure accurately.
+Moonshine setup is mandatory before first readiness. Models and private state are installed outside this checkout. When media finishes after the first run, a durable continuation resumes the original request with its ready, failed or unavailable result. Text remains responsive and the bot reports failures accurately.
 
-The bridge retains text, threaded replies, tapbacks, effects, polls, voice, attachments, grouped option cards, static app cards and supported app updates. Live Mini task cards are optional: enable only after explicit authorization, using the existing host/resources when present. Connecting Vercel alone does not authorize deployment. Initial task-card presentation uses the canonical helper/outbox; ordinary progress changes hosted JSON at the same URL.
+The bridge retains text, threaded replies, tapbacks, effects, polls, voice, attachments, grouped option cards, static app cards and supported app updates. Live Mini task cards are optional and follow the initial requested scope: a full-feature setup request already authorizes included Live Mini setup. Reuse the existing host/resources when present. Connecting Vercel alone does not authorize deployment. Initial task-card presentation uses the canonical helper/outbox; ordinary progress changes hosted JSON at the same URL.
 
 ## Install and verify code
 

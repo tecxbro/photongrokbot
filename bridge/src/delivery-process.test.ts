@@ -18,7 +18,7 @@ test("O01/X04 two separate JSON CLI processes atomically enqueue same operation"
     expect(one.out).not.toContain("literal");
     const invalid = await result(spawn(f.root, [cli, "--json-stdin", "--text", "extra"], submission));
     expect(invalid.code).not.toBe(0);
-    expect(invalid.err.trim()).toBe("OUTBOUND_SUBMISSION_REJECTED");
+    expect(JSON.parse(invalid.err)).toEqual({ ok: false, error: { code: "INCOMPATIBLE_ARGUMENTS", recovery: ["correct-input"] } });
 }
 finally {
     f.cleanup();
@@ -66,7 +66,7 @@ test("cards-ready JSON CLI writes validated durable intent and rejects extra fie
         expect(f.store.listOutbound()).toHaveLength(0);
         const bad = await result(spawn(f.root, [cli, "--cards-ready", "--json-stdin"], { ...marker, authorized: true }));
         expect(bad.code).not.toBe(0);
-        expect(bad.err.trim()).toBe("OUTBOUND_SUBMISSION_REJECTED");
+        expect(JSON.parse(bad.err)).toEqual({ ok: false, error: { code: "UNKNOWN_FIELD", recovery: ["correct-input"] } });
         const flags = await result(spawn(f.root, [cli, "--cards-ready", "--json-stdin", "--live"], marker));
         expect(flags.code).not.toBe(0);
     } finally { f.cleanup(); }

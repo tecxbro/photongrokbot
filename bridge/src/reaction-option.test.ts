@@ -91,7 +91,7 @@ test("ordinary reactions remain unchanged without known option presentation evid
     } finally { f.cleanup(); }
 });
 
-test("K06 repeated ambiguous option reactions across batches enqueue one clarification", async () => {
+test("K06 distinct ambiguous option reactions each receive their own clarification", async () => {
     const f = deliveryFixture();
     try {
         presentation(f);
@@ -102,7 +102,7 @@ test("K06 repeated ambiguous option reactions across batches enqueue one clarifi
             const statuses = await submitOutbound({ version: 1, batchId: context.batch.batchId, claim: context.claim, purpose: "final", actionKey: optionSelectionActionKey(record), payload: { kind: "text", spaceId: context.destination.spaceId, text: formatOptionSelection(record)! } }, f);
             ids.push(statuses[0]!.id);
         }
-        expect(ids[0]).toBe(ids[1]);
-        expect(f.store.listOutbound()).toHaveLength(2); // Original card group and one clarification.
+        expect(ids[0]).not.toBe(ids[1]);
+        expect(f.store.listOutbound()).toHaveLength(3); // Original card group and one clarification per new request.
     } finally { f.cleanup(); }
 });

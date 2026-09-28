@@ -48,6 +48,9 @@ test("private controls derive original task destination and register immutable f
   ).toEqual({
     taskId: f.task.taskId,
     batchId: f.task.batchId,
+    originalBatchId: f.task.batchId,
+    inputRevision: 1,
+    taskInputRevision: 1,
     destination: f.b.destination,
     origin: "https://cards.example.test",
   });
@@ -107,11 +110,47 @@ test("read-only operation recovery survives lease expiry without allowing anothe
       taskId: f.task.taskId,
       batchId: f.task.batchId,
       actionKey: "card-action",
+      cardId: f.context.cardId,
     }),
   ).toMatchObject({ items: [{ id: item!.id, state: "queued" }] });
   await expect(
     f.call("register", { claim: f.b.claim, context: f.context }),
   ).rejects.toThrow();
+});
+test("permitted follow-ups retain card identity while superseded inputs can only recover reads", async () => {
+  const f = setup();
+  await f.call("register", { claim: f.b.claim, context: f.context });
+  const next = batch(f.store);
+  await expect(f.call("task-context", {
+    taskId: f.task.taskId, batchId: next.batch.batchId, claim: next.claim,
+  })).rejects.toThrow("TASK_CONTEXT_MISMATCH");
+  const input = f.store.associateTask(next.claim, f.task.taskId, 1);
+  f.store.bindTask(next.claim, { ...f.task, currentInputRevision: input.inputRevision, receipt: "native-amendment" });
+  expect(await f.call("task-context", {
+    taskId: f.task.taskId, batchId: next.batch.batchId, claim: next.claim,
+    inputRevision: 1, taskInputRevision: input.inputRevision,
+  })).toMatchObject({
+    originalBatchId: f.task.batchId, batchId: next.batch.batchId,
+    inputRevision: 1, taskInputRevision: input.inputRevision,
+  });
+  await f.call("register", {
+    claim: next.claim, inputRevision: 1, taskInputRevision: input.inputRevision,
+    context: f.context,
+  });
+  expect(f.store.getTask(f.task.taskId)?.batchId).toBe(f.task.batchId);
+  expect(f.store.getMetadata<typeof f.context>("task-card-context", f.context.cardId)).toEqual(f.context);
+  await expect(f.call("task-context", {
+    taskId: f.task.taskId, batchId: f.task.batchId, claim: f.b.claim,
+    inputRevision: 1, taskInputRevision: 1,
+  })).rejects.toThrow("SUPERSEDED_TASK_INPUT");
+  expect(await f.call("task-context", {
+    taskId: f.task.taskId, batchId: f.task.batchId,
+    inputRevision: 1, taskInputRevision: 1,
+  })).toMatchObject({ originalBatchId: f.task.batchId });
+  await expect(f.call("operation-status", {
+    taskId: f.task.taskId, batchId: next.batch.batchId,
+    actionKey: "card-action", cardId: "some-other-card",
+  })).rejects.toThrow("TASK_CARD_CONTEXT_MISMATCH");
 });
 test("executable Bun control accepts bounded stdin and emits no input or private URL on rejection", async () => {
   const f = setup();
@@ -150,7 +189,9 @@ test("executable Bun control accepts bounded stdin and emits no input or private
   );
   expect(oversized.code).toBe(1);
   expect(oversized.stdout).toBe("");
-  expect(oversized.stderr).toBe("PRESENTATION_CONTROL_REJECTED\n");
+  expect(JSON.parse(oversized.stderr)).toEqual({
+    ok: false, error: { code: "INPUT_TOO_LARGE", recovery: ["correct-input"] },
+  });
   expect((await run("{}", ["task-context", "--", "--json-stdin"])).code).toBe(
     1,
   );

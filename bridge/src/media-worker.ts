@@ -26,7 +26,8 @@ export function pendingMediaPatch(reference: MediaReference): Partial<InboundRec
 }
 
 /** Bounded worker consuming durable jobs. notify() never waits on IO. Results
- * enrich only their original event through settleMedia; no accept/enqueue/wake.
+ * settle their original event and its durable continuation in one transaction.
+ * The existing wake dispatcher discovers it; no second inbox acceptance.
  */
 export function createMediaWorker(opts: MediaWorkerOptions) {
   const concurrency = opts.concurrency ?? 2;

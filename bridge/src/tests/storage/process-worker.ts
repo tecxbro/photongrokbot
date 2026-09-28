@@ -84,6 +84,7 @@ else if (mode === "settle-media")
   );
 else if (mode === "complete") result = store.completeClaim(data.claim);
 else if (mode === "bind-task") result = store.bindTask(data.claim, data.task);
+else if (mode === "task-result") result = store.ingestTaskResult(data.result);
 else if (mode === "hold-lock") {
   store.db.exec("BEGIN IMMEDIATE");
   writeFileSync(data.acquired, "acquired");

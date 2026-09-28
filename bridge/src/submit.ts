@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { canonical } from "./storage.contract.ts";
 import { existsSync, readFileSync } from "node:fs";
 import { parseLiveMiniEnv } from "./setup-verification.ts";
 import { resolveInstancePaths, assertPrivateFile } from "../../shared/instance-paths.mjs";
@@ -84,11 +86,13 @@ export function parsePayload(value: unknown): EnqueueOutboundInput {
 }
 export function parseSubmission(value: unknown): Submission {
     const row = object(value);
-    keys(row, ["version", "batchId", "taskId", "claim", "actionKey", "purpose", "payload", "presentation"]);
+    keys(row, ["version", "batchId", "taskId", "claim", "actionKey", "purpose", "payload", "presentation", "inputRevision", "taskInputRevision", "optionSetRevision"]);
     if (row.version !== 1)
         throw new Error("VERSION_INVALID");
     string(row.batchId, 512);
     optionalString(row.taskId);
+    for (const key of ["inputRevision", "taskInputRevision"]) if (row[key] !== undefined && (!Number.isSafeInteger(row[key]) || Number(row[key]) < 1)) throw new Error("INPUT_REVISION_INVALID");
+    if (row.optionSetRevision !== undefined) string(row.optionSetRevision, 120);
     string(row.actionKey, 512);
     if (!["progress", "final", "control", "presentation"].includes(String(row.purpose)))
         throw new Error("PURPOSE_INVALID");
@@ -120,6 +124,11 @@ export async function submitOutbound(raw: unknown, opts: SubmitOptions): Promise
     const destination = authorizeSubmission(submission, opts.store);
     const paths = opts.paths ?? resolveInstancePaths();
     authorizeArtifactPaths(paths, submission.payload);
+    if (submission.optionSetRevision) {
+        const revision = opts.store.assertWork(submission.claim, submission.inputRevision);
+        const option = opts.store.getMetadata<{payloadHash:string}>("option-set-context", canonical([submission.batchId, revision, submission.optionSetRevision, destination]));
+        if (option?.payloadHash !== createHash("sha256").update(canonical(submission.payload)).digest("hex")) throw new Error("OPTION_SET_CONTEXT_MISMATCH");
+    }
     if (submission.payload.kind === "app" || submission.payload.kind === "app_update") {
         const url = submission.payload.url;
         let configured = opts.store.getMetadata<{
@@ -158,15 +167,16 @@ export async function submitOutbound(raw: unknown, opts: SubmitOptions): Promise
                 };
                 viewUrl: string;
             }>("task-card-context", p.cardId);
-            if (!registered || registered.cardId !== p.cardId || registered.taskId !== p.taskId || registered.batchId !== submission.batchId || registered.viewUrl !== url || p.viewUrl !== url || registered.destination.spaceId !== destination.spaceId || registered.destination.lineId !== destination.lineId || (submission.taskId !== undefined && submission.taskId !== registered.taskId))
+            if (!registered || registered.cardId !== p.cardId || registered.taskId !== p.taskId || registered.batchId !== opts.store.getTask(p.taskId)?.batchId || registered.viewUrl !== url || p.viewUrl !== url || registered.destination.spaceId !== destination.spaceId || registered.destination.lineId !== destination.lineId || (submission.taskId !== undefined && submission.taskId !== registered.taskId))
                 throw new Error("TASK_CARD_CONTEXT_MISMATCH");
         }
     }
     else if (submission.presentation)
         throw new Error("TASK_CARD_APP_REQUIRED");
+    if (submission.presentation) opts.store.getTaskInput(submission.presentation.taskId, submission.batchId, opts.store.assertWork(submission.claim, submission.inputRevision));
     const payload = await (opts.normalize ?? normalizeEnqueueAttachments)(submission.payload, { paths, signal: opts.signal });
     opts.signal?.throwIfAborted();
     // Store rechecks the generation/destination in its own short transaction.
-    const items = opts.store.enqueue(payload, { actionKey: submission.actionKey, purpose: submission.purpose, claim: submission.claim, destination, ...(submission.taskId ? { taskId: submission.taskId } : {}), ...(submission.presentation ? { presentation: submission.presentation } : {}) });
+    const items = opts.store.enqueue(payload, { actionKey: submission.actionKey, purpose: submission.purpose, claim: submission.claim, inputRevision: submission.inputRevision, taskInputRevision: submission.taskInputRevision, optionSetRevision: submission.optionSetRevision, destination, ...(submission.taskId ? { taskId: submission.taskId } : {}), ...(submission.presentation ? { presentation: submission.presentation } : {}) });
     return items.map((item) => opts.store.outboundStatus(item.id)!);
 }

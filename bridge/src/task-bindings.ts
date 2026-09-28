@@ -1,5 +1,8 @@
 import type { BridgeStore, ClaimToken, TaskBinding } from "./contracts.ts";
 import { validateClaim } from "./storage.contract.ts";
+/** taskId is allocated locally before invocation; nativeRef is attached in the receipt.
+ * Each input returns its stored correlationId, which authorizes result reporting
+ * independently of the short-lived processing claim. */
 export function recordDelegation(
   store: BridgeStore,
   input: { claim: ClaimToken; task: TaskBinding },

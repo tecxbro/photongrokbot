@@ -1,3 +1,4 @@
+import { bridgeControlError } from "./control-errors.ts";
 import { getStore } from "./storage.ts";
 import { recordDelegation } from "./task-bindings.ts";
 import { validateClaim, validateId } from "./storage.contract.ts";
@@ -33,6 +34,20 @@ export async function control(
 ): Promise<unknown> {
   args = args[0] === "--" ? args.slice(1) : [...args];
   const command = args.shift();
+  if (["associate-task", "task-result", "resume-task"].includes(command ?? "")) {
+    if (args.length !== 1 || args[0] !== "--json-stdin") throw new Error("JSON_STDIN_REQUIRED");
+    const body = await stdin();
+    if (body.length > 65536) throw new Error("INPUT_TOO_LARGE");
+    const input = JSON.parse(body);
+    if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("OBJECT_REQUIRED");
+    if (command === "task-result") return store.ingestTaskResult(input);
+    const allowed = command === "associate-task" ? ["claim", "taskId", "inputRevision"] : ["taskId", "inputRevision"];
+    if (Object.keys(input).some(key => !allowed.includes(key))) throw new Error("UNKNOWN_FIELD");
+    validateId(input.taskId, "task_id");
+    if (command === "associate-task") return store.associateTask(input.claim, input.taskId, input.inputRevision);
+    if (!Number.isSafeInteger(input.inputRevision) || input.inputRevision < 1) throw new Error("INPUT_REVISION_INVALID");
+    return store.resumeTask(input.taskId, input.inputRevision);
+  }
   if (command === "recover-delegation") {
     if (args.length !== 1 || args[0] !== "--json-stdin")
       throw new Error("JSON_STDIN_REQUIRED");
@@ -68,7 +83,7 @@ export async function control(
   for (let i = 0; i < args.length; i += 2) {
     const key = args[i]!;
     if (
-      !["--batch-id", "--run-id", "--generation"].includes(key) ||
+      !["--batch-id", "--run-id", "--generation", "--input-revision"].includes(key) ||
       key in flags ||
       !args[i + 1]
     )
@@ -87,15 +102,16 @@ export async function control(
     generation: Number(flags["--generation"]),
   };
   validateClaim(token);
-  if (command === "renew") store.renewClaim(token);
-  else store.completeClaim(token);
+  const revision = flags["--input-revision"] === undefined ? undefined : Number(flags["--input-revision"]);
+  if (command === "renew") { if (revision !== undefined) throw new Error("ARGUMENT_INVALID"); store.renewClaim(token); }
+  else store.completeClaim(token, revision);
   return { ok: true, batchId };
 }
 if (import.meta.main) {
   try {
     console.log(JSON.stringify(await control(process.argv.slice(2))));
-  } catch {
-    console.error("BATCH_CONTROL_REJECTED");
+  } catch (error) {
+    console.error(JSON.stringify(bridgeControlError(error)));
     process.exitCode = 1;
   }
 }

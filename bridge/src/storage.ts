@@ -26,6 +26,10 @@ import type {
   PresentationContext,
   Submission,
   TaskBinding,
+  TaskInput,
+  TaskResult,
+  TaskResultInput,
+  OperationSource,
   WakeJob,
   OutboundClaim,
   OutboundStatus,
@@ -212,24 +216,45 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
         .all(kind, afterKey ?? null, afterKey ?? null, limit) as Row[]
     ).map((row) => ({ key: row.key, value: JSON.parse(row.value) }));
   }
-  operationStatus(
-    destination: Destination,
-    purpose: string,
-    actionKey: string,
-  ): OutboundStatus[] {
+  operationStatus(destination: Destination, purpose: string, actionKey: string, source: OperationSource): OutboundStatus[] {
     validateDestination(destination);
-    return (
-      this.db
-        .query(
-          "SELECT o.id FROM outbound o JOIN operations p ON p.id=o.operation_id WHERE p.space_id=? AND p.line_id=? AND p.purpose=? AND p.action_key=? ORDER BY o.ordinal",
-        )
-        .all(
-          destination.spaceId,
-          destination.lineId,
-          purpose,
-          actionKey,
-        ) as Row[]
-    ).map((row) => this.outboundStatus(row.id)!);
+    const scope = this.operationScope(destination, source);
+    return (this.db.query("SELECT o.id FROM outbound o JOIN operations p ON p.id=o.operation_id WHERE p.space_id=? AND p.line_id=? AND p.scope=? AND p.purpose=? AND p.action_key=? ORDER BY o.ordinal")
+      .all(destination.spaceId, destination.lineId, scope, purpose, actionKey) as Row[]).map(row => this.outboundStatus(row.id)!);
+  }
+  private operationScope(destination: Destination, source: OperationSource): string {
+    if (!source) throw new Error("OPERATION_SOURCE_REQUIRED");
+    if (canonical(this.batchDestination(source.batchId)) !== canonical(destination)) throw new Error("BATCH_DESTINATION_MISMATCH");
+    const batch = this.claimSnapshot(source.batchId);
+    const revision = source.inputRevision ?? batch.claimedRevision ?? batch.inputRevision;
+    if (!Number.isSafeInteger(revision) || revision < 1 || revision > batch.inputRevision) throw new Error("INPUT_REVISION_INVALID");
+    if (source.taskId) {
+      const associated = this.getTaskInput(source.taskId, source.batchId, revision, false);
+      if (source.taskInputRevision !== undefined && source.taskInputRevision !== associated.inputRevision) throw new Error("TASK_CONTEXT_MISMATCH");
+    } else if (source.taskInputRevision !== undefined && !this.db.query("SELECT 1 FROM task_inputs WHERE batch_id=? AND result_work_revision=? AND input_revision=?").get(source.batchId, revision, source.taskInputRevision)) throw new Error("TASK_CONTEXT_MISMATCH");
+    if (source.cardId) {
+      const card = this.getMetadata<PresentationContext>("task-card-context", source.cardId);
+      if (!card || card.taskId !== source.taskId || canonical(card.destination) !== canonical(destination)) throw new Error("TASK_CARD_CONTEXT_MISMATCH");
+      this.getTaskInput(card.taskId, source.batchId, revision, false);
+      return `card:${card.cardId}`;
+    }
+    if (source.optionSetRevision) {
+      const key = canonical([source.batchId, revision, source.optionSetRevision, destination]);
+      if (!this.getMetadata("option-set-context", key)) throw new Error("OPTION_SET_CONTEXT_MISMATCH");
+      return `options:${source.batchId}:${revision}:${source.optionSetRevision}`;
+    }
+    const recordedTask = this.db.query("SELECT task_id FROM task_inputs WHERE batch_id=? AND result_work_revision=? ORDER BY input_revision DESC LIMIT 1").get(source.batchId, revision) as Row | null;
+    if (recordedTask) {
+      if (source.taskId && source.taskId !== recordedTask.task_id) throw new Error("TASK_CONTEXT_MISMATCH");
+      source = {...source, taskId: recordedTask.task_id};
+    }
+    if (source.taskId) {
+      const input = this.getTaskInput(source.taskId, source.batchId, revision, false);
+      if (source.taskInputRevision !== undefined && source.taskInputRevision !== input.inputRevision) throw new Error("TASK_CONTEXT_MISMATCH");
+      return `task:${source.taskId}:input:${input.inputRevision}`;
+    }
+    if (source.taskInputRevision !== undefined) throw new Error("TASK_CONTEXT_MISMATCH");
+    return `work:${source.batchId}:${revision}`;
   }
   deleteMetadata(kind: string, key: string): void {
     this.db.query("DELETE FROM metadata WHERE kind=? AND key=?").run(kind, key);
@@ -340,6 +365,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       destinations.forEach(validateDestination);
     }
     return this.tx("form_batches", () => {
+      this.dispatchContinuations();
       // Explicit pairs come from independently due inbound debounce windows.
       // Undefined preserves startup recovery's sweep of all pending input.
       const groups =
@@ -381,6 +407,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
           this.db.query("UPDATE inbox SET pending=0 WHERE id=?").run(event.id);
         });
         this.db.query("INSERT INTO wakes(batch_id) VALUES(?)").run(batchId);
+        this.captureRevision(batchId, 1, "inbound", "inbound");
         result.push(this.readBatch(batchId));
       }
       return result;
@@ -394,39 +421,50 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
     if (!row) throw new Error("BATCH_NOT_FOUND");
     return { spaceId: row.space_id, lineId: row.line_id };
   }
-  readBatch(batchId: string): UnreadBatch {
-    const destination = this.batchDestination(batchId);
-    const row = this.db
-      .query("SELECT formed_at FROM batches WHERE id=?")
-      .get(batchId) as Row;
-    const messages = (
-      this.db
-        .query(
-          "SELECT i.record FROM batch_events b JOIN inbox i ON i.id=b.event_id WHERE b.batch_id=? ORDER BY b.ordinal",
-        )
-        .all(batchId) as Row[]
-    ).map((r) => parseRecord(r.record));
-    const media = (
-      this.db
-        .query(
-          "SELECT m.* FROM media_jobs m JOIN batch_events b ON b.event_id=m.event_id WHERE b.batch_id=? ORDER BY b.ordinal",
-        )
-        .all(batchId) as Row[]
-    ).map((r) => this.mediaRow(r));
-    return {
-      batchId,
-      flushedAt: new Date(row.formed_at).toISOString(),
-      messages,
-      destination,
-      media,
-      tasks: this.tasksForBatch(batchId),
-    } as UnreadBatch;
+  private captureRevision(batchId: string, revision: number, reason: string, sourceKey: string, extra: Row = {}): void {
+    const events = this.db.query("SELECT i.id,i.provider_id,i.record FROM batch_events b JOIN inbox i ON i.id=b.event_id WHERE b.batch_id=? ORDER BY b.ordinal").all(batchId) as Row[];
+    const media = (this.db.query("SELECT m.* FROM media_jobs m JOIN batch_events b ON b.event_id=m.event_id WHERE b.batch_id=? ORDER BY b.ordinal").all(batchId) as Row[]).map(row => this.mediaRow(row));
+    const snapshot = { messages: events.map(row => parseRecord(row.record)), media,
+      originalSources: events.map(row => ({eventId: row.id, messageId: row.provider_id})),
+      sources: events.map(row => ({eventId: row.id, messageId: row.provider_id})), ...extra };
+    this.db.query("INSERT INTO batch_revisions(batch_id,revision,reason,source_key,snapshot,created_at) VALUES(?,?,?,?,?,?)")
+      .run(batchId, revision, reason, sourceKey, canonical(snapshot), now());
+  }
+  private appendRevision(batchId: string, reason: string, sourceKey: string, extra: Row = {}): number {
+    const prior = this.db.query("SELECT revision FROM batch_revisions WHERE batch_id=? AND source_key=?").get(batchId, sourceKey) as Row | null;
+    if (prior) return prior.revision;
+    const batch = this.claimSnapshot(batchId), revision = batch.inputRevision + 1;
+    this.captureRevision(batchId, revision, reason, sourceKey, extra);
+    // A running reader retains its snapshot. Delegated/finished/expired readers
+    // yield to persisted continuation work, with fresh fenced authority.
+    const activeReader = batch.state === "claimed" && batch.leaseUntil! > now();
+    this.db.query("UPDATE batches SET input_revision=?,state=?,completed_at=NULL,run_id=CASE WHEN ? THEN run_id ELSE NULL END,lease_until=CASE WHEN ? THEN lease_until ELSE NULL END WHERE id=?")
+      .run(revision, activeReader ? "claimed" : "pending", activeReader ? 1 : 0, activeReader ? 1 : 0, batchId);
+    this.resetWake(batchId);
+    return revision;
+  }
+  private resetWake(batchId: string): void {
+    this.db.query("INSERT INTO wakes(batch_id) VALUES(?) ON CONFLICT(batch_id) DO UPDATE SET state='pending',attempts=0,next_at=0,attempt_id=NULL,lease_until=NULL,code=NULL").run(batchId);
+  }
+  readBatch(batchId: string, inputRevision?: number): UnreadBatch {
+    return this.tx("read_batch", () => {
+      const destination = this.batchDestination(batchId), row = this.claimSnapshot(batchId);
+      const revision = inputRevision ?? ((row.state === "claimed" || row.state === "delegated") && row.leaseUntil! > now() ? row.claimedRevision : null) ?? row.inputRevision;
+      const stored = this.db.query("SELECT * FROM batch_revisions WHERE batch_id=? AND revision=?").get(batchId, revision) as Row | null;
+      if (!stored) throw new Error("INPUT_REVISION_INVALID");
+      const snapshot = JSON.parse(stored.snapshot);
+      const formed = this.db.query("SELECT formed_at FROM batches WHERE id=?").get(batchId) as Row;
+      const taskResults = (this.db.query("SELECT value FROM task_results WHERE json_extract(value,'$.batchId')=? AND json_extract(value,'$.workRevision')<=? ORDER BY created_at,id").all(batchId, revision) as Row[]).map(r => JSON.parse(r.value));
+      return {batchId, flushedAt: new Date(formed.formed_at).toISOString(), destination,
+        ...snapshot, inputRevision: revision, acknowledgedRevision: row.acknowledgedRevision,
+        continuationReason: stored.reason, tasks: this.tasksForBatch(batchId), taskResults};
+    });
   }
   claimSnapshot(batchId: string): ClaimSnapshot {
     validateId(batchId, "batch_id");
     const row = this.db
       .query(
-        "SELECT state,run_id AS runId,generation,lease_until AS leaseUntil FROM batches WHERE id=?",
+        "SELECT state,run_id AS runId,generation,lease_until AS leaseUntil,input_revision AS inputRevision,claimed_revision AS claimedRevision,acknowledged_revision AS acknowledgedRevision FROM batches WHERE id=?",
       )
       .get(batchId) as ClaimSnapshot | null;
     if (!row) throw new Error("BATCH_NOT_FOUND");
@@ -452,10 +490,10 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       };
       this.db
         .query(
-          "UPDATE batches SET state='claimed',run_id=?,generation=?,lease_until=? WHERE id=?",
+          "UPDATE batches SET state='claimed',run_id=?,generation=?,lease_until=?,claimed_revision=input_revision WHERE id=?",
         )
         .run(token.runId, token.generation, at + leaseMs, batchId);
-      return { status: "acquired", token, leaseUntil: at + leaseMs };
+      return { status: "acquired", token, leaseUntil: at + leaseMs, inputRevision: row.inputRevision };
     });
   }
   assertClaim(token: ClaimToken): void {
@@ -478,99 +516,137 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
         .run(now() + leaseMs, token.batchId);
     });
   }
-  completeClaim(token: ClaimToken): void {
+  assertWork(token: ClaimToken, inputRevision?: number): number {
+    this.assertClaim(token);
+    const row = this.claimSnapshot(token.batchId);
+    const revision = inputRevision ?? row.claimedRevision;
+    if (!Number.isSafeInteger(revision) || revision !== row.claimedRevision) throw new Error("STALE_INPUT_REVISION");
+    return revision!;
+  }
+  completeClaim(token: ClaimToken, inputRevision?: number): void {
     this.tx("complete_claim", () => {
-      this.assertClaim(token);
-      const unresolvedTask = this.db
-        .query(
-          "SELECT id FROM tasks WHERE batch_id=? AND state IN ('intent','unknown','accepted') LIMIT 1",
-        )
-        .get(token.batchId);
+      const revision = this.assertWork(token, inputRevision), batch = this.claimSnapshot(token.batchId);
+      const unresolvedTask = this.db.query("SELECT 1 FROM task_inputs i JOIN tasks t ON t.id=i.task_id WHERE i.batch_id=? AND i.work_revision<=? AND t.current_input_revision=i.input_revision AND i.state IN ('intent','unknown','accepted') LIMIT 1").get(token.batchId, revision);
       if (unresolvedTask) throw new Error("TASK_UNRESOLVED");
-      this.db
-        .query("UPDATE batches SET state='completed',completed_at=? WHERE id=?")
-        .run(now(), token.batchId);
+      const pending = batch.inputRevision > revision;
+      this.db.query("UPDATE batches SET acknowledged_revision=MAX(acknowledged_revision,?),state=?,completed_at=?,run_id=NULL,lease_until=NULL WHERE id=?")
+        .run(revision, pending ? "pending" : "completed", pending ? null : now(), token.batchId);
+      if (pending) this.resetWake(token.batchId);
     });
   }
   bindTask(token: ClaimToken, binding: TaskBinding): void {
     validateId(binding.taskId, "task_id");
     validateDestination(binding.destination);
-    if (
-      !binding.owner ||
-      !binding.finalOwner ||
-      binding.batchId !== token.batchId ||
-      !["intent", "accepted", "unknown", "completed"].includes(binding.state)
-    )
-      throw new Error("TASK_BINDING_INVALID");
+    if ([binding.owner, binding.finalOwner].some(value => typeof value !== "string" || !value.trim() || value.length > 512) || !["intent", "accepted", "unknown", "completed"].includes(binding.state)) throw new Error("TASK_BINDING_INVALID");
+    if (binding.receipt !== undefined && (typeof binding.receipt !== "string" || !binding.receipt.trim() || binding.receipt.length > 4096)) throw new Error("TASK_RECEIPT_REQUIRED");
+    if (binding.nativeRef !== undefined && (typeof binding.nativeRef !== "string" || !binding.nativeRef.trim() || binding.nativeRef.length > 4096)) throw new Error("NATIVE_REFERENCE_INVALID");
     this.tx("bind_task", () => {
-      this.assertClaim(token);
-      const destination = this.batchDestination(token.batchId);
-      if (canonical(destination) !== canonical(binding.destination))
-        throw new Error("TASK_DESTINATION_MISMATCH");
+      const revision = this.assertWork(token);
+      if (canonical(this.batchDestination(token.batchId)) !== canonical(binding.destination)) throw new Error("TASK_DESTINATION_MISMATCH");
       const existing = this.getTask(binding.taskId);
+      let input: TaskInput;
       if (existing) {
-        if (
-          existing.batchId !== binding.batchId ||
-          canonical(existing.destination) !== canonical(binding.destination) ||
-          existing.owner !== binding.owner ||
-          existing.finalOwner !== binding.finalOwner
-        )
-          throw new Error("TASK_ID_CONFLICT");
-        if (
-          existing.state !== binding.state &&
-          !(
-            existing.state === "intent" &&
-            ["accepted", "unknown"].includes(binding.state)
-          ) &&
-          !(existing.state === "accepted" && binding.state === "completed") &&
-          !(
-            existing.state === "unknown" &&
-            binding.state === "accepted" &&
-            binding.receipt
-          )
-        )
-          throw new Error("TASK_TRANSITION_INVALID");
+        if (existing.batchId !== binding.batchId || canonical(existing.destination) !== canonical(binding.destination) || existing.owner !== binding.owner || existing.finalOwner !== binding.finalOwner) throw new Error("TASK_ID_CONFLICT");
+        input = this.getTaskInput(binding.taskId, token.batchId, revision);
+        if (binding.currentInputRevision !== undefined && binding.currentInputRevision !== input.inputRevision) throw new Error("SUPERSEDED_TASK_INPUT");
+        if (input.state !== binding.state && !(input.state === "intent" && ["accepted", "unknown"].includes(binding.state)) && !(input.state === "accepted" && binding.state === "completed") && !(input.state === "unknown" && binding.state === "accepted" && binding.receipt)) throw new Error("TASK_TRANSITION_INVALID");
+        if (existing.nativeRef && binding.nativeRef && existing.nativeRef !== binding.nativeRef) throw new Error("NATIVE_REFERENCE_CONFLICT");
       } else {
+        if (binding.batchId !== token.batchId) throw new Error("TASK_BINDING_INVALID");
         if (binding.state !== "intent") throw new Error("TASK_INTENT_REQUIRED");
-        if (
-          this.db
-            .query(
-              "SELECT id FROM tasks WHERE batch_id=? AND state!='completed' LIMIT 1",
-            )
-            .get(binding.batchId)
-        )
-          throw new Error("HANDOFF_ALREADY_RESERVED");
+        if (this.db.query("SELECT 1 FROM task_inputs i JOIN tasks t ON t.id=i.task_id WHERE i.batch_id=? AND i.work_revision=? AND i.input_revision=t.current_input_revision AND i.state!='completed'").get(token.batchId, revision)) throw new Error("HANDOFF_ALREADY_RESERVED");
+        this.db.query("INSERT INTO tasks(id,batch_id,binding,state,updated_at,current_input_revision) VALUES(?,?,?,?,?,1)").run(binding.taskId, binding.batchId, canonical(binding), binding.state, now());
+        input = {taskId: binding.taskId, inputRevision: 1, batchId: token.batchId, workRevision: revision, correlationId: id("cor"), state: "intent"};
+        this.db.query("INSERT INTO task_inputs(task_id,input_revision,batch_id,work_revision,correlation_id,state) VALUES(?,?,?,?,?,?)").run(binding.taskId, 1, token.batchId, revision, input.correlationId, input.state);
       }
-      if (["accepted", "completed"].includes(binding.state) && !binding.receipt)
-        throw new Error("TASK_RECEIPT_REQUIRED");
-      this.db
-        .query(
-          "INSERT INTO tasks(id,batch_id,binding,state,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET binding=excluded.binding,state=excluded.state,updated_at=excluded.updated_at",
-        )
-        .run(
-          binding.taskId,
-          binding.batchId,
-          canonical(binding),
-          binding.state,
-          now(),
-        );
-      this.db
-        .query("UPDATE batches SET state=? WHERE id=?")
-        .run(
-          binding.state === "completed" ? "claimed" : "delegated",
-          binding.batchId,
-        );
+      if (["accepted", "completed"].includes(binding.state) && (typeof binding.receipt !== "string" || !binding.receipt.trim() || binding.receipt.length > 4096)) throw new Error("TASK_RECEIPT_REQUIRED");
+      // The persistent local identity is independent of a native ID returned later.
+      const {inputs: _inputs, currentInputRevision: _current, ...clean} = binding;
+      const updated = {...clean, ...(existing?.nativeRef ? {nativeRef: existing.nativeRef} : {})};
+      this.db.query("UPDATE tasks SET binding=?,state=?,updated_at=? WHERE id=?").run(canonical(updated), binding.state, now(), binding.taskId);
+      this.db.query("UPDATE task_inputs SET state=?,receipt=? WHERE task_id=? AND input_revision=?").run(binding.state, binding.receipt ?? input.receipt ?? null, binding.taskId, input.inputRevision);
+      this.db.query("UPDATE batches SET state=? WHERE id=?").run(binding.state === "completed" ? "claimed" : "delegated", token.batchId);
     });
   }
+  private taskInputRow(row: Row): TaskInput {
+    return {taskId: row.task_id, inputRevision: row.input_revision, batchId: row.batch_id,
+      workRevision: row.work_revision, correlationId: row.correlation_id, state: row.state,
+      ...(row.receipt ? {receipt: row.receipt} : {}), ...(row.result_work_revision ? {resultWorkRevision: row.result_work_revision} : {})};
+  }
   getTask(taskId: string): TaskBinding | undefined {
-    const row = this.db
-      .query("SELECT binding FROM tasks WHERE id=?")
-      .get(taskId) as Row | null;
+    validateId(taskId, "task_id");
+    const row = this.db.query("SELECT binding,current_input_revision FROM tasks WHERE id=?").get(taskId) as Row | null;
     if (!row) return;
     const value = JSON.parse(row.binding);
-    if (value.taskId !== taskId || !value.destination)
-      throw new Error("TASK_RECORD_INVALID");
-    return value;
+    if (value.taskId !== taskId || !value.destination) throw new Error("TASK_RECORD_INVALID");
+    return {...value, currentInputRevision: row.current_input_revision,
+      inputs: (this.db.query("SELECT * FROM task_inputs WHERE task_id=? ORDER BY input_revision").all(taskId) as Row[]).map(r => this.taskInputRow(r))};
+  }
+  getTaskInput(taskId: string, batchId: string, workRevision?: number, requireCurrent = true): TaskInput {
+    const task = this.getTask(taskId), batch = this.claimSnapshot(batchId);
+    const revision = workRevision ?? batch.claimedRevision ?? batch.inputRevision;
+    if (!task || canonical(task.destination) !== canonical(this.batchDestination(batchId))) throw new Error("TASK_CONTEXT_MISMATCH");
+    const input = task.inputs!.find(i => i.batchId === batchId && (i.workRevision === revision || i.resultWorkRevision === revision));
+    if (!input) throw new Error("TASK_CONTEXT_MISMATCH");
+    if (requireCurrent && input.inputRevision !== task.currentInputRevision) throw new Error("SUPERSEDED_TASK_INPUT");
+    return input;
+  }
+  associateTask(token: ClaimToken, taskId: string, inputRevision?: number): TaskInput {
+    return this.tx("associate_task", () => {
+      const revision = this.assertWork(token, inputRevision), task = this.getTask(taskId);
+      if (!task) throw new Error("TASK_NOT_FOUND");
+      if (canonical(task.destination) !== canonical(this.batchDestination(token.batchId))) throw new Error("TASK_DESTINATION_MISMATCH");
+      const prior = task.inputs!.find(i => i.batchId === token.batchId && (i.workRevision === revision || i.resultWorkRevision === revision));
+      if (prior) {
+        if (prior.inputRevision !== task.currentInputRevision) throw new Error("SUPERSEDED_TASK_INPUT");
+        return prior;
+      }
+      if (!task.nativeRef && task.state !== "completed" && task.state !== "accepted") throw new Error("TASK_NOT_ACCEPTED");
+      if (this.db.query("SELECT 1 FROM task_inputs WHERE batch_id=? AND work_revision=?").get(token.batchId, revision)) throw new Error("HANDOFF_ALREADY_RESERVED");
+      const next = task.currentInputRevision! + 1;
+      const input: TaskInput = {taskId, inputRevision: next, batchId: token.batchId, workRevision: revision, correlationId: id("cor"), state: "intent"};
+      this.db.query("INSERT INTO task_inputs(task_id,input_revision,batch_id,work_revision,correlation_id,state) VALUES(?,?,?,?,?,?)").run(taskId, next, token.batchId, revision, input.correlationId, input.state);
+      const {inputs: _inputs, currentInputRevision: _current, ...binding} = task;
+      this.db.query("UPDATE tasks SET current_input_revision=?,state='intent',binding=?,updated_at=? WHERE id=?").run(next, canonical({...binding, state: "intent"}), now(), taskId);
+      return input;
+    });
+  }
+  ingestTaskResult(input: TaskResultInput): TaskResult {
+    if (!input || Object.keys(input).some(k => !["taskId", "inputRevision", "correlationId", "nativeRef", "receipt", "result"].includes(k))) throw new Error("TASK_RESULT_INVALID");
+    validateId(input.taskId, "task_id");
+    if (!Number.isSafeInteger(input.inputRevision) || input.inputRevision < 1 || typeof input.receipt !== "string" || !input.receipt.trim() || input.receipt.length > 4096 || input.result === undefined || canonical(input).length > 60000) throw new Error("TASK_RESULT_INVALID");
+    if (input.nativeRef !== undefined && (typeof input.nativeRef !== "string" || !input.nativeRef.trim() || input.nativeRef.length > 4096)) throw new Error("NATIVE_REFERENCE_INVALID");
+    return this.tx("task_result", () => {
+      const task = this.getTask(input.taskId), associated = task?.inputs?.find(i => i.inputRevision === input.inputRevision);
+      if (!task || !associated || associated.correlationId !== input.correlationId) throw new Error("TASK_RESULT_CORRELATION_MISMATCH");
+      if (task.nativeRef && input.nativeRef && task.nativeRef !== input.nativeRef) throw new Error("NATIVE_REFERENCE_CONFLICT");
+      const digest = hash(input);
+      const prior = this.db.query("SELECT digest,value FROM task_results WHERE task_id=? AND input_revision=?").get(input.taskId, input.inputRevision) as Row | null;
+      if (prior) {
+        if (prior.digest !== digest) throw new Error("TASK_RESULT_CONFLICT");
+        return JSON.parse(prior.value);
+      }
+      const superseded = task.currentInputRevision !== input.inputRevision;
+      const result: TaskResult = {...input, resultId: id("result"), batchId: associated.batchId, superseded};
+      if (!superseded) result.workRevision = this.appendRevision(associated.batchId, "task_result", `result:${result.resultId}`, {
+        sources: [{taskId: input.taskId, taskInputRevision: input.inputRevision, resultId: result.resultId}],
+      });
+      this.db.query("INSERT INTO task_results(id,task_id,input_revision,digest,value,created_at) VALUES(?,?,?,?,?,?)").run(result.resultId, input.taskId, input.inputRevision, digest, canonical(result), now());
+      this.db.query("UPDATE task_inputs SET state='completed',receipt=?,result_work_revision=? WHERE task_id=? AND input_revision=?").run(input.receipt, result.workRevision ?? null, input.taskId, input.inputRevision);
+      const {inputs: _inputs, currentInputRevision: _current, ...binding} = task;
+      const updated = {...binding, ...(input.nativeRef && !task.nativeRef ? {nativeRef: input.nativeRef} : {}), ...(!superseded ? {state: "completed", receipt: input.receipt} : {})};
+      this.db.query("UPDATE tasks SET state=?,binding=?,updated_at=? WHERE id=?").run(updated.state, canonical(updated), now(), input.taskId);
+      return result;
+    });
+  }
+  resumeTask(taskId: string, inputRevision: number): ClaimResult {
+    return this.tx("resume_task", () => {
+      const task = this.getTask(taskId);
+      if (!task || task.currentInputRevision !== inputRevision) throw new Error("SUPERSEDED_TASK_INPUT");
+      const input = task.inputs!.find(i => i.inputRevision === inputRevision);
+      if (!input?.resultWorkRevision) throw new Error("TASK_RESULT_REQUIRED");
+      return this.claimBatch(input.batchId);
+    });
   }
   registerPresentation(token: ClaimToken, context: PresentationContext): void {
     if (
@@ -614,18 +690,20 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
     this.tx("register_presentation", () => {
       this.assertClaim(token);
       if (
-        context.batchId !== token.batchId ||
         canonical(context.destination) !==
           canonical(this.batchDestination(token.batchId))
       )
         throw new Error("PRESENTATION_BINDING_MISMATCH");
       const task = this.getTask(context.taskId);
+      if (task && canonical(task.destination) !== canonical(context.destination)) throw new Error("PRESENTATION_TASK_MISMATCH");
+      if (task && task.batchId !== context.batchId) throw new Error("PRESENTATION_BINDING_MISMATCH");
       if (
         !task ||
         task.batchId !== context.batchId ||
         canonical(task.destination) !== canonical(context.destination)
       )
         throw new Error("PRESENTATION_TASK_MISMATCH");
+      this.getTaskInput(context.taskId, token.batchId, this.assertWork(token));
       const configured = this.getMetadata<{ origin?: unknown }>(
         "live-mini-host",
         "configured",
@@ -673,6 +751,9 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       destination: Destination;
       purpose: string;
       claim?: ClaimToken;
+      inputRevision?: number;
+      taskInputRevision?: number;
+      optionSetRevision?: string;
       taskId?: string;
       presentation?: Submission["presentation"];
     },
@@ -688,6 +769,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
     )
       throw new Error("OUTBOUND_CONTEXT_INVALID");
     if (!context.claim) throw new Error("CLAIM_REQUIRED");
+    if ((input.kind === "app" || input.kind === "app_update") && !context.presentation && this.getMetadata("task-card-url", input.url)) throw new Error("PRESENTATION_IDENTITY_CONFLICT");
     if (context.purpose === "control" && input.kind !== "typing")
       throw new Error("CONTROL_TYPING_ONLY");
     if (context.presentation) {
@@ -709,20 +791,34 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
     }
     const prepared = buildOutboundItems(input);
     return this.tx("enqueue", () => {
-      this.assertClaim(context.claim!);
+      const revision = this.assertWork(context.claim!, context.inputRevision);
+      context = {...context, inputRevision: revision};
       if (
         canonical(this.batchDestination(context.claim!.batchId)) !==
         canonical(context.destination)
       )
         throw new Error("BATCH_DESTINATION_MISMATCH");
+      const recordedTask = this.db.query("SELECT task_id,result_work_revision FROM task_inputs WHERE batch_id=? AND (work_revision=? OR result_work_revision=?) ORDER BY input_revision DESC LIMIT 1").get(context.claim!.batchId, revision, revision) as Row | null;
+      if (recordedTask) {
+        if (context.taskId && context.taskId !== recordedTask.task_id) throw new Error("TASK_CONTEXT_MISMATCH");
+        this.getTaskInput(recordedTask.task_id, context.claim!.batchId, revision);
+        if (recordedTask.result_work_revision === revision || context.presentation) context = {...context, taskId: recordedTask.task_id};
+      }
+      if (input.kind === "attachment_group" && context.actionKey.startsWith(`cards:${context.claim!.batchId}:`)) {
+        const recordedRevision = context.actionKey.slice(`cards:${context.claim!.batchId}:`.length);
+        if (context.optionSetRevision !== undefined && context.optionSetRevision !== recordedRevision) throw new Error("OPTION_SET_CONTEXT_MISMATCH");
+        context = {...context, optionSetRevision: recordedRevision};
+      }
       if (context.taskId) {
-        const task = this.getTask(context.taskId);
-        if (
-          !task ||
-          task.batchId !== context.claim!.batchId ||
-          !["accepted", "completed"].includes(task.state)
-        )
-          throw new Error("TASK_NOT_ACCEPTED");
+        const associated = this.getTaskInput(context.taskId, context.claim!.batchId, revision);
+        if (!["accepted", "completed"].includes(associated.state)) throw new Error("TASK_NOT_ACCEPTED");
+        if (context.taskInputRevision !== undefined && context.taskInputRevision !== associated.inputRevision) throw new Error("TASK_CONTEXT_MISMATCH");
+        context = {...context, taskInputRevision: associated.inputRevision};
+      } else if (context.taskInputRevision !== undefined) throw new Error("TASK_CONTEXT_MISMATCH");
+      if (context.optionSetRevision) {
+        const key = canonical([context.claim!.batchId, revision, context.optionSetRevision, context.destination]);
+        const option = this.getMetadata<{payloadHash:string}>("option-set-context", key);
+        if (!option) throw new Error("OPTION_SET_CONTEXT_MISMATCH");
       }
       return this.insertOperation(input, context, prepared);
     });
@@ -734,16 +830,22 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       destination: Destination;
       purpose: string;
       claim?: ClaimToken;
+      inputRevision?: number;
+      taskInputRevision?: number;
+      optionSetRevision?: string;
       taskId?: string;
       presentation?: Submission["presentation"];
     },
     prepared = buildOutboundItems(input),
   ): OutboundItem[] {
     const digest = hash(input);
+    const source: OperationSource | undefined = context.claim ? {batchId: context.claim.batchId, inputRevision: context.inputRevision, taskId: context.taskId ?? context.presentation?.taskId, taskInputRevision: context.taskInputRevision, optionSetRevision: context.optionSetRevision, cardId: context.presentation?.cardId} : undefined;
+    const scope = context.purpose === "onboarding" ? `installation:${this.installationId}` : this.operationScope(context.destination, source!);
+    const cardContext = context.presentation ? this.getMetadata<PresentationContext>("task-card-context", context.presentation.cardId) : undefined;
     const presentation = context.presentation
       ? {
           ...context.presentation,
-          batchId: context.claim!.batchId,
+          batchId: cardContext?.batchId ?? context.claim!.batchId,
           actionKey: context.actionKey,
           destination: context.destination,
         }
@@ -778,15 +880,20 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
     }
     const prior = this.db
       .query(
-        "SELECT id,payload_hash FROM operations WHERE space_id=? AND line_id=? AND purpose=? AND action_key=?",
+        "SELECT * FROM operations WHERE space_id=? AND line_id=? AND purpose=? AND action_key=? AND scope=?",
       )
       .get(
         context.destination.spaceId,
         context.destination.lineId,
         context.purpose,
         context.actionKey,
+        scope,
       ) as Row | null;
     if (prior) {
+      // Card ownership is anchored to its original task; other scopes also
+      // require the exact stored request association, even for equal payloads.
+      const migratedCard = !!context.presentation && prior.task_id === null && cardContext?.taskId === context.taskId;
+      if ((!migratedCard && prior.task_id !== (context.taskId ?? null)) || (!context.presentation && prior.batch_id !== (context.claim?.batchId ?? null))) throw new Error("OPERATION_SOURCE_CONFLICT");
       if (prior.payload_hash !== digest)
         throw new Error("ACTION_PAYLOAD_CONFLICT");
       const items = (
@@ -832,7 +939,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       throw new Error("TASK_CARD_OPERATION_CONFLICT");
     const operationId = id("op");
     this.db
-      .query("INSERT INTO operations VALUES(?,?,?,?,?,?,?,?,?)")
+      .query("INSERT INTO operations(id,space_id,line_id,purpose,action_key,payload_hash,batch_id,task_id,created_at,scope,input_revision,task_input_revision) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)")
       .run(
         operationId,
         context.destination.spaceId,
@@ -843,6 +950,9 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
         context.claim?.batchId ?? null,
         context.taskId ?? null,
         now(),
+        scope,
+        context.inputRevision ?? (context.claim ? this.claimSnapshot(context.claim.batchId).claimedRevision : null),
+        context.taskInputRevision ?? null,
       );
     prepared.forEach((item, index) => {
       this.db
@@ -1061,13 +1171,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
   }
   tasksForBatch(batchId: string): TaskBinding[] {
     this.batchDestination(batchId);
-    return (
-      this.db
-        .query(
-          "SELECT binding FROM tasks WHERE batch_id=? ORDER BY updated_at,id",
-        )
-        .all(batchId) as Row[]
-    ).map((row) => JSON.parse(row.binding));
+    return (this.db.query("SELECT DISTINCT t.id,t.updated_at FROM tasks t LEFT JOIN task_inputs i ON i.task_id=t.id WHERE t.batch_id=? OR i.batch_id=? ORDER BY t.updated_at,t.id").all(batchId, batchId) as Row[]).map(row => this.getTask(row.id)!);
   }
   /** Offline operator receipt recovery preserves the original task identity. */
   reconcileTask(
@@ -1087,8 +1191,10 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       const binding = this.getTask(taskId);
       if (!binding || !["unknown", "accepted"].includes(binding.state))
         throw new Error("RECOVERABLE_TASK_REQUIRED");
+      const currentInput = binding.inputs!.find(i => i.inputRevision === binding.currentInputRevision)!;
+      if (!currentInput) throw new Error("TASK_CONTEXT_MISMATCH");
       if (binding.state === "accepted") {
-        const claim = this.claimSnapshot(binding.batchId);
+        const claim = this.claimSnapshot(currentInput.batchId);
         if (
           !["claimed", "delegated"].includes(claim.state) ||
           claim.leaseUntil === null ||
@@ -1100,6 +1206,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       this.db
         .query("UPDATE tasks SET state=?,binding=?,updated_at=? WHERE id=?")
         .run(input.state, canonical(updated), now(), taskId);
+      this.db.query("UPDATE task_inputs SET state=?,receipt=? WHERE task_id=? AND input_revision=?").run(input.state, input.receipt, taskId, binding.currentInputRevision!);
       this.setMetadata("task-reconciliation", taskId, {
         ...input,
         at: now(),
@@ -1109,11 +1216,11 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
         .query(
           "UPDATE batches SET state='pending',run_id=NULL,lease_until=NULL,generation=generation+1 WHERE id=?",
         )
-        .run(binding.batchId);
+        .run(currentInput.batchId);
       this.db
         .query("UPDATE wakes SET state='pending',next_at=0 WHERE batch_id=?")
-        .run(binding.batchId);
-      return updated;
+        .run(currentInput.batchId);
+      return this.getTask(taskId)!;
     });
   }
 
@@ -1181,12 +1288,12 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
         SELECT b.id FROM batches b
         WHERE b.state='claimed' AND b.lease_until<=?
           AND NOT EXISTS (
-            SELECT 1 FROM tasks t WHERE t.batch_id=b.id
+            SELECT 1 FROM tasks t WHERE t.batch_id=b.id AND b.input_revision<=COALESCE(b.claimed_revision,0)
               AND t.state IN ('intent','accepted','unknown')
           )
           AND NOT EXISTS (
             SELECT 1 FROM operations op JOIN outbound o ON o.operation_id=op.id
-            WHERE op.batch_id=b.id AND op.purpose='final'
+            WHERE op.batch_id=b.id AND op.input_revision=b.input_revision AND op.purpose='final'
               AND o.state IN (${unresolved})
           )
         ORDER BY b.lease_until,b.id LIMIT 100
@@ -1291,8 +1398,13 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
           "SELECT m.*,i.record FROM media_jobs m JOIN inbox i ON i.id=m.event_id WHERE m.id=?",
         )
         .get(jobId) as Row | null;
-      if (!row || row.state !== "processing" || row.attempts !== attempt)
-        throw new Error("MEDIA_JOB_NOT_PROCESSING");
+      if (!row || row.attempts !== attempt) throw new Error("MEDIA_JOB_NOT_PROCESSING");
+      const digest = hash(result);
+      if (["ready", "failed", "unavailable"].includes(row.state)) {
+        if (row.result_hash !== digest) throw new Error("MEDIA_RESULT_CONFLICT");
+        return;
+      }
+      if (row.state !== "processing") throw new Error("MEDIA_JOB_NOT_PROCESSING");
       if (!["ready", "failed", "unavailable"].includes(result.state))
         throw new Error("MEDIA_RESULT_INVALID");
       const reference = this.mediaRow(row).reference;
@@ -1351,8 +1463,22 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
         .query("UPDATE inbox SET record=? WHERE id=?")
         .run(canonical(updated), row.event_id);
       this.db
-        .query("UPDATE media_jobs SET state=?,code=? WHERE id=?")
-        .run(result.state, "code" in result ? result.code : null, jobId);
+        .query("UPDATE media_jobs SET state=?,code=?,result_hash=? WHERE id=?")
+        .run(result.state, "code" in result ? result.code : null, digest, jobId);
+      const membership = this.db.query("SELECT batch_id FROM batch_events WHERE event_id=?").get(row.event_id) as Row | null;
+      if (membership) this.appendRevision(membership.batch_id, `media_${result.state}`, `media:${jobId}`, {
+        sources: [{eventId: row.event_id, messageId: reference.messageId, mediaJobId: jobId}],
+      });
+    });
+  }
+  dispatchContinuations(): number {
+    return this.tx("dispatch_continuations", () => {
+      const rows = this.db.query("SELECT id FROM batches WHERE input_revision>1 AND input_revision>acknowledged_revision AND input_revision>COALESCE(claimed_revision,0) AND state IN ('completed','delegated','review')").all() as Row[];
+      for (const row of rows) {
+        this.db.query("UPDATE batches SET state='pending',run_id=NULL,lease_until=NULL,completed_at=NULL WHERE id=?").run(row.id);
+        this.resetWake(row.id);
+      }
+      return rows.length;
     });
   }
   recoverWork() {
@@ -1378,6 +1504,9 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
             row.id,
           );
       }
+      this.db.query("UPDATE task_inputs SET state='unknown' WHERE state='intent'").run();
+      // Repair wake eligibility from durable revision state. Never accept again.
+      this.dispatchContinuations();
       return { media, wakes, tasks: rows.length };
     });
   }
@@ -1460,7 +1589,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
     )
       throw new Error("RETENTION_CUTOFF_INVALID");
     return this.tx("prune", () => {
-      const blocked = `NOT EXISTS (SELECT 1 FROM operations op JOIN outbound u ON u.operation_id=op.id WHERE op.batch_id=b.id AND u.state IN (${unresolved})) AND NOT EXISTS (SELECT 1 FROM tasks t WHERE t.batch_id=b.id AND t.state!='completed')`;
+      const blocked = `b.input_revision=b.acknowledged_revision AND NOT EXISTS (SELECT 1 FROM media_jobs m JOIN batch_events mb ON mb.event_id=m.event_id WHERE mb.batch_id=b.id AND m.state IN ('pending','processing')) AND NOT EXISTS (SELECT 1 FROM operations op JOIN outbound u ON u.operation_id=op.id WHERE op.batch_id=b.id AND u.state IN (${unresolved})) AND NOT EXISTS (SELECT 1 FROM tasks t LEFT JOIN task_inputs ti ON ti.task_id=t.id WHERE (t.batch_id=b.id OR ti.batch_id=b.id) AND (t.state!='completed' OR EXISTS (SELECT 1 FROM task_inputs ri JOIN batches rb ON rb.id=ri.batch_id WHERE ri.task_id=t.id AND rb.input_revision>rb.acknowledged_revision)))`;
       const events = this.db
         .query(
           `SELECT i.id,i.record FROM inbox i JOIN batch_events be ON be.event_id=i.id JOIN batches b ON b.id=be.batch_id WHERE i.redacted=0 AND b.state='completed' AND b.completed_at<? AND ${blocked}`,
@@ -1544,6 +1673,10 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
         .query("SELECT id,item FROM outbound WHERE redacted=0")
         .all() as Row[])
         if (!deletingOuts.has(row.id)) protect(JSON.parse(row.item));
+      // Results may carry registered assets whose original message is older.
+      // Protect the full structured value while its continuation remains active.
+      for (const row of this.db.query("SELECT r.value FROM task_results r JOIN task_inputs i ON i.task_id=r.task_id AND i.input_revision=r.input_revision JOIN batches b ON b.id=i.batch_id WHERE b.state!='completed' OR b.input_revision>b.acknowledged_revision").all() as Row[])
+        for (const path of [...candidates]) if (row.value.includes(JSON.stringify(path).slice(1,-1))) candidates.delete(path);
       // Presentation/session metadata still needed for edits and reaction resolution protects originals.
       for (const row of this.db
         .query(
@@ -1576,6 +1709,22 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
             }),
             row.id,
           );
+        }
+        // Snapshot bodies must honor the same deletion as the canonical inbox.
+        for (const row of this.db.query("SELECT batch_id,revision,snapshot FROM batch_revisions").all() as Row[]) {
+          const snapshot = JSON.parse(row.snapshot);
+          let changed = false;
+          snapshot.messages = (snapshot.messages ?? []).map((message: InboundRecord) => {
+            const member = this.db.query("SELECT i.id FROM inbox i JOIN batch_events be ON be.event_id=i.id WHERE be.batch_id=? AND i.provider_id=?").get(row.batch_id, message.id) as Row | null;
+            if (!member || !deletingEvents.has(member.id)) return message;
+            changed = true;
+            return {id: message.id, spaceId: message.spaceId, senderId: "", text: "[retained identity; content removed]", timestamp: message.timestamp, receivedAt: message.receivedAt};
+          });
+          if (changed) { delete snapshot.media; this.db.query("UPDATE batch_revisions SET snapshot=? WHERE batch_id=? AND revision=?").run(canonical(snapshot), row.batch_id, row.revision); }
+        }
+        for (const row of this.db.query(`SELECT r.id,r.value FROM task_results r JOIN task_inputs ti ON ti.task_id=r.task_id AND ti.input_revision=r.input_revision JOIN batches b ON b.id=ti.batch_id WHERE b.state='completed' AND b.completed_at<? AND ${blocked}`).all(options.resolvedBefore) as Row[]) {
+          const result = JSON.parse(row.value);
+          this.db.query("UPDATE task_results SET value=? WHERE id=?").run(canonical({...result, result: {redacted:true}}), row.id);
         }
         for (const row of outs) {
           const item = JSON.parse(row.item);

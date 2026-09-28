@@ -103,6 +103,7 @@ export class GpProofRuntime {
       // Recover pending acceptance even when the old process died before debounce.
       this.controller.flushAll();
       this.addLoop(async () => {
+        store.dispatchContinuations();
         this.controller!.flushDue();
         this.wakes!.notify();
         this.media!.notify();

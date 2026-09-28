@@ -271,6 +271,9 @@ for (const phase of ["before_commit", "after_commit"]) {
     });
     const b = f.store.formBatches()[0]!;
     const job = f.store.claimMedia()!;
+    const originalClaim = f.store.claimBatch(b.batchId);
+    if (originalClaim.status !== "acquired") throw new Error("FIXTURE_CLAIM_FAILED");
+    f.store.completeClaim(originalClaim.token, originalClaim.inputRevision);
     expect(
       await child(f.root, "settle-media", {
         job,
@@ -281,6 +284,22 @@ for (const phase of ["before_commit", "after_commit"]) {
     expect(f.store.readBatch(b.batchId).messages[0]?.transcript).toBe(
       phase === "before_commit" ? undefined : "fixture transcript",
     );
+    expect(f.store.readBatch(b.batchId).inputRevision).toBe(phase === "before_commit" ? 1 : 2);
+    if (phase === "before_commit") {
+      expect(f.store.claimBatch(b.batchId).status).toBe("completed");
+      const retry = f.store.claimMedia()!;
+      f.store.settleMedia(retry.id, { state: "ready", patch: { transcript: "fixture transcript" } }, retry.attempts);
+    }
+    const continuation = f.store.claimWake()!;
+    expect(continuation.batchId).toBe(b.batchId);
+    f.store.settleWake(continuation, { state: "acknowledged" });
+    const resumed = f.store.claimBatch(b.batchId);
+    if (resumed.status !== "acquired") throw new Error("DURABLE_CONTINUATION_LOST");
+    expect(f.store.readBatch(b.batchId, resumed.inputRevision).continuationReason).toBe("media_ready");
+    f.store.completeClaim(resumed.token, resumed.inputRevision);
+    f.store.recoverWork();
+    expect(f.store.claimWake()).toBeUndefined();
+    expect(f.store.recentInbound()).toHaveLength(1);
     expect(f.store.formBatches()).toHaveLength(0);
   });
 }
@@ -306,6 +325,75 @@ test("D08 separate writer lock contention fails within bounded busy timeout", as
   }
   expect(f.store.recentInbound()).toHaveLength(0);
 }, 10000);
+
+function delegated(f: ReturnType<typeof fixture>) {
+  const ctx = batch(f.store);
+  const task = { taskId: "process-native-task", batchId: ctx.batch.batchId, destination: ctx.destination, owner: "worker", finalOwner: "front-door", state: "intent" as const };
+  f.store.bindTask(ctx.claim, task);
+  f.store.bindTask(ctx.claim, { ...task, state: "accepted", receipt: "original native receipt", nativeRef: "native-process-reference" });
+  const input = f.store.getTask(task.taskId)!.inputs![0]!;
+  f.store.db.query("UPDATE batches SET lease_until=0 WHERE id=?").run(ctx.batch.batchId);
+  return { ...ctx, result: { taskId: task.taskId, inputRevision: input.inputRevision, correlationId: input.correlationId, nativeRef: "native-process-reference", receipt: "native result evidence", result: { text: "Done." } } };
+}
+
+for (const phase of ["before_commit", "after_commit"]) {
+  test(`crash ${phase} native result and resumed work revision are atomic`, async () => {
+    const f = setup(), ctx = delegated(f);
+    expect(await child(f.root, "task-result", { result: ctx.result, crashAt: `task_result:${phase}` }).exited).not.toBe(0);
+    expect(f.store.readBatch(ctx.batch.batchId).inputRevision).toBe(phase === "before_commit" ? 1 : 2);
+    const recorded = f.store.ingestTaskResult(ctx.result);
+    f.store.recoverWork();
+    const resumed = f.store.resumeTask(ctx.result.taskId, ctx.result.inputRevision);
+    if (resumed.status !== "acquired") throw new Error("RESULT_NOT_RESUMABLE");
+    const read = f.store.readBatch(ctx.batch.batchId, resumed.inputRevision);
+    expect(read.inputRevision).toBe(2);
+    expect(read.taskResults).toEqual([recorded]);
+    f.store.completeClaim(resumed.token, resumed.inputRevision);
+    expect(f.store.ingestTaskResult(ctx.result)).toEqual(recorded);
+    expect(f.store.claimWake()).toBeUndefined();
+    expect(f.store.tasksForBatch(ctx.batch.batchId)).toHaveLength(1);
+  });
+}
+
+test("concurrent native result retries from separate processes record one continuation", async () => {
+  const f = setup(), ctx = delegated(f);
+  const barrier = join(f.root, "result-go"), ready = [0, 1].map(index => join(f.root, `result-ready-${index}`));
+  const children = ready.map(path => child(f.root, "task-result", { result: ctx.result }, path, barrier));
+  await waitFor(ready); writeFileSync(barrier, "go");
+  const [first, second] = await Promise.all(children.map(output));
+  expect(first).toEqual(second);
+  expect(f.store.readBatch(ctx.batch.batchId).inputRevision).toBe(2);
+  expect(f.store.readBatch(ctx.batch.batchId).taskResults).toEqual([first]);
+  const wake = f.store.claimWake()!;
+  expect(wake.batchId).toBe(ctx.batch.batchId);
+  expect(f.store.claimWake()).toBeUndefined();
+});
+
+test("concurrent old wake acknowledgement cannot erase the ready-media continuation", async () => {
+  const f = setup();
+  f.store.accept({ eventKey: "wake-media-race", record: { ...record("race-message"), kind: "voice" }, destination: { spaceId: "space-1", lineId: "line-1" }, media: { messageId: "race-message", spaceId: "space-1", lineId: "line-1", kind: "voice" } });
+  const original = f.store.formBatches()[0]!, originalWake = f.store.claimWake()!, job = f.store.claimMedia()!;
+  const claim = f.store.claimBatch(original.batchId);
+  if (claim.status !== "acquired") throw new Error("FIXTURE_CLAIM_FAILED");
+  f.store.completeClaim(claim.token, claim.inputRevision);
+  const barrier = join(f.root, "media-wake-go"), ready = ["media", "wake"].map(name => join(f.root, `media-wake-${name}`));
+  const settled = child(f.root, "settle-media", { job }, ready[0], barrier);
+  const acknowledged = child(f.root, "settle-wake", { job: originalWake }, ready[1], barrier);
+  await waitFor(ready); writeFileSync(barrier, "go");
+  expect(await settled.exited).toBe(0);
+  const [ackExit, ackError] = await Promise.all([acknowledged.exited, new Response(acknowledged.stderr).text()]);
+  if (ackExit !== 0) expect(ackError).toContain("STALE_WAKE_ATTEMPT");
+  expect(f.store.readBatch(original.batchId).inputRevision).toBe(2);
+  const continuation = f.store.claimWake()!;
+  expect(continuation.batchId).toBe(original.batchId);
+  expect(continuation.attemptId).not.toBe(originalWake.attemptId);
+  f.store.settleWake(continuation, { state: "acknowledged" });
+  const resumed = f.store.claimBatch(original.batchId);
+  if (resumed.status !== "acquired") throw new Error("MEDIA_CONTINUATION_LOST");
+  expect(f.store.readBatch(original.batchId, resumed.inputRevision).messages[0]!.transcript).toBe("fixture transcript");
+  f.store.completeClaim(resumed.token, resumed.inputRevision);
+  expect(f.store.claimWake()).toBeUndefined();
+});
 for (const phase of ["before_commit", "after_commit"]) {
   test(`presentation ledger and outbox share one durable commit across crash ${phase}`, async () => {
     const f = setup();

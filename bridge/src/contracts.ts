@@ -3,20 +3,25 @@ import type { EnqueueOutboundInput, InboundRecord, OutboundItem, UnreadBatch } f
 export const CONTRACT_VERSION = 1 as const;
 export type Destination = { spaceId: string; lineId: string };
 export type ClaimToken = { batchId: string; runId: string; generation: number };
-export type ClaimResult = { status: "acquired"; token: ClaimToken; leaseUntil: number } | { status: "busy" | "completed" };
+export type ClaimResult = { status: "acquired"; token: ClaimToken; leaseUntil: number; inputRevision: number } | { status: "busy" | "completed" };
 export type DeliveryState = "queued" | "sending" | "accepted" | "retry_wait" | "unknown" | "failed" | "skipped" | "cancelled";
 export type ProviderReference = { messageId?: string; parts?: unknown[]; miniAppCardSession?: {chatGuid:string;messageGuid:string;sessionId:string;targetMessageGuid:string} };
 export type ProviderOutcome = { state: "accepted"; reference?: ProviderReference; evidence: string } | { state: "unknown" | "failed" | "skipped"; code: string; reference?: ProviderReference } | { state: "retry_wait"; code: string; retryAfterMs: number };
 export type MediaReference = { messageId: string; attachmentId?: string; spaceId: string; lineId: string; kind: "voice" | "attachment"; name?: string; mimeType?: string; size?: number; duration?: number };
 export type MediaJob = { id: string; eventId: string; reference: MediaReference; state: "pending" | "processing" | "ready" | "failed" | "unavailable"; attempts: number };
 export type MediaResult = { state: "ready"; patch: Partial<InboundRecord> } | { state: "failed" | "unavailable"; code: string; patch?: Partial<InboundRecord> };
-export type Submission = { version: 1; batchId: string; taskId?: string; claim: ClaimToken; actionKey: string; purpose: "progress" | "final" | "control" | "presentation"; payload: EnqueueOutboundInput; presentation?: { cardId: string; taskId: string; viewUrl: string; claimId: string } };
+/** Stored input references, never an arbitrary caller-authored idempotency scope. */
+export type OperationSource = { batchId: string; inputRevision?: number; taskId?: string; taskInputRevision?: number; cardId?: string; optionSetRevision?: string };
+export type TaskInput = { taskId: string; inputRevision: number; batchId: string; workRevision: number; correlationId: string; state: "intent" | "accepted" | "unknown" | "completed"; receipt?: string; resultWorkRevision?: number };
+export type TaskResultInput = { taskId: string; inputRevision: number; correlationId: string; nativeRef?: string; receipt: string; result: unknown };
+export type TaskResult = TaskResultInput & { resultId: string; batchId: string; workRevision?: number; superseded: boolean };
+export type Submission = { version: 1; batchId: string; inputRevision?: number; taskInputRevision?: number; optionSetRevision?: string; taskId?: string; claim: ClaimToken; actionKey: string; purpose: "progress" | "final" | "control" | "presentation"; payload: EnqueueOutboundInput; presentation?: { cardId: string; taskId: string; viewUrl: string; claimId: string } };
 export type OutboundStatus = { id: string; state: DeliveryState; attempts: number; reference?: ProviderReference; code?: string };
 export type WakeJob = { batchId: string; attemptId: string; attempts: number };
 export type OutboundClaim = { item: OutboundItem; attemptId: string; destination: Destination };
 export type AcceptInput = { eventKey: string; record: InboundRecord; destination: Destination; media?: MediaReference; onboarding?: boolean; greetingOnly?: boolean };
 export type AcceptResult = { eventId: string; duplicate: boolean; onboardingCreated: boolean };
-export type TaskBinding = { taskId: string; batchId: string; destination: Destination; owner: string; finalOwner: string; state: "intent" | "accepted" | "unknown" | "completed"; receipt?: string };
+export type TaskBinding = { taskId: string; batchId: string; destination: Destination; owner: string; finalOwner: string; state: "intent" | "accepted" | "unknown" | "completed"; receipt?: string; nativeRef?: string; currentInputRevision?: number; inputs?: TaskInput[] };
 export type PresentationContext = { cardId: string; taskId: string; batchId: string; destination: Destination; viewUrl: string };
 /** Frozen port; implementation may add methods, coordinator approves signature revisions. */
 export interface BridgeStore {
@@ -24,15 +29,20 @@ export interface BridgeStore {
   close(): void;
   accept(input: AcceptInput): AcceptResult;
   formBatches(now?: number, destinations?: Destination[]): UnreadBatch[];
-  readBatch(batchId: string): UnreadBatch;
+  readBatch(batchId: string, inputRevision?: number): UnreadBatch;
   claimBatch(batchId: string, leaseMs?: number): ClaimResult;
   renewClaim(token: ClaimToken, leaseMs?: number): void;
-  completeClaim(token: ClaimToken): void;
+  completeClaim(token: ClaimToken, inputRevision?: number): void;
+  assertWork(token: ClaimToken, inputRevision?: number): number;
   assertClaim(token: ClaimToken): void;
   bindTask(token: ClaimToken, binding: TaskBinding): void;
   getTask(taskId: string): TaskBinding | undefined;
+  getTaskInput(taskId: string, batchId: string, workRevision?: number, requireCurrent?: boolean): TaskInput;
+  associateTask(token: ClaimToken, taskId: string, inputRevision?: number): TaskInput;
+  ingestTaskResult(input: TaskResultInput): TaskResult;
+  resumeTask(taskId: string, inputRevision: number): ClaimResult;
   registerPresentation(token: ClaimToken, context: PresentationContext): void;
-  enqueue(input: EnqueueOutboundInput, context: { actionKey: string; destination: Destination; purpose: string; claim?: ClaimToken; taskId?: string; presentation?: Submission["presentation"] }): OutboundItem[];
+  enqueue(input: EnqueueOutboundInput, context: { actionKey: string; destination: Destination; purpose: string; claim?: ClaimToken; inputRevision?: number; taskInputRevision?: number; optionSetRevision?: string; taskId?: string; presentation?: Submission["presentation"] }): OutboundItem[];
   claimOutbound(now?: number): OutboundClaim | undefined;
   settleOutbound(id: string, attemptId: string, outcome: ProviderOutcome): void;
   recoverSending(): number;
@@ -46,5 +56,5 @@ export interface BridgeStore {
   listMetadata<T>(kind: string, limit?: number, afterKey?: string): Array<{ key: string; value: T }>;
   setMetadata(kind: string, key: string, value: unknown): void;
   deleteMetadata(kind: string, key: string): void;
-  operationStatus(destination: Destination, purpose: string, actionKey: string): OutboundStatus[];
+  operationStatus(destination: Destination, purpose: string, actionKey: string, source: OperationSource): OutboundStatus[];
 }

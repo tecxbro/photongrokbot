@@ -3,6 +3,7 @@
     "version": 1,
     "batchId": "BATCH_FROM_CLAIM",
     "claim": { "batchId": "BATCH_FROM_CLAIM", "runId": "RUN_FROM_CLAIM", "generation": 1 },
+    "inputRevision": 1,
     "actionKey": "cards:BATCH_FROM_CLAIM:v1",
     "purpose": "final",
     "payload": {

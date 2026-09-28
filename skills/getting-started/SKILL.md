@@ -1,13 +1,15 @@
 ---
 name: getting-started
-description: Authorized resumable setup for the shared-VM Photon Spectrum product.
+description: Grokbot build/setup entry point for adapting and verifying this shared-VM source kit.
 ---
 
-# Authorized setup
+# Grokbot build and setup
 
-Follow the [operating contract](../../docs/product-repair/OPERATING_CONTRACT.md). This workflow applies only after the user requests setup. The bot performs technical steps on the shared agent VM; it never asks the user to paste secrets or run engineer commands. Browser device-login approval and an unknown authorized sender identity are legitimate human inputs. A routine message wake has no bootstrap authority.
+Follow the [operating contract](../../docs/product-repair/OPERATING_CONTRACT.md). This workflow applies only after the user requests setup. The bot performs technical steps on the shared agent VM; it never asks the user to paste secrets or run engineer commands. Browser device-login approval and an unknown authorized sender identity are legitimate human inputs. A routine message wake has no bootstrap authority. Honor the scope in the initial request: full-feature setup includes Live Mini and needs no second permission questionnaire. Account-specific configuration is discovery work for Grokbot, not a task to send back to the human.
 
 ## 1. Establish private bootstrap
+
+Reuse the checked-out kit and any verified private installation. Adapt runtime paths to the shared VM. Discover host/runtime facts and the initially requested scope. Verify checkout identity, pinned dependencies and storage before continuing.
 
 Inspect checkout identity and the actual VM facts needed by [VM checks](../../docs/product-repair/packet/VM_CHECK.md). Use pinned Bun 1.4.2, the frozen bridge lock and Python/ffmpeg appropriate to that host. Do not silently upgrade dependencies. Install the bundled Photon CLI/Spectrum/iMessage skills into the executor's supported skill directory without overwriting unrelated local changes, then read them and matching official docs. Unknown native/provider tool schemas must be inspected before calls.
 
@@ -15,14 +17,16 @@ Select an explicit persistent private root outside code, default `/workspace/pho
 
 ```sh
 bun install --frozen-lockfile
-bun run setup-state -- init --authorized
+bun run setup-state -- init --authorized --scope core
 bun run setup-state -- initialize-storage
 bun run setup-state -- status
 ```
 
-These commands create local identity/storage only. A previous initialization with a missing database is state loss to recover, not a fresh install. Interrupted bootstrap uses the same identity. The exclusive setup lock cannot be stolen on timeout; `recover-lock` first previews a verified-dead owner, then requires its exact nonce for apply.
+Use `--scope full` instead of `--scope core` when the initial request includes all features; this persists the initial scope and authorizes included Live Mini. A later full-feature request can enable it on the same installation without replacing identities. These commands create local identity/storage only. A previous initialization with a missing database is state loss to recover, not a fresh install. Interrupted bootstrap uses the same identity. The exclusive setup lock cannot be stolen on timeout; `recover-lock` first previews a verified-dead owner, then requires its exact nonce for apply.
 
 ## 2. Discover or create authorized resources safely
+
+Reuse the intended account/project/line and valid credentials. Adapt the discovered provider tool schema to this kit. Discover project ownership, line and required account configuration yourself. Verify every resource through actual read/tool evidence and persist its receipt.
 
 Use the installed Photon CLI and [official docs index](https://photon.codes/docs/llms.txt), keeping Stable/Beta/package/API versions aligned. Reuse the user's intended project/line if verified; default new setup uses the free-plan project name grokbot when available. A name collision or lost response does not justify blindly creating the next project. No billing upgrade is implicit.
 
@@ -40,6 +44,8 @@ Device authentication uses the exact verification URL and short code returned by
 
 ## 3. Mandatory Moonshine and six roles
 
+Reuse verified role identities and the pinned Moonshine package/model. Adapt the generated profiles to the actual native role tools. Discover supported bot/agent identity fields and any existing roles. Verify all six core identities and the real Moonshine installation.
+
 Run [Moonshine installation](../../stt/INSTALL.md) using pinned packages and immutable model hashes. Verify it through the implemented command, not merely directory existence:
 
 ```sh
@@ -56,13 +62,17 @@ All six verified identities must be present. A bootstrap coordinator that create
 
 ## 4. Front Door finishes sender, native routine and config
 
+Reuse known sender identity, routine and credentials. Adapt the redacted routine contract using the real discovered native schema. Discover missing account-specific values through authorized tools; only unknown human identity or browser approval needs human input. Verify sender, hosted line, routine receipt and complete literal configuration.
+
 After core roles exist, use the already-known authorized sender if verified, otherwise ask once for its exact iMessage identity. Register that user on the intended project using documented actual CLI behavior. Record owner-binding evidence. The sender is not the hosted destination number.
 
-Create/reuse the Front Door webhook routine by inspecting the native routine tool schema. [The redacted routine file](../../routines/photon-imessage-wake.REDACTED.json) is a descriptive contract, not a fabricated create-tool payload. Record wake-routine intent and actual receipt. The body is batchId only; the bot privately retains returned URL/bearer. If the tool cannot provide a needed contract, report that specific integration gate without making up an API.
+Create/reuse the Front Door webhook routine by inspecting the native routine tool schema. [The redacted routine file](../../routines/photon-imessage-wake.REDACTED.json) is a descriptive contract, not a fabricated create-tool payload. Record wake-routine intent and actual receipt. The wake body is `{batchId}` for inbound work and persisted media/task-result continuations; read the current revision and reason from bridge storage, not invented provider fields. The bot privately retains returned URL/bearer. If the tool cannot provide a needed contract, report that specific integration gate without making up an API.
 
 Write complete literal config through `bun run setup-state -- write-bridge-env --json-stdin`, with a bounded `{text: ...}` envelope prepared inside the secure setup executor. It contains SPECTRUM_PROJECT_ID, SPECTRUM_PROJECT_SECRET, AUTHORIZED_SENDER_ID, GROK_ORCHESTRATOR_WEBHOOK_URL and GROK_ORCHESTRATOR_WEBHOOK_KEY. Never paste these values into chat, source them as shell, or store them in the checkout. Record bridge-config evidence after validation. Existing credentials remain unchanged on a routine rerun.
 
 ## 5. Ready, start, then first text
+
+Reuse the existing locked launcher and readiness checks. Adapt only deployment paths required by the verified VM. Discover current runtime ownership and actual connection state. Verify source checks, installed readiness, provider acceptance and physical observation as separate evidence tiers.
 
 ```sh
 bun run setup-state -- status
@@ -76,4 +86,4 @@ Only now give the bot's hosted iMessage line and invite the user to text it from
 
 ## Optional Live Mini
 
-Core setup does not require Live Mini. A connected Vercel account is not permission to deploy. If the user explicitly enables it, follow [live-mini-enable](../live-mini-enable/SKILL.md), reusing existing resources/keys and recording environment revision before deployment. Do not block first-text readiness on it.
+Reuse existing Live Mini resources/keys and any verified optional role identity. Adapt the host configuration to the intended installation; discover project, storage and native role tool details yourself. Verify the environment revision, deployment and optional role before assignment. If Live Mini is included in the initial full-feature request, follow [live-mini-enable](../live-mini-enable/SKILL.md) within that authorization; do not ask again. Core-only setup does not enable it, and a connected Vercel account alone is not authority. Core first-text readiness remains independent, but a requested full-feature setup is not fully delivered until included Live Mini work is verified or a concrete integration blocker is reported.

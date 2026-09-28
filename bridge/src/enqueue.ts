@@ -1,3 +1,4 @@
+import { bridgeControlError } from "./control-errors.ts";
 import { getStore } from "./storage.ts";
 import { boundedStdin } from "./batch-control.ts";
 import { submitOutbound } from "./submit.ts";
@@ -7,7 +8,7 @@ import { parseCardsReadyMarker, writeCardsReadyMarker } from "./cards-ready.ts";
 export function parseLegacyArgs(raw: string[]): unknown {
     const args = raw[0] === "--" ? raw.slice(1) : raw;
     const values = new Map<string, string[]>();
-    const allowed = new Set(["space-id", "text", "attachment", "effect", "reply-to", "react", "target", "typing", "poll-title", "option", "voice", "duration", "app-url", "app-update", "live", "batch-id", "run-id", "generation", "action-key", "purpose", "task-id"]);
+    const allowed = new Set(["space-id", "text", "attachment", "effect", "reply-to", "react", "target", "typing", "poll-title", "option", "voice", "duration", "app-url", "app-update", "live", "batch-id", "run-id", "generation", "action-key", "purpose", "task-id", "input-revision", "task-input-revision"]);
     for (let i = 0; i < args.length; i++) {
         const flag = args[i]!;
         if (!flag.startsWith("--") || !allowed.has(flag.slice(2)))
@@ -31,7 +32,7 @@ export function parseLegacyArgs(raw: string[]): unknown {
     if (modeFlags.length > 1)
         throw new Error("INCOMPATIBLE_ARGUMENTS");
     const mode = modeFlags[0] ?? "text";
-    const context = new Set(["space-id", "batch-id", "run-id", "generation", "action-key", "purpose", "task-id"]);
+    const context = new Set(["space-id", "batch-id", "run-id", "generation", "action-key", "purpose", "task-id", "input-revision", "task-input-revision"]);
     const extras: Record<string, string[]> = { text: ["text", "attachment", "effect"], "reply-to": ["reply-to", "text"], react: ["react", "target"], typing: ["typing"], "poll-title": ["poll-title", "option"], voice: ["voice", "duration", "text"], "app-url": ["app-url", "live"], "app-update": ["app-update", "app-url", "live"] };
     for (const key of values.keys())
         if (!context.has(key) && !extras[mode]!.includes(key))
@@ -60,7 +61,7 @@ export function parseLegacyArgs(raw: string[]): unknown {
         else
             payload = { kind: "text", spaceId, text: get("text") ?? "", ...(attachments[0] ? { attachmentPath: attachments[0] } : {}), ...(get("effect") ? { effect: get("effect") } : {}) };
     }
-    return { version: 1, batchId: get("batch-id"), claim: { batchId: get("batch-id"), runId: get("run-id"), generation: Number(get("generation")) }, actionKey: get("action-key"), purpose: get("purpose"), payload, ...(get("task-id") ? { taskId: get("task-id") } : {}) };
+    return { version: 1, batchId: get("batch-id"), claim: { batchId: get("batch-id"), runId: get("run-id"), generation: Number(get("generation")) }, actionKey: get("action-key"), purpose: get("purpose"), payload, ...(get("input-revision") !== undefined ? {inputRevision: Number(get("input-revision"))} : {}), ...(get("task-input-revision") !== undefined ? {taskInputRevision: Number(get("task-input-revision"))} : {}), ...(get("task-id") ? { taskId: get("task-id") } : {}) };
 }
 export async function enqueueMain(raw = process.argv.slice(2)): Promise<void> {
     const args = raw[0] === "--" ? raw.slice(1) : raw;
@@ -93,8 +94,8 @@ if (import.meta.main) {
     try {
         await enqueueMain();
     }
-    catch {
-        console.error("OUTBOUND_SUBMISSION_REJECTED");
+    catch (error) {
+        console.error(JSON.stringify(bridgeControlError(error)));
         process.exitCode = 1;
     }
 }

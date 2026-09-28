@@ -10,15 +10,15 @@ export class AuthorizationError extends Error {
 export function authorizeSubmission(submission: Submission, store: BridgeStore): Destination {
     if (submission.claim.batchId !== submission.batchId)
         throw new AuthorizationError("CLAIM_BATCH_MISMATCH");
-    store.assertClaim(submission.claim);
+    const revision = store.assertWork(submission.claim, submission.inputRevision);
     const destination = store.readBatch(submission.batchId).destination;
     if (!destination || destination.spaceId !== submission.payload.spaceId)
         throw new AuthorizationError("DESTINATION_MISMATCH");
     if (submission.taskId) {
-        const task = store.getTask(submission.taskId);
-        if (!task || task.batchId !== submission.batchId || !["accepted", "completed"].includes(task.state) || task.destination.spaceId !== destination.spaceId || task.destination.lineId !== destination.lineId)
+        const input = store.getTaskInput(submission.taskId, submission.batchId, revision);
+        if (!["accepted", "completed"].includes(input.state) || (submission.taskInputRevision !== undefined && submission.taskInputRevision !== input.inputRevision))
             throw new AuthorizationError("TASK_CONTEXT_MISMATCH");
-    }
+    } else if (submission.taskInputRevision !== undefined) throw new AuthorizationError("TASK_CONTEXT_MISMATCH");
     if (submission.purpose === "control" && submission.payload.kind !== "typing")
         throw new AuthorizationError("CONTROL_TYPING_ONLY");
     if (submission.payload.kind === "typing" && submission.purpose !== "control")

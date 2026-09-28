@@ -70,7 +70,8 @@ export class InboundController {
   }
   flushDue(now = this.clock()): UnreadBatch[] {
     const due = [...this.due.entries()].filter(([, value]) => value.due <= now);
-    if (!due.length) return [];
+    // Empty destination sweeps still dispatch persisted continuations. Text
+    // keeps its independent debounce and media never holds the receive loop.
     const batches = this.options.store.formBatches(now, due.map(([, value]) => value.destination));
     for (const [key] of due) this.due.delete(key);
     this.retainFullGroups(batches, now);

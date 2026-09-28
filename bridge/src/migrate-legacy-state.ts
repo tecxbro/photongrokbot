@@ -470,7 +470,7 @@ export function migrateLegacy(options: {
               receipt: "legacy-record-only",
             };
             store.db
-              .query("INSERT INTO tasks VALUES(?,?,?,?,?)")
+              .query("INSERT INTO tasks(id,batch_id,binding,state,updated_at) VALUES(?,?,?,?,?)")
               .run(
                 taskId,
                 b.batchId,
@@ -500,7 +500,7 @@ export function migrateLegacy(options: {
               }
             : undefined;
           store.db
-            .query("INSERT INTO operations VALUES(?,?,?,?,?,?,?,?,?)")
+            .query("INSERT INTO operations(id,space_id,line_id,purpose,action_key,payload_hash,batch_id,task_id,created_at,scope) VALUES(?,?,?,?,?,?,?,?,?,?)")
             .run(
               operationId,
               item.spaceId,
@@ -511,6 +511,7 @@ export function migrateLegacy(options: {
               null,
               null,
               Date.parse(item.createdAt),
+              `legacy:${operationId}`,
             );
           store.db
             .query(
@@ -566,7 +567,7 @@ export function migrateLegacy(options: {
                   receipt: "legacy-record-only",
                 };
                 store.db
-                  .query("INSERT INTO tasks VALUES(?,?,?,?,?)")
+                  .query("INSERT INTO tasks(id,batch_id,binding,state,updated_at) VALUES(?,?,?,?,?)")
                   .run(
                     taskId,
                     batchId,
@@ -616,6 +617,19 @@ export function migrateLegacy(options: {
             });
           }
         }
+        // Legacy imports enter the current schema once, with immutable source
+        // revisions and correlation records; no positional v1 table writes.
+        store.db.exec(`
+          UPDATE batches SET acknowledged_revision=CASE WHEN state='completed' THEN 1 ELSE 0 END;
+          INSERT INTO batch_revisions(batch_id,revision,reason,source_key,snapshot,created_at)
+          SELECT b.id,1,'inbound','inbound',json_object(
+            'messages',json(COALESCE((SELECT json_group_array(json(record)) FROM
+              (SELECT i.record FROM batch_events be JOIN inbox i ON i.id=be.event_id WHERE be.batch_id=b.id ORDER BY be.ordinal)),'[]')),
+            'sources',json(COALESCE((SELECT json_group_array(json_object('eventId',i.id,'messageId',i.provider_id)) FROM batch_events be JOIN inbox i ON i.id=be.event_id WHERE be.batch_id=b.id),'[]'))
+          ),b.formed_at FROM batches b;
+          INSERT INTO task_inputs(task_id,input_revision,batch_id,work_revision,correlation_id,state,receipt)
+          SELECT id,1,batch_id,1,'cor-'||lower(hex(randomblob(16))),state,json_extract(binding,'$.receipt') FROM tasks;
+        `);
         const celebration = inv.files.get("onboarding-celebrated.json") as any;
         if (celebration?.setupConfettiSent === true)
           store.setMetadata("onboarding", "reservation", {

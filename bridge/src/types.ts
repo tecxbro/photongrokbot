@@ -105,6 +105,12 @@ export const INBOUND_ATTACHMENT_MAX_BYTES = 100 * 1024 * 1024;
 
 export type UnreadBatch = {
   batchId: string;
+  inputRevision?: number;
+  acknowledgedRevision?: number;
+  continuationReason?: "inbound" | "media_ready" | "media_failed" | "media_unavailable" | "task_result";
+  originalSources?: Array<{eventId: string; messageId: string}>;
+  sources?: Array<{ eventId?: string; messageId?: string; mediaJobId?: string; taskId?: string; taskInputRevision?: number; resultId?: string }>;
+  taskResults?: import("./contracts.ts").TaskResult[];
   flushedAt: string;
   destination?: import("./contracts.ts").Destination;
   media?: import("./contracts.ts").MediaJob[];

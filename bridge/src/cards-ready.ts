@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { canonical } from "./storage.contract.ts";
 import { resolveInstancePaths } from "../../shared/instance-paths.mjs";
 import type { BridgeStore, Destination, OutboundStatus, Submission } from "./contracts.ts";
@@ -35,19 +36,29 @@ function validateMarker(marker: CardsReadyMarker): Submission {
 }
 export function writeCardsReadyMarker(marker: CardsReadyMarker, store: BridgeStore): string {
     marker = parseCardsReadyMarker(marker);
+    const inputRevision = store.assertWork(marker.submission.claim, marker.submission.inputRevision);
+    marker = {...marker, submission: {...marker.submission, inputRevision, optionSetRevision: marker.revision}};
     const submission = marker.submission;
     const destination = authorizeSubmission(submission, store);
     const key = JSON.stringify([destination.spaceId, destination.lineId, submission.actionKey]);
     const existing = store.getMetadata<CardsReadyMarker>("cards-ready-pending", key);
     // Claim leases and producer timing may refresh; the logical payload cannot.
-    const logical = ({ submission: { claim: _claim, ...submission }, readyAt: _readyAt, ...rest }: CardsReadyMarker) => ({ ...rest, submission });
+    const logical = ({ submission: { claim: _claim, ...submission }, readyAt: _readyAt, ...rest }: CardsReadyMarker) => ({ ...rest, submission: {...submission, inputRevision: submission.inputRevision ?? 1, optionSetRevision: submission.optionSetRevision ?? rest.revision} });
     if (existing && canonical(logical(existing)) !== canonical(logical(marker)))
         throw new Error("CARD_MARKER_CONFLICT");
+    const scopeKey = canonical([submission.batchId, inputRevision, marker.revision, destination]);
+    const payloadHash = createHash("sha256").update(canonical(submission.payload)).digest("hex");
+    const registered = store.getMetadata<{payloadHash:string}>("option-set-context", scopeKey);
+    if (registered && registered.payloadHash !== payloadHash) throw new Error("CARD_MARKER_CONFLICT");
+    store.setMetadata("option-set-context", scopeKey, {payloadHash});
     store.setMetadata("cards-ready-pending", key, marker);
     return key;
 }
 export function readCardsReadyMarker(key: string, store: BridgeStore): CardsReadyMarker | null { return store.getMetadata<CardsReadyMarker>("cards-ready-pending", key) ?? null; }
-export function outboundAlreadyCoversBatch(store: BridgeStore, destination: Destination, batchId: string, revision: string): OutboundStatus[] { return store.operationStatus(destination, "final", cardsActionKey(batchId, revision)); }
+export function outboundAlreadyCoversBatch(store: BridgeStore, destination: Destination, batchId: string, revision: string, inputRevision = store.readBatch(batchId).inputRevision ?? 1): OutboundStatus[] {
+    if (!store.getMetadata("option-set-context", canonical([batchId, inputRevision, revision, destination]))) return [];
+    return store.operationStatus(destination, "final", cardsActionKey(batchId, revision), {batchId, inputRevision, optionSetRevision: revision});
+}
 export function assetsAreComplete(opts: {
     paths: string[];
     expectedCount?: number;
@@ -100,7 +111,8 @@ export async function finalEnqueueReadyStack(stack: ReadyStack, opts: CardsOptio
     outboundIds: string[];
     statuses: OutboundStatus[];
 }> {
-    const submission = validateMarker(stack);
+    const pendingKey = writeCardsReadyMarker({submission: stack.submission, expectedCount: stack.expectedCount, revision: stack.revision, readyAt: stack.readyAt}, opts.store);
+    const submission = validateMarker(opts.store.getMetadata<CardsReadyMarker>("cards-ready-pending", pendingKey)!);
     const statuses = await submitOutbound(submission, opts);
     return { outboundIds: statuses.map((s) => s.id), statuses };
 }

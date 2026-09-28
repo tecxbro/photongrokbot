@@ -36,6 +36,8 @@ export function exportInstance(paths: Paths, store: ExportStore, options: { appl
       assertPrivateFile(destination, paths.root);
       const copied = openSync(destination, constants.O_RDONLY); try { fsyncSync(copied); } finally { closeSync(copied); }
     }
+    // The consistent SQLite snapshot includes work revisions, task inputs,
+    // correlated results and the original operation identities together.
     store.backupTo(join(target, 'bridge.sqlite'));
     assertPrivateFile(join(target, 'bridge.sqlite'), paths.root);
     atomicPrivateWrite(join(target, 'export.json'), JSON.stringify({ version: 1, createdAt: Date.now(), installationId: store.installationId, includesCredentials: false, planId }));

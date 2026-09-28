@@ -548,7 +548,7 @@ test("offline evidence resolution never retries uncertain operation and requires
     }),
   ).toThrow("UNKNOWN_OUTBOUND_REQUIRED");
   expect(
-    f.store.operationStatus(ctx.destination, "final", "resolve"),
+    f.store.operationStatus(ctx.destination, "final", "resolve", {batchId: ctx.batch.batchId, inputRevision: 1}),
   ).toHaveLength(2);
 });
 test("expired unknown native task can only resume original binding from explicit receipt", () => {
@@ -691,6 +691,10 @@ test("presentation identity is committed with outbox and never changed by idempo
   expect(f.store.enqueue(input, context).map((row) => row.id)).toEqual(
     first.map((row) => row.id),
   );
+  // Schema 1 allowed presentation.taskId while operations.task_id was null.
+  // Its persisted card context remains the trusted source after upgrade.
+  f.store.db.query("UPDATE operations SET task_id=NULL WHERE id=(SELECT operation_id FROM outbound WHERE id=?)").run(first[0]!.id);
+  expect(f.store.enqueue(input, context).map(row => row.id)).toEqual(first.map(row => row.id));
   for (const patch of [
     { cardId: "different" },
     { taskId: "different" },
@@ -718,7 +722,7 @@ test("presentation identity is committed with outbox and never changed by idempo
     purpose: "presentation",
     actionKey: "static-first",
   };
-  f.store.enqueue(input, staticContext);
+  expect(() => f.store.enqueue(input, staticContext)).toThrow("PRESENTATION_IDENTITY_CONFLICT");
   expect(() =>
     f.store.enqueue(input, { ...staticContext, presentation }),
   ).toThrow("TASK_CARD_OPERATION_CONFLICT");

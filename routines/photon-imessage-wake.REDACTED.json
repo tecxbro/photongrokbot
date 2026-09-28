@@ -13,12 +13,22 @@
   "order": [
     "validate batch reference",
     "acquire current processing claim",
-    "read bound batch",
-    "resolve task and context",
+    "read bound batch and consumed input revision",
+    "resolve existing task, permitted input association and context",
     "choose reaction/effect/no reaction",
     "direct answer or durable handoff",
     "idempotent final enqueue and bookkeeping"
   ],
   "creationAuthority": "explicit bootstrap using inspected native tool schema; no normal-wake creation",
-  "acknowledgement": "HTTP 200 starts a run; not task completion"
+  "acknowledgement": "HTTP 200 starts a run; not task completion",
+  "workSources": [
+    "inbound",
+    "media_ready",
+    "media_failed",
+    "media_unavailable",
+    "task_result"
+  ],
+  "readContract": "Read inputRevision, acknowledgedRevision, continuationReason, original source references and results from bridge storage after acquiring the current claim.",
+  "completion": "Acknowledge only the consumed inputRevision; later persisted work remains actionable.",
+  "taskResults": "Workers report the recorded local taskId, task inputRevision, correlationId and receipt through task-result without the expired parent token; resume-task obtains fresh processing authority."
 }

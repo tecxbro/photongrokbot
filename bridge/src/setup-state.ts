@@ -7,10 +7,10 @@ import { liveEnvironmentRevision, preserveLiveMiniCredentials, parseLiveMiniEnv,
 
 type Paths = ReturnType<typeof resolveInstancePaths>;
 export const CORE_ROLES = ['front-door', 'orchestrator', 'creator', 'feature-add', 'image-cards', 'app-sheet'] as const;
-export const SETUP_RESOURCES = ['spectrum-project', ...CORE_ROLES, 'owner-binding', 'wake-routine', 'bridge-config', 'moonshine', 'live-project', 'live-env', 'live-deployment'] as const;
+export const SETUP_RESOURCES = ['spectrum-project', ...CORE_ROLES, 'owner-binding', 'wake-routine', 'bridge-config', 'moonshine', 'live-mini', 'live-project', 'live-env', 'live-deployment'] as const;
 export type SetupResource = typeof SETUP_RESOURCES[number];
 export type SetupRecord = { operationId: string; status: 'intent' | 'unknown' | 'verified' | 'failed'; resourceId?: string; verifiedAt?: number; code?: string; environmentRevision?: string; evidence?: { modelRevision: string; manifestSha256: string; packages: Record<string, string> } };
-export type SetupState = { version: 1; authorizedAt?: number; liveMiniAuthorizedAt?: number; textEverReady?: boolean; fullEverReady?: boolean; liveMiniOrigin?: string; resources: Partial<Record<SetupResource, SetupRecord>> };
+export type SetupState = { version: 1; initialScope?: 'core' | 'full'; authorizedAt?: number; liveMiniAuthorizedAt?: number; textEverReady?: boolean; fullEverReady?: boolean; liveMiniOrigin?: string; resources: Partial<Record<SetupResource, SetupRecord>> };
 export type InstanceDocument = { version: 1; installationId: string; setup: SetupState; [key: string]: unknown };
 type SetupStore = { installationId: string; getMetadata<T>(kind: string, key: string): T | undefined; setMetadata(kind: string, key: string, value: unknown): void };
 const idPattern = /^[A-Za-z0-9][A-Za-z0-9_.:@/-]{0,191}$/;
@@ -27,6 +27,7 @@ export function readInstanceDocument(paths: Paths): InstanceDocument {
   invariant(document.version === 1 && /^[A-Za-z0-9_-]{8,128}$/.test(document.installationId), 'INSTANCE_IDENTITY_INVALID');
   if (document.database !== undefined) invariant(document.database && typeof document.database === 'object' && ['intent', 'ready'].includes((document.database as { status?: string }).status ?? ''), 'INSTANCE_DATABASE_RECOVERY_REQUIRED');
   invariant(document.setup?.version === 1 && document.setup.resources && typeof document.setup.resources === 'object', 'SETUP_STATE_INVALID');
+  invariant(document.setup.initialScope === undefined || ['core', 'full'].includes(document.setup.initialScope), 'SETUP_SCOPE_INVALID');
   for (const [key, value] of Object.entries(document.setup.resources)) {
     resourceKey(key);
     invariant(value && idPattern.test(value.operationId) && ['intent', 'unknown', 'verified', 'failed'].includes(value.status), 'SETUP_STATE_INVALID');
@@ -66,8 +67,9 @@ export function recoverSetupLock(paths: Paths, options: { apply?: boolean; nonce
   unlinkSync(ownerPath); rmdirSync(directory); return { recoverable: true, applied: true };
 }
 
-export function initializeSetup(paths: Paths, options: { authorized: boolean }): InstanceDocument {
+export function initializeSetup(paths: Paths, options: { authorized: boolean; scope?: 'core' | 'full' }): InstanceDocument {
   invariant(options.authorized, 'SETUP_AUTHORIZATION_REQUIRED');
+  invariant(options.scope === undefined || ['core', 'full'].includes(options.scope), 'SETUP_SCOPE_INVALID');
   const release = acquireSetupLock(paths);
   try {
     if (existsSync(paths.configPath)) {
@@ -76,7 +78,7 @@ export function initializeSetup(paths: Paths, options: { authorized: boolean }):
       return existing;
     }
     invariant(![paths.databasePath, paths.bridgeEnv, paths.liveMiniEnv].some(path => existsSync(path)), 'INSTANCE_IDENTITY_RECOVERY_REQUIRED');
-    const document: InstanceDocument = { version: 1, installationId: crypto.randomUUID(), setup: { version: 1, authorizedAt: Date.now(), resources: {} } };
+    const document: InstanceDocument = { version: 1, installationId: crypto.randomUUID(), setup: { version: 1, initialScope: options.scope ?? 'core', authorizedAt: Date.now(), ...(options.scope === 'full' ? { liveMiniAuthorizedAt: Date.now() } : {}), resources: {} } };
     atomicPrivateWrite(paths.configPath, JSON.stringify(document, null, 2) + '\n');
     return document;
   } finally { release(); }
@@ -162,10 +164,10 @@ export class SetupSession {
   status() {
     const resources = this.document.setup.resources;
     const textReady = ['spectrum-project', ...CORE_ROLES, 'owner-binding', 'wake-routine', 'bridge-config'].every(key => resources[key as SetupResource]?.status === 'verified');
-    return { fullEverReady: !!this.document.setup.fullEverReady, textReady, textEverReady: !!this.document.setup.textEverReady, fullSetupComplete: textReady && resources.moonshine?.status === 'verified', moonshineRequired: true, liveMiniEnabled: !!this.document.setup.liveMiniAuthorizedAt, resources: Object.fromEntries(Object.entries(resources).map(([key, value]) => [key, value!.status])) };
+    return { initialScope: this.document.setup.initialScope ?? 'core', fullEverReady: !!this.document.setup.fullEverReady, textReady, textEverReady: !!this.document.setup.textEverReady, fullSetupComplete: textReady && resources.moonshine?.status === 'verified', moonshineRequired: true, liveMiniEnabled: !!this.document.setup.liveMiniAuthorizedAt, resources: Object.fromEntries(Object.entries(resources).map(([key, value]) => [key, value!.status])) };
   }
   registry() {
-    return { roles: Object.fromEntries(CORE_ROLES.flatMap(role => {
+    return { roles: Object.fromEntries(([...CORE_ROLES, ...(this.document.setup.liveMiniAuthorizedAt ? ['live-mini' as const] : [])]).flatMap(role => {
       const record = this.document.setup.resources[role];
       return record?.status === 'verified' && record.resourceId ? [[role, record.resourceId]] : [];
     })) };
@@ -249,8 +251,17 @@ export async function setupMain(args = process.argv.slice(2)) {
   const paths = resolveInstancePaths();
   const [command, ...rest] = args;
   if (command === 'init') {
-    invariant(rest.length === 1 && rest[0] === '--authorized', 'SETUP_AUTHORIZATION_REQUIRED');
-    initializeSetup(paths, { authorized: true }); return { initialized: true };
+    invariant(rest[0] === '--authorized', 'SETUP_AUTHORIZATION_REQUIRED');
+    invariant(rest.length === 1 || (rest.length === 3 && rest[1] === '--scope' && ['core', 'full'].includes(rest[2]!)), 'SETUP_ARGUMENT_INVALID');
+    const scope = rest[2] as 'core' | 'full' | undefined;
+    initializeSetup(paths, { authorized: true, scope });
+    // A repeated full-feature request also authorizes included Live Mini for an existing instance.
+    // Preserve the original scope and identity; the SQLite checkpoint remains authoritative.
+    if (scope === 'full') {
+      const store = existsSync(paths.databasePath) ? (await import('./storage.ts')).openStore({ paths }) : undefined;
+      try { await withSetupSession(paths, session => session.authorizeLiveMini(true), store); } finally { store?.close(); }
+    }
+    return { initialized: true };
   }
   if (command === 'recover-lock') {
     if (rest.length === 0) return recoverSetupLock(paths);

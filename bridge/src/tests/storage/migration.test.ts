@@ -14,6 +14,10 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fixture, record } from "./fixture.ts";
 import { migrateLegacy } from "../../migrate-legacy-state.ts";
+import { Database } from "bun:sqlite";
+import { openStore } from "../../storage.ts";
+import { canonical } from "../../storage.contract.ts";
+import { createHash } from "node:crypto";
 const roots: string[] = [];
 const fixtures: ReturnType<typeof fixture>[] = [];
 function unprotect(path: string) {
@@ -316,4 +320,108 @@ test("legacy task helper prevents replay even without orchestrator handled recor
   expect((await apply(f)).exit).toBe(0);
   expect(f.store.tasksForBatch("legacy-batch")[0]?.state).toBe("unknown");
   expect(f.store.claimBatch("legacy-batch").status).toBe("busy");
+});
+
+function versionOneFixture() {
+  const f = fixture(); fixtures.push(f); f.store.close();
+  for (const suffix of ["", "-wal", "-shm"]) rmSync(f.paths.databasePath + suffix, { force: true });
+  writeFileSync(f.paths.databasePath, "", { mode: 0o600 });
+  const db = new Database(f.paths.databasePath);
+  db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");
+  db.exec(readFileSync(new URL("../../migrations/001-inbox-outbox.sql", import.meta.url), "utf8"));
+  db.query("INSERT INTO instance VALUES(1,?,1)").run("test-installation-0001");
+  db.exec("PRAGMA user_version=1");
+  const destination = { spaceId: "space-1", lineId: "line-1" };
+  const task = { taskId: "v1-task", batchId: "v1-batch", destination, owner: "worker", finalOwner: "front-door", state: "accepted", receipt: "preserved native evidence" };
+  db.query("INSERT INTO inbox(id,event_key,provider_id,space_id,line_id,record,received_at,pending) VALUES(?,?,?,?,?,?,?,0)").run("v1-event", "v1-event-key", "v1-message", "space-1", "line-1", JSON.stringify(record("v1-message")), 1);
+  db.query("INSERT INTO batches(id,space_id,line_id,formed_at,state,run_id,generation,lease_until) VALUES(?,?,?,1,'delegated','v1-run',1,0)").run("v1-batch", "space-1", "line-1");
+  db.exec("INSERT INTO batch_events VALUES('v1-batch','v1-event',0); INSERT INTO wakes(batch_id,state) VALUES('v1-batch','acknowledged')");
+  db.query("INSERT INTO tasks VALUES(?,?,?,?,?)").run(task.taskId, task.batchId, JSON.stringify(task), task.state, 1);
+  const payload = { spaceId: "space-1", text: "Done." };
+  const digest = createHash("sha256").update(canonical(payload)).digest("hex");
+  db.query("INSERT INTO operations VALUES(?,?,?,?,?,?,?,?,?)").run("v1-operation", "space-1", "line-1", "progress", "answer:1", digest, "v1-batch", null, 1);
+  const reference = { messageId: "provider-original", miniAppCardSession: { chatGuid: "chat", messageGuid: "message", sessionId: "session", targetMessageGuid: "target" } };
+  const item = { id: "v1-outbound", kind: "text", ...payload, createdAt: new Date(1).toISOString(), status: "unknown", attempts: 1, operationId: "v1-operation" };
+  db.query("INSERT INTO outbound(id,operation_id,ordinal,item,state,attempts,reference,code) VALUES(?,?,0,?,'unknown',1,?,'v1_uncertainty')").run(item.id, "v1-operation", JSON.stringify(item), JSON.stringify(reference));
+  for (const [kind, key, value] of [
+    ["onboarding", "reservation", { state: "legacy-recorded", outboundIds: [item.id] }],
+    ["presentation", "option-map", { messageId: "provider-options", parts: [{ partIndex: 0, optionId: "dog", childId: "p:0/provider-options" }] }],
+    ["app-session", "provider-original", { session: reference.miniAppCardSession, url: "https://example.test/live", live: true }],
+  ] as const) db.query("INSERT INTO metadata VALUES(?,?,?)").run(kind, key, JSON.stringify(value));
+  const snapshot = { outbound: db.query("SELECT * FROM outbound").all(), metadata: db.query("SELECT * FROM metadata ORDER BY kind,key").all(), tasks: db.query("SELECT id,batch_id,binding,state,updated_at FROM tasks").all() };
+  db.exec("PRAGMA wal_checkpoint(TRUNCATE)"); db.close();
+  return { ...f, destination, task, payload, snapshot };
+}
+
+test("v1 read-only inspection requires explicit upgrade and leaves the database unchanged", () => {
+  const f = versionOneFixture();
+  const before = readFileSync(f.paths.databasePath);
+  expect(() => openStore({ paths: f.paths, readOnly: true })).toThrow("STORE_UPGRADE_REQUIRED");
+  expect(readFileSync(f.paths.databasePath)).toEqual(before);
+  const raw = new Database(f.paths.databasePath, { readonly: true });
+  try { expect(raw.query("PRAGMA user_version").get()).toEqual({ user_version: 1 }); }
+  finally { raw.close(); }
+});
+
+test("forward v1 upgrade preserves operation IDs, uncertainty, provider references, task ownership and metadata", () => {
+  const f = versionOneFixture(), upgraded = openStore({ paths: f.paths });
+  try {
+    expect(upgraded.db.query("PRAGMA user_version").get()).toEqual({ user_version: 2 });
+    expect(upgraded.db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+    expect(upgraded.db.query("SELECT * FROM outbound").all()).toEqual(f.snapshot.outbound);
+    expect(upgraded.db.query("SELECT * FROM metadata ORDER BY kind,key").all()).toEqual(f.snapshot.metadata);
+    expect(upgraded.db.query("SELECT id,batch_id,binding,state,updated_at FROM tasks").all()).toEqual(f.snapshot.tasks);
+    expect(upgraded.getTask(f.task.taskId)).toMatchObject(f.task);
+    expect(upgraded.getTask(f.task.taskId)!.inputs).toHaveLength(1);
+    expect(upgraded.readBatch("v1-batch")).toMatchObject({ inputRevision: 1, continuationReason: "inbound" });
+    const status = upgraded.operationStatus(f.destination, "progress", "answer:1", { batchId: "v1-batch", inputRevision: 1 });
+    expect(status[0]).toMatchObject({ id: "v1-outbound", state: "unknown", code: "v1_uncertainty", reference: { messageId: "provider-original" } });
+    expect(upgraded.claimOutbound()).toBeUndefined();
+  } finally { upgraded.close(); }
+  const reopened = openStore({ paths: f.paths, readOnly: true });
+  try {
+    expect(reopened.outboundStatus("v1-outbound")?.state).toBe("unknown");
+    expect(reopened.getTask(f.task.taskId)!.inputs).toHaveLength(1);
+  } finally { reopened.close(); }
+});
+
+for (const recovery of ["recoverWork", "formBatches"] as const) {
+  test(`${recovery} preserves a legacy review batch instead of treating its original input as a continuation`, () => {
+    const f = versionOneFixture();
+    const versionOne = new Database(f.paths.databasePath);
+    try {
+      versionOne.exec("UPDATE batches SET state='review',run_id=NULL,lease_until=NULL WHERE id='v1-batch'; UPDATE wakes SET state='failed' WHERE batch_id='v1-batch'");
+    } finally { versionOne.close(); }
+    const upgraded = openStore({ paths: f.paths });
+    try {
+      expect(upgraded.claimSnapshot("v1-batch")).toMatchObject({ state: "review", inputRevision: 1, acknowledgedRevision: 0, claimedRevision: null });
+      upgraded[recovery]();
+      upgraded[recovery]();
+      expect(upgraded.claimSnapshot("v1-batch")).toMatchObject({ state: "review", inputRevision: 1, acknowledgedRevision: 0, claimedRevision: null });
+      expect(upgraded.claimBatch("v1-batch")).toEqual({ status: "busy" });
+      expect(upgraded.claimWake()).toBeUndefined();
+      expect(upgraded.outboundStatus("v1-outbound")).toMatchObject({ state: "unknown", code: "v1_uncertainty" });
+      expect(upgraded.getTask(f.task.taskId)).toMatchObject(f.task);
+      expect(upgraded.readBatch("v1-batch").messages[0]?.id).toBe("v1-message");
+    } finally { upgraded.close(); }
+  });
+}
+
+
+test("documented offline schema upgrade requires the lifetime lock and upgrades the original v1 database", () => {
+  const f = versionOneFixture();
+  const bridgeRoot = new URL("../../../", import.meta.url).pathname;
+  const env: Record<string, string | undefined> = {...process.env, PHOTON_TEST_MODE: "1", PHOTON_INSTANCE_DIR: f.root};
+  delete env.PHOTON_LOCK_FD;
+  const unlocked = Bun.spawnSync([process.execPath, "run", "src/upgrade-store.ts"], {cwd: bridgeRoot, env});
+  expect(unlocked.exitCode).toBe(1);
+  expect(JSON.parse(unlocked.stderr.toString()).error.code).toBe("INSTANCE_LOCK_REQUIRED");
+  const before = new Database(f.paths.databasePath, {readonly: true});
+  expect(before.query("PRAGMA user_version").get()).toEqual({user_version: 1}); before.close();
+  const upgraded = Bun.spawnSync(["python3", "tools/with-instance-lock.py", join(f.root, "runtime.lock"), process.execPath, "run", "src/upgrade-store.ts"], {cwd: bridgeRoot, env});
+  expect(upgraded.exitCode).toBe(0);
+  expect(JSON.parse(upgraded.stdout.toString())).toEqual({ok: true, schemaVersion: 2});
+  const store = openStore({paths: f.paths, readOnly: true});
+  try { expect(store.outboundStatus("v1-outbound")?.state).toBe("unknown"); }
+  finally { store.close(); }
 });

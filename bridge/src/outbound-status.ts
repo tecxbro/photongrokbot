@@ -1,3 +1,4 @@
+import { bridgeControlError } from "./control-errors.ts";
 import { getStore } from "./storage.ts";
 import { boundedStdin } from "./batch-control.ts";
 import { assertInstanceLock } from "./instance-lock.ts";
@@ -34,8 +35,8 @@ if (import.meta.main) {
       if (!status) throw new Error("OUTBOUND_NOT_FOUND");
       console.log(JSON.stringify(status));
     }
-  } catch {
-    console.error("OUTBOUND_STATUS_REJECTED");
+  } catch (error) {
+    console.error(JSON.stringify(bridgeControlError(error)));
     process.exitCode = 1;
   }
 }

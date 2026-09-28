@@ -24,6 +24,9 @@ export type ClaimSnapshot = {
   runId: string | null;
   generation: number;
   leaseUntil: number | null;
+  inputRevision: number;
+  claimedRevision: number | null;
+  acknowledgedRevision: number;
 };
 export type PrivacySummary = {
   events: number;
@@ -61,6 +64,7 @@ export interface ExtendedBridgeStore extends BridgeStore {
     apply?: boolean;
   }): { events: number; outbound: number; artifactPaths: string[] };
   /** Strictly local recorded task evidence. Never invokes a native tool. */
+  dispatchContinuations(): number;
   recoverWork(): { media: number; wakes: number; tasks: number };
 }
 export function validateId(
