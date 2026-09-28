@@ -61,5 +61,11 @@ test('T01/P08 runbook CLI reconciles original unknown operations and exports an 
       expect(db.query('PRAGMA quick_check').get()).toEqual({ quick_check: 'ok' });
       expect(db.query('SELECT state FROM outbound ORDER BY seq').all()).toEqual([{ state: 'accepted' }, { state: 'cancelled' }]);
     } finally { db.close(); }
+    const prune = run('prune-instance');
+    expect(prune).toMatchObject({ applied: false, events: 0, outbound: 0 });
+    const pruneArgs = ['--apply', '--plan-id', prune.planId, '--now', String(prune.now)];
+    run('src/prune-instance.ts', pruneArgs, undefined, false, 1);
+    expect(run('src/prune-instance.ts', pruneArgs, undefined, true)).toMatchObject({ applied: true, events: 0, outbound: 0 });
+    expect(f.store.listOutbound().map(item => item.id)).toEqual(ids);
   } finally { f.cleanup(); }
 });
