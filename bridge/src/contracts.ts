@@ -9,7 +9,7 @@ export type ProviderReference = { messageId?: string; parts?: unknown[]; miniApp
 export type ProviderOutcome = { state: "accepted"; reference?: ProviderReference; evidence: string } | { state: "unknown" | "failed" | "skipped"; code: string; reference?: ProviderReference } | { state: "retry_wait"; code: string; retryAfterMs: number };
 export type MediaReference = { messageId: string; attachmentId?: string; spaceId: string; lineId: string; kind: "voice" | "attachment"; name?: string; mimeType?: string; size?: number; duration?: number };
 export type MediaJob = { id: string; eventId: string; reference: MediaReference; state: "pending" | "processing" | "ready" | "failed" | "unavailable"; attempts: number };
-export type MediaResult = { state: "ready"; patch: Partial<InboundRecord> } | { state: "failed" | "unavailable"; code: string };
+export type MediaResult = { state: "ready"; patch: Partial<InboundRecord> } | { state: "failed" | "unavailable"; code: string; patch?: Partial<InboundRecord> };
 export type Submission = { version: 1; batchId: string; taskId?: string; claim: ClaimToken; actionKey: string; purpose: "progress" | "final" | "control" | "presentation"; payload: EnqueueOutboundInput; presentation?: { cardId: string; taskId: string; viewUrl: string; claimId: string } };
 export type OutboundStatus = { id: string; state: DeliveryState; attempts: number; reference?: ProviderReference; code?: string };
 export type WakeJob = { batchId: string; attemptId: string; attempts: number };
@@ -38,7 +38,7 @@ export interface BridgeStore {
   claimWake(now?: number): WakeJob | undefined;
   settleWake(job: WakeJob, result: { state: "acknowledged" | "retry_wait" | "failed"; code?: string; retryAfterMs?: number }): void;
   claimMedia(): MediaJob | undefined;
-  settleMedia(jobId: string, result: MediaResult): void;
+  settleMedia(jobId: string, result: MediaResult, attempt: number): void;
   knownTarget(destination: Destination, messageId: string): boolean;
   getMetadata<T>(kind: string, key: string): T | undefined;
   setMetadata(kind: string, key: string, value: unknown): void;
