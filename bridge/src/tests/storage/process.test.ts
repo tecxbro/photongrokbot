@@ -313,7 +313,7 @@ for (const phase of ["before_commit", "after_commit"]) {
     const input = {
       kind: "app",
       spaceId: ctx.destination.spaceId,
-      url: "https://example.test/card",
+      url: "https://example.test/live-1/card?k=test",
       live: true,
     };
     const presentation = {
@@ -322,6 +322,30 @@ for (const phase of ["before_commit", "after_commit"]) {
       claimId: "host-claim",
       viewUrl: input.url,
     };
+    const task = {
+      taskId: presentation.taskId,
+      batchId: ctx.claim.batchId,
+      destination: ctx.destination,
+      owner: "worker",
+      finalOwner: "main",
+      state: "intent" as const,
+    };
+    f.store.bindTask(ctx.claim, task);
+    f.store.bindTask(ctx.claim, {
+      ...task,
+      state: "accepted",
+      receipt: "native-receipt",
+    });
+    f.store.setMetadata("live-mini-host", "configured", {
+      origin: "https://example.test",
+    });
+    f.store.registerPresentation(ctx.claim, {
+      cardId: presentation.cardId,
+      taskId: presentation.taskId,
+      batchId: ctx.claim.batchId,
+      destination: ctx.destination,
+      viewUrl: presentation.viewUrl,
+    });
     const context = {
       ...ctx,
       purpose: "presentation",
@@ -339,6 +363,9 @@ for (const phase of ["before_commit", "after_commit"]) {
     const ledger = f.store.listMetadata<any>("presentation-submission");
     expect(rows).toHaveLength(phase === "before_commit" ? 0 : 1);
     expect(ledger).toHaveLength(rows.length);
+    expect(f.store.listMetadata("task-card-operation")).toHaveLength(
+      rows.length,
+    );
     const replay = f.store.enqueue({ ...input, kind: "app" }, context);
     expect(f.store.listOutbound()).toHaveLength(1);
     expect(

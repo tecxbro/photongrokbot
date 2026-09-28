@@ -158,7 +158,12 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
   ): Array<{ key: string; value: T }> {
     if (!Number.isInteger(limit) || limit < 1 || limit > 1000)
       throw new Error("LIMIT_INVALID");
-    if (afterKey !== undefined && (typeof afterKey !== "string" || afterKey.length > 8192 || afterKey.includes("\0")))
+    if (
+      afterKey !== undefined &&
+      (typeof afterKey !== "string" ||
+        afterKey.length > 8192 ||
+        afterKey.includes("\0"))
+    )
       throw new Error("METADATA_CURSOR_INVALID");
     return (
       this.db
@@ -656,7 +661,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
           (value) =>
             typeof value !== "string" || !value.trim() || value.length > 512,
         ) ||
-        !["app", "app_update"].includes(input.kind ?? "") ||
+        input.kind !== "app" ||
         !("url" in input) ||
         presentation.viewUrl !== input.url ||
         (context.taskId !== undefined && presentation.taskId !== context.taskId)
@@ -704,6 +709,34 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
           destination: context.destination,
         }
       : undefined;
+    const cardIdentity = presentation
+      ? { ...presentation, purpose: context.purpose, payloadHash: digest }
+      : undefined;
+    if (presentation) {
+      const registered = this.getMetadata(
+        "task-card-context",
+        presentation.cardId,
+      );
+      const expected = {
+        cardId: presentation.cardId,
+        taskId: presentation.taskId,
+        batchId: presentation.batchId,
+        destination: presentation.destination,
+        viewUrl: presentation.viewUrl,
+      };
+      if (
+        context.purpose !== "presentation" ||
+        registered === undefined ||
+        canonical(registered) !== canonical(expected)
+      )
+        throw new Error("TASK_CARD_CONTEXT_MISMATCH");
+      const reserved = this.getMetadata<Row>(
+        "task-card-operation",
+        presentation.cardId,
+      );
+      if (reserved && canonical(reserved.identity) !== canonical(cardIdentity))
+        throw new Error("TASK_CARD_OPERATION_CONFLICT");
+    }
     const prior = this.db
       .query(
         "SELECT id,payload_hash FROM operations WHERE space_id=? AND line_id=? AND purpose=? AND action_key=?",
@@ -735,8 +768,29 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
         )
           throw new Error("PRESENTATION_IDENTITY_CONFLICT");
       }
+      if (
+        presentation &&
+        !this.getMetadata("task-card-operation", presentation.cardId)
+      )
+        this.db
+          .query(
+            "INSERT INTO metadata(kind,key,value) VALUES('task-card-operation',?,?)",
+          )
+          .run(
+            presentation.cardId,
+            canonical({
+              identity: cardIdentity,
+              operationId: prior.id,
+              outboundIds: items.map((item) => item.id),
+            }),
+          );
       return items;
     }
+    if (
+      presentation &&
+      this.getMetadata("task-card-operation", presentation.cardId)
+    )
+      throw new Error("TASK_CARD_OPERATION_CONFLICT");
     const operationId = id("op");
     this.db
       .query("INSERT INTO operations VALUES(?,?,?,?,?,?,?,?,?)")
@@ -766,6 +820,19 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       }
       this.fault?.("enqueue:child");
     });
+    if (presentation)
+      this.db
+        .query(
+          "INSERT INTO metadata(kind,key,value) VALUES('task-card-operation',?,?)",
+        )
+        .run(
+          presentation.cardId,
+          canonical({
+            identity: cardIdentity,
+            operationId,
+            outboundIds: prepared.map((item) => item.id),
+          }),
+        );
     return prepared;
   }
   claimOutbound(at = now()): OutboundClaim | undefined {

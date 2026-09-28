@@ -596,16 +596,17 @@ test("destination validation rejects entire flush before pending membership can 
 });
 test("presentation identity is committed with outbox and never changed by idempotent replay", () => {
   const f = setup();
-  const ctx = batch(f.store);
+  const ctx = presentationFixture(f);
+  f.store.registerPresentation(ctx.claim, ctx.context);
   const input = {
     kind: "app" as const,
     spaceId: ctx.destination.spaceId,
-    url: "https://example.test/card",
+    url: ctx.context.viewUrl,
     live: true,
   };
   const presentation = {
     cardId: "card-1",
-    taskId: "live-task-1",
+    taskId: ctx.context.taskId,
     viewUrl: input.url,
     claimId: "host-claim-1",
   };
@@ -662,7 +663,7 @@ test("presentation identity is committed with outbox and never changed by idempo
   f.store.enqueue(input, staticContext);
   expect(() =>
     f.store.enqueue(input, { ...staticContext, presentation }),
-  ).toThrow("PRESENTATION_IDENTITY_CONFLICT");
+  ).toThrow("TASK_CARD_OPERATION_CONFLICT");
   const send = f.store.claimOutbound()!;
   f.store.settleOutbound(send.item.id, send.attemptId, {
     state: "unknown",
@@ -1042,12 +1043,71 @@ test("wake exclusion IDs and bounded list validate before any durable claim", ()
 
 test("metadata pagination advances beyond blocked first page without skipping keys", () => {
   const f = setup();
-  for (const key of ["c", "a", "b", "d"]) f.store.setMetadata("pending", key, { key });
+  for (const key of ["c", "a", "b", "d"])
+    f.store.setMetadata("pending", key, { key });
   f.store.setMetadata("unrelated", "aa", true);
-  expect(f.store.listMetadata("pending", 2).map((entry) => entry.key)).toEqual(["a", "b"]);
-  expect(f.store.listMetadata("pending", 2, "b").map((entry) => entry.key)).toEqual(["c", "d"]);
+  expect(f.store.listMetadata("pending", 2).map((entry) => entry.key)).toEqual([
+    "a",
+    "b",
+  ]);
+  expect(
+    f.store.listMetadata("pending", 2, "b").map((entry) => entry.key),
+  ).toEqual(["c", "d"]);
   expect(f.store.listMetadata("pending", 2, "d")).toEqual([]);
   expect(f.store.listMetadata("pending")).toHaveLength(4);
-  expect(() => f.store.listMetadata("pending", 2, "x".repeat(8193))).toThrow("METADATA_CURSOR_INVALID");
-  expect(() => f.store.listMetadata("pending", 2, "bad\0cursor")).toThrow("METADATA_CURSOR_INVALID");
+  expect(() => f.store.listMetadata("pending", 2, "x".repeat(8193))).toThrow(
+    "METADATA_CURSOR_INVALID",
+  );
+  expect(() => f.store.listMetadata("pending", 2, "bad\0cursor")).toThrow(
+    "METADATA_CURSOR_INVALID",
+  );
+});
+
+test("one registered task card reserves exactly one immutable initial operation", () => {
+  const f = setup();
+  const ctx = presentationFixture(f);
+  f.store.registerPresentation(ctx.claim, ctx.context);
+  const input = {
+    kind: "app" as const,
+    spaceId: ctx.destination.spaceId,
+    url: ctx.context.viewUrl,
+    live: true,
+  };
+  const context = {
+    ...ctx,
+    taskId: ctx.context.taskId,
+    purpose: "presentation",
+    actionKey: "first-card",
+    presentation: {
+      cardId: ctx.context.cardId,
+      taskId: ctx.context.taskId,
+      viewUrl: ctx.context.viewUrl,
+      claimId: "host-claim",
+    },
+  };
+  const first = f.store.enqueue(input, context);
+  expect(f.store.enqueue(input, context).map((item) => item.id)).toEqual(
+    first.map((item) => item.id),
+  );
+  for (const changed of [
+    { ...context, actionKey: "another-action" },
+    {
+      ...context,
+      presentation: { ...context.presentation, claimId: "new-claim" },
+    },
+  ])
+    expect(() => f.store.enqueue(input, changed)).toThrow(
+      "TASK_CARD_OPERATION_CONFLICT",
+    );
+  expect(() => f.store.enqueue({ ...input, live: false }, context)).toThrow(
+    "TASK_CARD_OPERATION_CONFLICT",
+  );
+  expect(() =>
+    f.store.enqueue(
+      { ...input, kind: "app_update", targetMessageId: "original" },
+      context,
+    ),
+  ).toThrow("PRESENTATION_CONTEXT_INVALID");
+  expect(f.store.listMetadata("task-card-operation")).toHaveLength(1);
+  expect(f.store.listOutbound()).toHaveLength(1);
 });
