@@ -8,9 +8,25 @@ description: >-
 
 **Audience:** you (the imported Front Door / primary bot), not the human adopter.
 
-**Goal:** Use the Spectrum **free plan** to stand up the hosted iMessage line, bridge + STT + sibling agents on the **agent VM**, then prove live with one exact flow: the bot gives the adopter the bot’s hosted line number; the adopter texts **anything** to that number from their authorized phone (suggest `hi` if they ask what to send); the bot replies once with a greeting like “it’s grokbot here” **plus a confetti message effect**.
+**Goal:** Use the Spectrum **free plan** to stand up the hosted iMessage line, bridge + STT + **all** sibling agents on the **agent VM**, have **Front Door** finish phone authorization + wake webhook + `.env` write + runtime restart, then prove live with one exact flow: the bot gives the adopter the bot’s hosted line number; the adopter texts **anything** to that number from their authorized phone (suggest `hi` if they ask what to send); the bot replies once with a greeting like “it’s grokbot here” **plus a confetti message effect**.
 
-**Do not** ask the adopter to run `bun install`, fill `.env`, or download models. You run those steps. The adopter’s only live action is texting `hi` to the hosted number you give them. Only pause when a human action is required (browser login approval, or the adopter’s phone number for authorization).
+**Do not** ask the adopter to run `bun install`, fill `.env`, paste webhook URL/key/headers, or download models. You run those steps. The adopter’s only live action is texting the hosted number **after** the ready checklist passes. Only pause when a human action is required (browser login approval, or the adopter’s phone number for authorization — phone ask happens **after** core bots exist, owned by Front Door).
+
+---
+
+## Hard rules (read first — never violate)
+
+1. **NEVER ask for first iMessage / “hi”** until **all** of these are true:
+   - All core bots exist (Front Door + Master Orchestrator + Creator + Feature Add + Image Cards + App Sheet).
+   - Wake routine exists on Front Door (Photon iMessage wake).
+   - Webhook URL + bearer are written into bridge `.env` **by the bot** (not the human).
+   - Runtime has been restarted with those env vars.
+   - `AUTHORIZED_SENDER_ID` is set.
+2. **NEVER instruct the human** to paste webhook URL, bearer, `Authorization` header, or POST body. The bot creates the routine and writes `.env`.
+3. **Phone-number ask** happens **AFTER** bots exist, owned by Front Door (or handed to Front Door via SendToAgent if a bootstrap bot created Front Door).
+4. **Step 0 orientation** must **NOT** ask them to text now. Say setup finishes first, then they text the bot number once.
+
+---
 
 Ground every Photon CLI flag in live docs — fetch before inventing:
 
@@ -33,13 +49,14 @@ Pack root on disk: wherever this share was unpacked (call it `{{PACK_ROOT}}`). B
 
 ---
 
-## Step 0 — Orient the adopter (short)
+## Step 0 — Orient the adopter (short — no texting yet)
 
 Tell them, in plain language:
 
-1. You will install Photon CLI on the VM, create a Spectrum **free-plan** project **`grokbot`** (or `grokbot-A`…`Z`), provision the bot’s hosted iMessage line, wire the bridge, download voice STT, and create sibling bots.
-2. You may already have their phone number; if not, ask once for the number to authorize as `AUTHORIZED_SENDER_ID` and register as a Spectrum user. They may also need to approve a browser login.
-3. When ready, give them the hosted iMessage line number — the bot’s number, not their own — and tell them to text that number from their authorized phone (**any first message works**; suggest `hi` if they want a prompt). Reply once with a grokbot greeting (“it’s grokbot here” / similar) **plus confetti**. That is the live proof.
+1. You will install Photon CLI on the VM, create a Spectrum **free-plan** project **`grokbot`** (or `grokbot-A`…`Z`), provision the bot’s hosted iMessage line, wire the bridge, download voice STT, and create **all** sibling bots first.
+2. **After** those bots exist, Front Door will finish the last wiring: authorize their phone if needed, create the wake webhook, write secrets into `.env` itself, and restart the runtime. They may need to approve a browser login; they will **not** paste any webhook URL, key, or header.
+3. **Only when setup is fully ready**, you will give them the hosted iMessage line number — the bot’s number, not their own — and invite them to text that number from their authorized phone (**any first message works**; suggest `hi` if they want a prompt). Reply once with a grokbot greeting (“it’s grokbot here” / similar) **plus confetti**. That is the live proof.
+4. **Do not text yet.** Setup finishes first; then they text the bot number once.
 
 Point them at CLI docs only as reference: https://photon.codes/docs/cli/installation (and the llms index above). Then you do the work.
 
@@ -145,7 +162,7 @@ CLI login token ≠ Spectrum **project secret**. Bridge auth uses project id + p
 
 ---
 
-## Step 3 — Use the photon-cli skill to create a Spectrum free-plan project and provision the bot line `grokbot` (fallback `grokbot-A`…`Z`)
+## Step 3 — Spectrum free-plan project + hosted bot line (capture number; do not invite texting yet)
 
 First consult the installed `photon-cli` skill and the live docs, then run the documented commands below. From https://photon.codes/docs/cli/projects:
 
@@ -188,13 +205,103 @@ photon spectrum lines ls --json
 photon spectrum lines ls --json
 ```
 
-Set `HOSTED_IMESSAGE_NUMBER` to the line’s E.164 number. This is the bot’s destination number for the proof. Give this number to the adopter after setup; never tell them to text their own authorized number.
+Set `HOSTED_IMESSAGE_NUMBER` to the line’s E.164 number. This is the bot’s destination number for the proof.
+
+**Do not give this number to the adopter yet and do not invite them to text.** Capture it only. Invite texting only in Step 9 after the ready checklist passes. Never tell them to text their own authorized number.
 
 ---
 
-## Step 4 — Get the adopter’s authorized sender phone (not the bot line)
+## Step 4 — Install bridge on the VM + fill SPECTRUM_* only
 
-The bot already has the adopter’s phone when it is available after login. Prefer a number **already available**:
+```bash
+# Example install path — choose a stable {{BRIDGE_ROOT}} on the VM
+export BRIDGE_ROOT="${BRIDGE_ROOT:-/workspace/grokbot-bridge}"
+mkdir -p "$BRIDGE_ROOT"
+cp -a "{{PACK_ROOT}}/bridge/." "$BRIDGE_ROOT/"
+cd "$BRIDGE_ROOT"
+cp .env.example .env
+chmod 0600 .env
+```
+
+Fill `.env` yourself for Spectrum credentials only (see `02-SECRETS.md` for key names). Leave webhook keys blank until Front Door finishes Step 8. Defer `AUTHORIZED_SENDER_ID` if the adopter’s phone is not yet known (Front Door owns that in Step 7).
+
+| Key | When / how |
+|---|---|
+| `SPECTRUM_PROJECT_ID` | Now — from `photon projects show` / create |
+| `SPECTRUM_PROJECT_SECRET` | Now — same / regenerate-secret |
+| `AUTHORIZED_SENDER_ID` | **Later (Step 7)** — Front Door; leave blank if unknown |
+| `GROK_ORCHESTRATOR_WEBHOOK_URL` | **Later (Step 8)** — bot writes after wake routine |
+| `GROK_ORCHESTRATOR_WEBHOOK_KEY` | **Later (Step 8)** — same routine bearer |
+
+```bash
+# Bun required for this bridge
+command -v bun >/dev/null || curl -fsSL https://bun.sh/install | bash
+bun install
+# STT first (Step 5) before calling ready — voice is mandatory
+# You may start runtime after STT for health checks, but you MUST restart
+# again after Step 8 writes webhook env. Do not invite texting yet.
+```
+
+Do not paste secrets into chat. Do not ask the human to fill webhook URL/key/headers.
+
+---
+
+## Step 5 — Moonshine STT (mandatory)
+
+Weights are **not** in the tarball (~214 MB). Follow **`{{PACK_ROOT}}/stt/INSTALL.md`** end-to-end on `{{BRIDGE_ROOT}}`:
+
+1. `python3 -m venv .venv-moonshine` + `pip install -U moonshine-voice`
+2. Ensure `ffmpeg` on PATH
+3. Download `small-streaming-en` / `quantized_26_08_21` (HF preferred or Moonshine CDN/SDK)
+4. Place under `data/models/moonshine/small-streaming-en/quantized_26_08_21/`
+5. Spot-check with `tools/moonshine_stt.py` if a sample wav is available
+
+Do not mark setup complete without STT installed.
+
+---
+
+## Step 6 — Create ALL sibling agents first (before phone / webhook / hi)
+
+Drive CreateAgent / equivalent tooling yourself. Do not ask the adopter to paste profiles. **Do not ask for phone, create the wake webhook, or invite “hi” until this step finishes.**
+
+For each row, create the agent, paste `PROFILE_TEMPLATE.md` as the profile body (after placeholder substitution), and attach the listed skills from `{{PACK_ROOT}}/skills/`:
+
+| Folder | Skills to attach |
+|---|---|
+| `agents/front-door/` | `imessage-front-door-wake`, `spectrum-imessage-apps-nudge`, **`getting-started`** (this skill) |
+| `agents/master-orchestrator/` | `imessage-master-orchestrator` |
+| `agents/creator/` | `imessage-creator` |
+| `agents/feature-add/` | `imessage-feature-add` |
+| `agents/image-cards/` | `photon-demo-image-overlay`, `photon-image-card-delivery` |
+| `agents/app-sheet/` | `spectrum-imessage-apps-nudge` |
+
+**Which bots to create depends on who you are:**
+
+- **If this bot is already Front Door:** create the other five (Master Orchestrator, Creator, Feature Add, Image Cards, App Sheet). Then continue to Steps 7–9 yourself.
+- **If this bot is a bootstrap / importer and is NOT Front Door:** create Front Door first (with this skill attached), then create the other five. Substitute placeholders, write bot cards, update `memory.md`. Then **hand off Phase B to Front Door** via SendToAgent (see **Handoff** below). Bootstrap must **not** ask for phone, create the wake, write webhook `.env`, restart for webhook, invite hi, or run the live proof itself.
+
+**After each create, record and substitute:**
+
+1. Real `serverId` / agent UUID for that bot.
+2. Replace placeholders everywhere they appear: `{{FRONT_DOOR_BOT_ID}}`, `{{MASTER_ORCHESTRATOR_BOT_ID}}`, `{{CREATOR_BOT_ID}}`, `{{FEATURE_ADD_BOT_ID}}`, `{{IMAGE_CARDS_BOT_ID}}`, `{{APP_SHEET_BOT_ID}}`, matching `{{*_AGENT_UUID}}`, and `{{BRIDGE_ROOT}}` / `{{PACK_ROOT}}`.
+3. Write bot cards: `bridge/orchestrator-memory/bots/<serverId>.md` from `_TEMPLATE.md` + the matching `ROLE_*.md`; update `bridge/orchestrator-memory/memory.md` with the live roster.
+4. Prefer creating **Front Door first** when you are bootstrap, then Master Orchestrator, then Creator / Feature Add / Image Cards / App Sheet.
+
+Live Mini (`agents/live-mini/` + `live-mini/`) is optional — skip unless the adopter asks for it.
+
+### Handoff — when bootstrap created Front Door (SendToAgent)
+
+If you (bootstrap) just created Front Door, send Front Door a clear Phase B task. Example SendToAgent text:
+
+> Phase B — Front Door finish (phone → authorize → webhook → `.env` → restart → proof). Core bots are created; placeholders and bot cards are updated. `{{BRIDGE_ROOT}}` is set. `HOSTED_IMESSAGE_NUMBER` is captured but the adopter has **not** been invited to text yet. Complete getting-started Steps 7–9 in order: (7) obtain adopter phone / set `AUTHORIZED_SENDER_ID` + `photon spectrum users add` + write into `.env`; (8) create Photon iMessage wake on Front Door from `routines/photon-imessage-wake.REDACTED.json`, write `GROK_ORCHESTRATOR_WEBHOOK_URL` + `GROK_ORCHESTRATOR_WEBHOOK_KEY` into bridge `.env` yourself, restart runtime — **never** ask the human to paste URL/key/headers; (9) ready checklist, then give hosted bot number and invite first text (suggest hi) + greeting + confetti. Do not ask for hi until the checklist passes.
+
+Bootstrap stops there. Front Door owns Steps 7–9.
+
+---
+
+## Step 7 — Front Door finish — phone (AUTHORIZED_SENDER_ID)
+
+**Owner: Front Door only** (after all core bots exist). Prefer a number already available:
 
 ```bash
 photon whoami
@@ -215,105 +322,41 @@ photon spectrum users add
 # follow CLI prompts / flags from --help; do not invent undocumented flags
 ```
 
-Optional availability check (docs): `photon projects check-phone +19876543210`
+Write `AUTHORIZED_SENDER_ID` into bridge `.env` yourself. Optional availability check (docs): `photon projects check-phone +19876543210`.
 
 ---
 
-## Step 5 — Install bridge on the VM + fill env + start runtime
+## Step 8 — Front Door finish — webhook (bot writes `.env`; human never pastes)
 
-```bash
-# Example install path — choose a stable {{BRIDGE_ROOT}} on the VM
-export BRIDGE_ROOT="${BRIDGE_ROOT:-/workspace/grokbot-bridge}"
-mkdir -p "$BRIDGE_ROOT"
-cp -a "{{PACK_ROOT}}/bridge/." "$BRIDGE_ROOT/"
-cd "$BRIDGE_ROOT"
-cp .env.example .env
-chmod 0600 .env
-```
-
-Fill `.env` yourself (see `02-SECRETS.md` for key names):
-
-| Key | How you get it |
-|---|---|
-| `SPECTRUM_PROJECT_ID` | `photon projects show` / create |
-| `SPECTRUM_PROJECT_SECRET` | same / regenerate-secret |
-| `AUTHORIZED_SENDER_ID` | Step 4 |
-| `GROK_ORCHESTRATOR_WEBHOOK_URL` | after wake routine (Step 8) |
-| `GROK_ORCHESTRATOR_WEBHOOK_KEY` | same routine bearer |
-
-```bash
-# Bun required for this bridge
-command -v bun >/dev/null || curl -fsSL https://bun.sh/install | bash
-bun install
-# STT first (Step 6) before calling ready — voice is mandatory
-./scripts/start-runtime.sh   # or: bun run start
-```
-
-Confirm runtime is up (process listening / log healthy). Do not paste secrets into chat.
-
----
-
-## Step 6 — Moonshine STT (mandatory)
-
-Weights are **not** in the tarball (~214 MB). Follow **`{{PACK_ROOT}}/stt/INSTALL.md`** end-to-end on `{{BRIDGE_ROOT}}`:
-
-1. `python3 -m venv .venv-moonshine` + `pip install -U moonshine-voice`
-2. Ensure `ffmpeg` on PATH
-3. Download `small-streaming-en` / `quantized_26_08_21` (HF preferred or Moonshine CDN/SDK)
-4. Place under `data/models/moonshine/small-streaming-en/quantized_26_08_21/`
-5. Spot-check with `tools/moonshine_stt.py` if a sample wav is available
-
-Do not mark setup complete without STT installed.
-
----
-
-## Step 7 — Sibling agents + skills (you create them; do not hand this to the human)
-
-Drive CreateAgent / equivalent tooling yourself. Do not ask the adopter to paste profiles.
-
-For each row, create the agent, paste `PROFILE_TEMPLATE.md` as the profile body (after placeholder substitution), and attach the listed skills from `{{PACK_ROOT}}/skills/`:
-
-| Folder | Skills to attach |
-|---|---|
-| `agents/front-door/` | `imessage-front-door-wake`, `spectrum-imessage-apps-nudge`, **`getting-started`** (this skill) |
-| `agents/master-orchestrator/` | `imessage-master-orchestrator` |
-| `agents/creator/` | `imessage-creator` |
-| `agents/feature-add/` | `imessage-feature-add` |
-| `agents/image-cards/` | `photon-demo-image-overlay`, `photon-image-card-delivery` |
-| `agents/app-sheet/` | `spectrum-imessage-apps-nudge` |
-
-**After each create, record and substitute:**
-
-1. Real `serverId` / agent UUID for that bot.
-2. Replace placeholders everywhere they appear: `{{FRONT_DOOR_BOT_ID}}`, `{{MASTER_ORCHESTRATOR_BOT_ID}}`, `{{CREATOR_BOT_ID}}`, `{{FEATURE_ADD_BOT_ID}}`, `{{IMAGE_CARDS_BOT_ID}}`, `{{APP_SHEET_BOT_ID}}`, matching `{{*_AGENT_UUID}}`, and `{{BRIDGE_ROOT}}` / `{{PACK_ROOT}}`.
-3. Write bot cards: `bridge/orchestrator-memory/bots/<serverId>.md` from `_TEMPLATE.md` + the matching `ROLE_*.md`; update `bridge/orchestrator-memory/memory.md` with the live roster.
-4. Prefer creating **Front Door first** (needs wake skill + this playbook), then Master Orchestrator, then Creator / Feature Add / Image Cards / App Sheet.
-
-Live Mini (`agents/live-mini/` + `live-mini/`) is optional — skip unless the adopter asks for it.
-
----
-
-## Step 8 — Webhook wake routine (bot wires this; human does not)
-
-On the **Front Door** agent (not the adopter’s checklist), create routine **Photon iMessage wake** from `routines/photon-imessage-wake.REDACTED.json`:
+**Owner: Front Door only.** Create routine **Photon iMessage wake** on Front Door from `routines/photon-imessage-wake.REDACTED.json`:
 
 1. Trigger type: **webhook**.
 2. Prompt / procedure: follow `skills/imessage-front-door-wake/SKILL.md` (parse `{"batchId"}`, load unread batch under `{{BRIDGE_ROOT}}`, Step 2/3, enqueue). Do not put message text in the webhook body.
-3. Enable the routine. Copy the host-issued **webhook URL** and **bearer**.
-4. Write into bridge `.env` (never paste into chat or iMessage):
+3. Enable the routine. Capture the host-issued **webhook URL** and **bearer** yourself.
+4. **Write into bridge `.env` yourself** (never paste into chat or iMessage, never ask the human to paste URL / bearer / Authorization header / POST body):
    - `GROK_ORCHESTRATOR_WEBHOOK_URL`
    - `GROK_ORCHESTRATOR_WEBHOOK_KEY`
-5. Restart the bridge runtime if it was already running so it picks up webhook env.
+5. **Restart the bridge runtime** so it picks up webhook env + `AUTHORIZED_SENDER_ID`.
 
-Body contract is only `{"batchId":"..."}`. Auth is `Authorization: Bearer <GROK_ORCHESTRATOR_WEBHOOK_KEY>`.
+Body contract is only `{"batchId":"..."}`. Auth is `Authorization: Bearer <GROK_ORCHESTRATOR_WEBHOOK_KEY>` — used by the bridge, not by the human.
 
-If your host has no “create webhook routine” UI/API yet, use whatever routine-create tool exists for this agent (e.g. `update_state` target routine with trigger type webhook, or the product’s webhook routine creator). Do not invent a fake URL — wait until the platform returns a real URL + bearer.
+If your host has no “create webhook routine” UI/API yet, use whatever routine-create tool exists for this agent (e.g. `update_state` target routine with trigger type webhook, or the product’s webhook routine creator). Do not invent a fake URL — wait until the platform returns a real URL + bearer. Do not hand those values to the human.
 
 ---
 
-## Step 9 — First live proof (bot line → any first text → greeting + confetti)
+## Step 9 — Ready checklist, then first live proof
 
-Give the adopter `HOSTED_IMESSAGE_NUMBER`, the E.164 number of the bot’s hosted Spectrum iMessage line. Tell them to text **that bot number** from their authorized phone. **Any first message counts** (hi, hey, a question, a sticker — does not matter). If they ask what to send, suggest `hi`. The destination is the bot’s number, never the adopter’s own number.
+**Ready checklist — all must pass before inviting any text:**
+
+- [ ] All six core bots exist (Front Door + Master Orchestrator + Creator + Feature Add + Image Cards + App Sheet)
+- [ ] Wake routine exists on Front Door
+- [ ] `GROK_ORCHESTRATOR_WEBHOOK_URL` + `GROK_ORCHESTRATOR_WEBHOOK_KEY` written into `.env` by the bot
+- [ ] Runtime restarted with those env vars
+- [ ] `AUTHORIZED_SENDER_ID` set
+- [ ] Moonshine STT installed
+- [ ] `HOSTED_IMESSAGE_NUMBER` captured
+
+Only after every box is checked: give the adopter `HOSTED_IMESSAGE_NUMBER`, the E.164 number of the bot’s hosted Spectrum iMessage line. Tell them to text **that bot number** from their authorized phone. **Any first message counts** (hi, hey, a question, a sticker — does not matter). If they ask what to send, suggest `hi`. The destination is the bot’s number, never the adopter’s own number.
 
 On that first inbound wake (or immediately after the first successful inbound space is known), regardless of the inbound text:
 
@@ -330,7 +373,7 @@ bun run enqueue -- --space-id "<spaceId>" --text "it’s grokbot here" --effect 
 
 If runtime `handledBy: runtime-greeting` already answered a bare hi, still ensure the reply is a greeting plus the **confetti** message effect once via enqueue with `--effect confetti` if the marker is unset.
 
-The adopter-facing proof is exactly one action: send any first iMessage to the bot’s hosted number. The bot’s reply is the greeting (“it’s grokbot here” / similar) plus confetti.
+The adopter-facing proof is exactly one action: send any first iMessage to the bot’s hosted number **after** setup is ready. The bot’s reply is the greeting (“it’s grokbot here” / similar) plus confetti.
 
 ---
 
@@ -339,11 +382,12 @@ The adopter-facing proof is exactly one action: send any first iMessage to the b
 - Follow `imessage-front-door-wake` for ordinary wakes (Step 0 react|no-react|effect → modality → Step 2/3).
 - Decision contracts live under `bridge/orchestrator-memory/` (`REPLY_MODALITY`, `REACTIONS_EFFECTS`, `CHAT_VS_TASK`, …).
 - Never echo Spectrum project secrets, webhook bearers, or `PHOTON_TOKEN` into iMessage or chat logs.
+- Never ask the human to paste webhook URL, bearer, Authorization header, or POST body.
 - Do not claim Moonshine weights shipped in the pack.
 
 ## Stop / escalate to human only for
 
 - Browser approval of `photon login`
-- Their E.164 (or Apple ID) when CLI does not already expose it
+- Their E.164 (or Apple ID) when CLI does not already expose it — **after** core bots exist, Front Door asks
 - Billing / Stripe if project upgrade is required for a line
 - Explicit permission for irreversible deletes (`photon projects delete`, etc.)

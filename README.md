@@ -12,13 +12,15 @@ Packed: **2026-09-27** (PT). Scrubbed — no live secrets, phones, personal spec
 
 1. Point you at Photon CLI docs and install the **Photon CLI on the agent VM** (npm or standalone binary).
 2. Authenticate via the CLI with **device login**: on the VM the bot runs `photon login --no-browser`, then gives you the verification URL (typically `https://app.photon.codes/sign-in/device`) and the user code from the CLI; you approve in your browser.
-3. Create a Spectrum **free-plan** project named **`grokbot`**. If that name is taken, try `grokbot-A` … `grokbot-Z`, then provision the bot’s hosted iMessage line.
-4. Give you the bot’s hosted iMessage number to text. Separately, use your phone number for `AUTHORIZED_SENDER_ID` / Spectrum user registration: the bot already has it when available, or asks once in E.164, e.g. **`+19876543210`**.
-5. Install this pack’s **bridge** on the VM, fill `.env` from CLI outputs (project id + project secret + webhook), start the runtime.
-6. **Download the Moonshine STT model** (required — weights are not in the tarball; see `stt/INSTALL.md`).
-7. Create sibling agents from `agents/*/`, attach skills, wire the **Photon iMessage wake** webhook routine.
+3. Create a Spectrum **free-plan** project named **`grokbot`**. If that name is taken, try `grokbot-A` … `grokbot-Z`, then provision the bot’s hosted iMessage line (**capture the number; do not invite you to text yet**).
+4. Install this pack’s **bridge** on the VM, fill `SPECTRUM_PROJECT_ID` / `SPECTRUM_PROJECT_SECRET` from CLI outputs. Leave webhook keys blank for now. Start work toward runtime after STT.
+5. **Download the Moonshine STT model** (required — weights are not in the tarball; see `stt/INSTALL.md`).
+6. **Create all sibling agents first** (Front Door + Master Orchestrator + Creator + Feature Add + Image Cards + App Sheet), attach skills, write bot cards.
+7. **Front Door finishes phone:** use your already-known phone, or ask once in E.164 (e.g. **`+19876543210`**) for `AUTHORIZED_SENDER_ID` / `photon spectrum users add`, and write it into `.env`.
+8. **Front Door finishes webhook:** create the **Photon iMessage wake** routine on Front Door, **write** `GROK_ORCHESTRATOR_WEBHOOK_URL` + `GROK_ORCHESTRATOR_WEBHOOK_KEY` into bridge `.env` itself, restart the runtime. **You are never asked to paste webhook URL, bearer, Authorization header, or POST body.**
+9. **Ready checklist passes**, then the bot gives you its hosted iMessage number. **First live proof:** text **anything** to that bot number from your authorized phone (not to your own number; suggest `hi` if you want a prompt). The bot replies once with a greeting such as **“it’s grokbot here”** plus an iMessage **confetti** message effect (`--effect confetti` / `setup-confetti` marker).
 
-When that is done, the bot gives you its hosted iMessage number. **First live proof:** text **anything** to that bot number from your authorized phone (not to your own number; suggest `hi` if you want a prompt). The bot replies once with a greeting such as **“it’s grokbot here”** plus an iMessage **confetti** message effect (`--effect confetti` / `setup-confetti` marker).
+**Order matters:** bots → phone + webhook finish (bot writes `.env`) → restart → checklist → then first text. Setup finishes before any invite to text.
 
 ---
 

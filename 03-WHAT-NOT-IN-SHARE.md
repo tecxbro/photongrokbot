@@ -19,14 +19,15 @@ Exporting one Grok bot profile without the bridge, webhook, memory contracts, si
 | Photon CLI on agent VM | Install via npm or binary; point adopter at https://photon.codes/docs/cli/installation |
 | Auth | `photon login` (adopter approves browser / `--no-browser` URL) |
 | Spectrum project | Create `grokbot` or `grokbot-A`…`Z` with `--spectrum` |
-| Hosted bot line + authorized sender | Provision the Spectrum free-plan hosted line and give its number to the adopter; use the adopter’s already-known phone, or ask once in E.164 like `+19876543210`, for `AUTHORIZED_SENDER_ID` / `photon spectrum users add` |
-| Bridge install | Copy `bridge/`, fill `.env` from CLI, `bun install`, start runtime |
+| Hosted bot line | Provision the Spectrum free-plan hosted line; **capture** `HOSTED_IMESSAGE_NUMBER` — do **not** invite texting yet |
+| Bridge install | Copy `bridge/`, fill `SPECTRUM_*` from CLI; leave webhook keys blank until Step 8; `bun install` |
 | Moonshine STT | **Required** — run `stt/INSTALL.md` (download weights) |
-| Six Grok agents | CreateAgent from `agents/*/PROFILE_TEMPLATE.md` |
+| Six Grok agents **first** | CreateAgent from `agents/*/PROFILE_TEMPLATE.md` **before** phone / webhook / hi |
 | Skills | Attach workflows under `skills/` including **`getting-started`** on Front Door |
-| Webhook routine | Front Door **Photon iMessage wake**; wire URL + bearer into `.env` |
+| Front Door — phone | After bots exist: use already-known phone or ask once in E.164 like `+19876543210` for `AUTHORIZED_SENDER_ID` / `photon spectrum users add`; bot writes `.env` |
+| Front Door — webhook | Create **Photon iMessage wake** on Front Door; **bot** writes URL + bearer into `.env`; restart runtime. **Never** ask the human to paste webhook URL / key / Authorization header / POST body |
 | Bot cards + `memory.md` | Fill real serverIds after creation |
-| First live proof | Bot gives its hosted line number; adopter texts **anything** to that number (not their own; suggest `hi`) → “it’s grokbot here” + **confetti** once |
+| First live proof (**last**) | Ready checklist passes → bot gives hosted line number → adopter texts **anything** (suggest `hi`) → “it’s grokbot here” + **confetti** once |
 | Domain specialists | Optional — create your own later. **Not** shipped. |
 | Live Mini host | Optional — deploy `live-mini/live-task-cards/` only if wanted |
 
@@ -44,7 +45,9 @@ Exporting one Grok bot profile without the bridge, webhook, memory contracts, si
 
 ## Decisions recorded
 
-- **Bot does setup** — adopter-facing docs keep the proof to one action: text the bot’s hosted line (any first message; suggest `hi`).
+- **Bots before phone / webhook / hi** — create all six core agents first; Front Door owns phone + wake finish; proof is last.
+- **Bot writes `.env` webhook keys** — never instruct the human to paste webhook URL, bearer, Authorization header, or POST body.
+- **Bot does setup** — adopter-facing docs keep the proof to one action: text the bot’s hosted line (any first message; suggest `hi`) **only after** the ready checklist.
 - **STT mandatory** — Moonshine download is part of getting-started; weights stay out of the tarball.
 - **Live Mini optional** — pack ships scrubbed `live-mini/` source + `agents/live-mini/` templates. Static App Sheet remains the default shipped specialist for `--app-url`.
 - **Personal specialists omitted** — adopters/bots create their own; `_TEMPLATE.md` + generic `memory.md` remain.
