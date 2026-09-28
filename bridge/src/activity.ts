@@ -12,6 +12,7 @@ export class ActivityDriver {
     since: number;
     refreshed: number;
     expired: boolean;
+    cleanupNeeded: boolean;
   }>();
 
   constructor(
@@ -26,22 +27,27 @@ export class ActivityDriver {
     for (const [key, entry] of this.active) {
       if (!current.has(key)) {
         this.active.delete(key);
-        if (!entry.expired) await this.bestEffort(() => this.port.stop(entry.destination));
+        if (entry.cleanupNeeded) await this.bestEffort(() => this.port.stop(entry.destination));
       }
     }
     for (const [key, destination] of current) {
       const time = this.now();
       let entry = this.active.get(key);
       if (!entry) {
-        entry = { destination, since: time, refreshed: time - this.refreshMs, expired: false };
+        entry = { destination, since: time, refreshed: time - this.refreshMs, expired: false, cleanupNeeded: false };
         this.active.set(key, entry);
       }
-      if (entry.expired) continue;
       if (time - entry.since >= this.lifetimeMs) {
         entry.expired = true;
-        await this.bestEffort(() => this.port.stop(destination));
-      } else if (time - entry.refreshed >= this.refreshMs) {
+        if (entry.cleanupNeeded) {
+          entry.cleanupNeeded = false;
+          await this.bestEffort(() => this.port.stop(destination));
+        }
+      } else if (!entry.expired && time - entry.refreshed >= this.refreshMs) {
         entry.refreshed = time;
+        // A rejected/timed-out start may already have reached the provider.
+        // Disable refresh retries separately from the eventual cleanup attempt.
+        entry.cleanupNeeded = true;
         // A failed/uncertain optional control must not start an overlapping retry.
         if (!await this.bestEffort(() => this.port.start(destination))) entry.expired = true;
       }
