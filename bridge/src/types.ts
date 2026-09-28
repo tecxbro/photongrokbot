@@ -106,6 +106,7 @@ export type UnreadBatch = {
   batchId: string;
   flushedAt: string;
   destination?: import("./contracts.ts").Destination;
+  media?: import("./contracts.ts").MediaJob[];
   messages: InboundRecord[];
   /** Set when runtime already answered (skip Front Door / Chatty). */
   handledBy?: "runtime-greeting";
