@@ -43,7 +43,7 @@ export interface BridgeStore {
   settleMedia(jobId: string, result: MediaResult, attempt: number): void;
   knownTarget(destination: Destination, messageId: string): boolean;
   getMetadata<T>(kind: string, key: string): T | undefined;
-  listMetadata<T>(kind: string, limit?: number): Array<{ key: string; value: T }>;
+  listMetadata<T>(kind: string, limit?: number, afterKey?: string): Array<{ key: string; value: T }>;
   setMetadata(kind: string, key: string, value: unknown): void;
   deleteMetadata(kind: string, key: string): void;
   operationStatus(destination: Destination, purpose: string, actionKey: string): OutboundStatus[];
