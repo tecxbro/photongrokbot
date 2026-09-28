@@ -2,6 +2,8 @@ import { getStore } from "./storage.ts";
 import { recordDelegation } from "./task-bindings.ts";
 import { validateClaim, validateId } from "./storage.contract.ts";
 import type { BridgeStore } from "./contracts.ts";
+import { assertInstanceLock } from "./instance-lock.ts";
+import { resolveInstancePaths } from "../../shared/instance-paths.mjs";
 export async function boundedStdin(
   stream: ReadableStream<Uint8Array> = Bun.stdin.stream(),
 ): Promise<string> {
@@ -31,6 +33,24 @@ export async function control(
 ): Promise<unknown> {
   args = args[0] === "--" ? args.slice(1) : [...args];
   const command = args.shift();
+  if (command === "recover-delegation") {
+    if (args.length !== 1 || args[0] !== "--json-stdin")
+      throw new Error("JSON_STDIN_REQUIRED");
+    assertInstanceLock(resolveInstancePaths());
+    const input = JSON.parse(await stdin());
+    if (
+      !input ||
+      Object.keys(input).some(
+        (key) => !["taskId", "state", "receipt"].includes(key),
+      )
+    )
+      throw new Error("RECONCILIATION_INPUT_INVALID");
+    const concrete = store as ReturnType<typeof getStore>;
+    return concrete.reconcileTask(input.taskId, {
+      state: input.state,
+      receipt: input.receipt,
+    });
+  }
   if (command === "delegation-intent" || command === "delegation-receipt") {
     if (args.length !== 1 || args[0] !== "--json-stdin")
       throw new Error("JSON_STDIN_REQUIRED");

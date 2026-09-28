@@ -17,6 +17,7 @@ import type {
   MediaJob,
   MediaResult,
   ProviderOutcome,
+  ProviderReference,
   TaskBinding,
   WakeJob,
   OutboundClaim,
@@ -147,6 +148,42 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       .query("SELECT value FROM metadata WHERE kind=? AND key=?")
       .get(kind, key) as Row | null;
     return row ? JSON.parse(row.value) : undefined;
+  }
+  listMetadata<T>(
+    kind: string,
+    limit = 1000,
+  ): Array<{ key: string; value: T }> {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 1000)
+      throw new Error("LIMIT_INVALID");
+    return (
+      this.db
+        .query(
+          "SELECT key,value FROM metadata WHERE kind=? ORDER BY key LIMIT ?",
+        )
+        .all(kind, limit) as Row[]
+    ).map((row) => ({ key: row.key, value: JSON.parse(row.value) }));
+  }
+  operationStatus(
+    destination: Destination,
+    purpose: string,
+    actionKey: string,
+  ): OutboundStatus[] {
+    validateDestination(destination);
+    return (
+      this.db
+        .query(
+          "SELECT o.id FROM outbound o JOIN operations p ON p.id=o.operation_id WHERE p.space_id=? AND p.line_id=? AND p.purpose=? AND p.action_key=? ORDER BY o.ordinal",
+        )
+        .all(
+          destination.spaceId,
+          destination.lineId,
+          purpose,
+          actionKey,
+        ) as Row[]
+    ).map((row) => this.outboundStatus(row.id)!);
+  }
+  deleteMetadata(kind: string, key: string): void {
+    this.db.query("DELETE FROM metadata WHERE kind=? AND key=?").run(kind, key);
   }
   setMetadata(kind: string, key: string, value: unknown): void {
     if (!kind || !key) throw new Error("METADATA_KEY_INVALID");
@@ -311,6 +348,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       messages,
       destination,
       media,
+      tasks: this.tasksForBatch(batchId),
     } as UnreadBatch;
   }
   claimSnapshot(batchId: string): ClaimSnapshot {
@@ -630,63 +668,177 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       this.db
         .query("UPDATE attempts SET settled_at=?,outcome=? WHERE id=?")
         .run(at, canonical(outcome), attemptId);
-      const item = payload(row);
-      if (reference?.messageId) {
-        this.db
-          .query("INSERT INTO targets VALUES(?,?,?) ON CONFLICT DO NOTHING")
-          .run(row.space_id, row.line_id, reference.messageId);
-        if (item.kind === "poll")
-          this.setMetadata("poll", reference.messageId, {
-            title: item.title,
-            options: item.options,
-            savedAt: new Date(at).toISOString(),
-          });
-        if (reference.miniAppCardSession)
-          this.setMetadata("app-session", reference.messageId, {
-            session: reference.miniAppCardSession,
-            ...("url" in item ? { url: item.url, live: item.live } : {}),
-            savedAt: new Date(at).toISOString(),
-          });
-        if (item.kind === "attachment_group" && reference.parts) {
-          const record = {
-            batchId: item.batchId ?? `outbound-${item.id}`,
-            spaceId: row.space_id,
-            lineId: row.line_id,
-            messageId: reference.messageId,
-            outboundId: outboundId,
-            savedAt: new Date(at).toISOString(),
-            parts: reference.parts,
-          };
-          this.setMetadata("presentation", record.batchId, record);
-          this.setMetadata("presentation-index", reference.messageId, {
-            batchId: record.batchId,
-          });
-        }
-      }
-      if (row.purpose === "onboarding") {
-        const reservation = this.getMetadata<Row>("onboarding", "reservation")!;
-        this.setMetadata("onboarding", "reservation", {
-          ...reservation,
-          state: outcome.state,
-          reference,
-          evidence: outcome.state === "accepted" ? outcome.evidence : undefined,
-        });
-      }
-      const live = this.getMetadata<Row>("presentation-submission", outboundId);
-      if (live)
-        this.setMetadata("presentation-settlement", outboundId, {
-          ...live,
-          outboundId,
-          state: "pending",
-          deliveryState: outcome.state,
-          reference,
-        });
+      this.settleDerived(row, outboundId, outcome, reference, at);
     });
   }
+  private settleDerived(
+    row: Row,
+    outboundId: string,
+    outcome: { state: string; evidence?: string },
+    reference: ProviderReference | undefined,
+    at: number,
+  ): void {
+    const item = payload(row);
+    if (reference?.messageId) {
+      this.db
+        .query("INSERT INTO targets VALUES(?,?,?) ON CONFLICT DO NOTHING")
+        .run(row.space_id, row.line_id, reference.messageId);
+      if (item.kind === "poll")
+        this.setMetadata("poll", reference.messageId, {
+          title: item.title,
+          options: item.options,
+          savedAt: new Date(at).toISOString(),
+        });
+      if (reference.miniAppCardSession)
+        this.setMetadata("app-session", reference.messageId, {
+          session: reference.miniAppCardSession,
+          ...("url" in item ? { url: item.url, live: item.live } : {}),
+          savedAt: new Date(at).toISOString(),
+        });
+      if (item.kind === "attachment_group" && reference.parts) {
+        const record = {
+          batchId: item.batchId ?? `outbound-${item.id}`,
+          spaceId: row.space_id,
+          lineId: row.line_id,
+          messageId: reference.messageId,
+          outboundId: outboundId,
+          savedAt: new Date(at).toISOString(),
+          parts: reference.parts,
+        };
+        this.setMetadata("presentation", record.batchId, record);
+        this.setMetadata("presentation-index", reference.messageId, {
+          batchId: record.batchId,
+        });
+      }
+    }
+    if (row.purpose === "onboarding") {
+      const reservation = this.getMetadata<Row>("onboarding", "reservation")!;
+      this.setMetadata("onboarding", "reservation", {
+        ...reservation,
+        state: outcome.state,
+        reference,
+        evidence: outcome.state === "accepted" ? outcome.evidence : undefined,
+      });
+    }
+    const live = this.getMetadata<Row>("presentation-submission", outboundId);
+    if (live)
+      this.setMetadata("presentation-settlement", outboundId, {
+        ...live,
+        outboundId,
+        state: "pending",
+        deliveryState: outcome.state,
+        reference,
+      });
+  }
+  /** Offline operator resolution only: records external evidence, never dispatches. */
+  reconcileOutbound(
+    outboundId: string,
+    input: {
+      state: "accepted" | "cancelled";
+      evidence: string;
+      reference?: ProviderReference;
+    },
+  ): OutboundStatus {
+    validateId(outboundId);
+    if (
+      !input ||
+      !["accepted", "cancelled"].includes(input.state) ||
+      typeof input.evidence !== "string" ||
+      input.evidence.trim().length < 8 ||
+      input.evidence.length > 4096
+    )
+      throw new Error("RECONCILIATION_EVIDENCE_REQUIRED");
+    if (
+      input.state === "accepted" &&
+      (!input.reference ||
+        typeof input.reference.messageId !== "string" ||
+        !input.reference.messageId.trim())
+    )
+      throw new Error("EXACT_PROVIDER_REFERENCE_REQUIRED");
+    return this.tx("reconcile_outbound", () => {
+      const row = this.db
+        .query(
+          "SELECT o.*,p.space_id,p.line_id,p.purpose,p.action_key,p.task_id FROM outbound o JOIN operations p ON p.id=o.operation_id WHERE o.id=?",
+        )
+        .get(outboundId) as Row | null;
+      if (!row || row.state !== "unknown")
+        throw new Error("UNKNOWN_OUTBOUND_REQUIRED");
+      const at = now();
+      this.db
+        .query(
+          "UPDATE outbound SET state=?,reference=?,code='OPERATOR_RECONCILED',settled_at=? WHERE id=?",
+        )
+        .run(
+          input.state,
+          input.reference ? canonical(input.reference) : row.reference,
+          at,
+          outboundId,
+        );
+      this.setMetadata("outbound-reconciliation", outboundId, {
+        ...input,
+        at,
+        priorCode: row.code,
+        priorReference: row.reference ? JSON.parse(row.reference) : undefined,
+      });
+      this.settleDerived(row, outboundId, input, input.reference, at);
+      return this.outboundStatus(outboundId)!;
+    });
+  }
+  tasksForBatch(batchId: string): TaskBinding[] {
+    this.batchDestination(batchId);
+    return (
+      this.db
+        .query(
+          "SELECT binding FROM tasks WHERE batch_id=? ORDER BY updated_at,id",
+        )
+        .all(batchId) as Row[]
+    ).map((row) => JSON.parse(row.binding));
+  }
+  /** Offline operator receipt recovery preserves the original task identity. */
+  reconcileTask(
+    taskId: string,
+    input: { state: "accepted" | "completed"; receipt: string },
+  ): TaskBinding {
+    validateId(taskId, "task_id");
+    if (
+      !input ||
+      !["accepted", "completed"].includes(input.state) ||
+      typeof input.receipt !== "string" ||
+      input.receipt.trim().length < 8 ||
+      input.receipt.length > 4096
+    )
+      throw new Error("NATIVE_RECEIPT_REQUIRED");
+    return this.tx("reconcile_task", () => {
+      const binding = this.getTask(taskId);
+      if (!binding || binding.state !== "unknown")
+        throw new Error("UNKNOWN_TASK_REQUIRED");
+      const updated = { ...binding, ...input };
+      this.db
+        .query("UPDATE tasks SET state=?,binding=?,updated_at=? WHERE id=?")
+        .run(input.state, canonical(updated), now(), taskId);
+      this.setMetadata("task-reconciliation", taskId, {
+        ...input,
+        at: now(),
+        prior: binding,
+      });
+      this.db
+        .query(
+          "UPDATE batches SET state='pending',run_id=NULL,lease_until=NULL,generation=generation+1 WHERE id=?",
+        )
+        .run(binding.batchId);
+      this.db
+        .query("UPDATE wakes SET state='pending',next_at=0 WHERE batch_id=?")
+        .run(binding.batchId);
+      return updated;
+    });
+  }
+
   recoverSending(): number {
     return this.tx("recover_sending", () => {
       const rows = this.db
-        .query("SELECT id,attempt_id FROM outbound WHERE state='sending'")
+        .query(
+          "SELECT o.*,p.space_id,p.line_id,p.purpose FROM outbound o JOIN operations p ON p.id=o.operation_id WHERE o.state='sending'",
+        )
         .all() as Row[];
       for (const row of rows) {
         this.db
@@ -701,6 +853,13 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
             canonical({ state: "unknown", code: "PROCESS_INTERRUPTED" }),
             row.attempt_id,
           );
+        this.settleDerived(
+          row,
+          row.id,
+          { state: "unknown" },
+          row.reference ? JSON.parse(row.reference) : undefined,
+          now(),
+        );
       }
       return rows.length;
     });

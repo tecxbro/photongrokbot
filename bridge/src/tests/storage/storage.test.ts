@@ -457,3 +457,74 @@ test("D07 eligible operation reads use indexed outbox after retained history", (
     true,
   );
 });
+test("offline evidence resolution never retries uncertain operation and requires provider reference", () => {
+  const f = setup();
+  const ctx = batch(f.store);
+  const items = f.store.enqueue(
+    { spaceId: "space-1", text: "first\n\nsecond" },
+    { ...ctx, purpose: "final", actionKey: "resolve" },
+  );
+  const first = f.store.claimOutbound()!;
+  f.store.settleOutbound(first.item.id, first.attemptId, {
+    state: "unknown",
+    code: "TIMEOUT",
+  });
+  expect(() =>
+    f.store.reconcileOutbound(first.item.id, {
+      state: "accepted",
+      evidence: "operator inspected provider",
+    }),
+  ).toThrow("EXACT_PROVIDER_REFERENCE_REQUIRED");
+  const resolved = f.store.reconcileOutbound(first.item.id, {
+    state: "accepted",
+    evidence: "operator inspected exact provider receipt",
+    reference: { messageId: "provider-exact" },
+  });
+  expect(resolved.state).toBe("accepted");
+  expect(resolved.attempts).toBe(1);
+  expect(f.store.claimOutbound()?.item.id).toBe(items[1]!.id);
+  expect(() =>
+    f.store.reconcileOutbound(first.item.id, {
+      state: "cancelled",
+      evidence: "abandonment after review",
+    }),
+  ).toThrow("UNKNOWN_OUTBOUND_REQUIRED");
+  expect(
+    f.store.operationStatus(ctx.destination, "final", "resolve"),
+  ).toHaveLength(2);
+});
+test("expired unknown native task can only resume original binding from explicit receipt", () => {
+  const f = setup();
+  const ctx = batch(f.store);
+  const binding = {
+    taskId: "recover-task",
+    batchId: ctx.batch.batchId,
+    destination: ctx.destination,
+    owner: "worker",
+    finalOwner: "front-door",
+    state: "intent" as const,
+  };
+  f.store.bindTask(ctx.claim, binding);
+  f.store.recoverWork();
+  f.store.db
+    .query("UPDATE batches SET lease_until=0 WHERE id=?")
+    .run(ctx.batch.batchId);
+  const recovered = f.store.reconcileTask(binding.taskId, {
+    state: "accepted",
+    receipt: "native tool exact task receipt",
+  });
+  expect(recovered.taskId).toBe(binding.taskId);
+  expect((f.store.readBatch(ctx.batch.batchId) as any).tasks[0].state).toBe(
+    "accepted",
+  );
+  const acquired = f.store.claimBatch(ctx.batch.batchId);
+  expect(acquired.status).toBe("acquired");
+  expect(() => f.store.renewClaim(ctx.claim)).toThrow("STALE_CLAIM");
+  if (acquired.status === "acquired")
+    expect(() =>
+      f.store.bindTask(acquired.token, {
+        ...binding,
+        taskId: "replacement-task",
+      }),
+    ).toThrow("HANDOFF_ALREADY_RESERVED");
+});

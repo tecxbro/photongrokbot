@@ -1,4 +1,11 @@
-import type { BridgeStore, ClaimToken, Destination } from "./contracts.ts";
+import type {
+  BridgeStore,
+  ClaimToken,
+  Destination,
+  OutboundStatus,
+  ProviderReference,
+  TaskBinding,
+} from "./contracts.ts";
 import type { InboundRecord, OutboundItem } from "./types.ts";
 import type { DatabasePaths } from "./db.ts";
 export type StoreOptions = {
@@ -25,6 +32,19 @@ export type PrivacySummary = {
 };
 export interface ExtendedBridgeStore extends BridgeStore {
   backupTo(path: string): void;
+  tasksForBatch(batchId: string): TaskBinding[];
+  reconcileOutbound(
+    id: string,
+    input: {
+      state: "accepted" | "cancelled";
+      evidence: string;
+      reference?: ProviderReference;
+    },
+  ): OutboundStatus;
+  reconcileTask(
+    taskId: string,
+    input: { state: "accepted" | "completed"; receipt: string },
+  ): TaskBinding;
   acknowledgePrunedArtifacts(paths: string[]): void;
   activeConversationWork(): Destination[];
   batchDestination(batchId: string): Destination;

@@ -296,3 +296,24 @@ test("legacy delegated record stays review-needed rather than replaying task", a
     ),
   ).toMatchObject({ taskId: "old-task" });
 });
+test("committed migration repairs missing cutover marker without reimporting work", async () => {
+  const f = setup();
+  expect((await apply(f)).exit).toBe(0);
+  rmSync(join(f.source, ".product-repair-cutover.json"));
+  const again = await apply(f);
+  expect(again.report.alreadyImported).toBe(true);
+  expect(existsSync(join(f.source, ".product-repair-cutover.json"))).toBe(true);
+  expect(f.store.listOutbound()).toHaveLength(2);
+});
+test("legacy task helper prevents replay even without orchestrator handled record", async () => {
+  const f = setup();
+  f.write("tasks/legacy-task.json", {
+    taskId: "legacy-task",
+    batchId: "legacy-batch",
+    owner: "researcher",
+    finalOwner: "front-door",
+  });
+  expect((await apply(f)).exit).toBe(0);
+  expect(f.store.tasksForBatch("legacy-batch")[0]?.state).toBe("unknown");
+  expect(f.store.claimBatch("legacy-batch").status).toBe("busy");
+});

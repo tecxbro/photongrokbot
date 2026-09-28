@@ -235,6 +235,35 @@ function makePlan(inv: Inventory, lineId: string) {
       });
   return { inbound, handled, batches, outbound, membership, issues };
 }
+function writeCutoverMarker(
+  source: string,
+  installationId: string,
+  digest: string,
+  databasePath: string,
+): void {
+  const path = join(source, ".product-repair-cutover.json");
+  if (existsSync(path)) {
+    const existing = JSON.parse(readFileSync(path, "utf8"));
+    if (
+      existing.installationId !== installationId ||
+      existing.digest !== digest ||
+      existing.databasePath !== databasePath
+    )
+      throw new Error("LEGACY_CUTOVER_CONFLICT");
+    return;
+  }
+  writeFileSync(
+    path,
+    canonical({
+      version: 1,
+      installationId,
+      digest,
+      databasePath,
+      doNotStartLegacyWriter: true,
+    }),
+    { mode: 0o600, flag: "wx" },
+  );
+}
 export function migrateLegacy(options: {
   source: string;
   paths: InstancePaths;
@@ -267,6 +296,12 @@ export function migrateLegacy(options: {
     if (prior) {
       if (prior.digest !== inv.digest || prior.source_root !== inv.source)
         throw new Error("LEGACY_SOURCE_CHANGED_RECONCILE");
+      writeCutoverMarker(
+        inv.source,
+        store.installationId,
+        inv.digest,
+        options.paths.databasePath,
+      );
       return {
         ...JSON.parse(prior.report),
         alreadyImported: true,
@@ -510,6 +545,51 @@ export function migrateLegacy(options: {
             noReplay: true,
           });
         for (const [name, value] of inv.files) {
+          if (name.startsWith("tasks/") || name.startsWith("delegations/")) {
+            const raw = value as any;
+            const taskId = raw?.taskId;
+            const batchId = raw?.batchId;
+            if (
+              typeof taskId === "string" &&
+              typeof batchId === "string" &&
+              store.db.query("SELECT id FROM batches WHERE id=?").get(batchId)
+            ) {
+              if (!store.getTask(taskId)) {
+                const destination = store.batchDestination(batchId);
+                const binding = {
+                  taskId,
+                  batchId,
+                  destination,
+                  owner: String(raw.owner ?? raw.taskOwner ?? "legacy-unknown"),
+                  finalOwner: String(raw.finalOwner ?? "legacy-front-door"),
+                  state: "unknown",
+                  receipt: "legacy-record-only",
+                };
+                store.db
+                  .query("INSERT INTO tasks VALUES(?,?,?,?,?)")
+                  .run(
+                    taskId,
+                    batchId,
+                    canonical(binding),
+                    "unknown",
+                    Date.now(),
+                  );
+                store.db
+                  .query("UPDATE batches SET state='review' WHERE id=?")
+                  .run(batchId);
+              }
+              report.issues.push({
+                file: name,
+                code: "LEGACY_HANDOFF_REVIEW",
+                id: taskId,
+              });
+            } else
+              report.issues.push({
+                file: name,
+                code: "DANGLING_TASK_BINDING",
+                ...(typeof taskId === "string" ? { id: taskId } : {}),
+              });
+          }
           store.setMetadata("legacy-source", name, remap(value));
           if (name === "poll-meta.json" || name === "app-card-sessions.json") {
             const map = (value as any)?.byMessageId;
@@ -552,16 +632,11 @@ export function migrateLegacy(options: {
           .run(inv.source, inv.digest, canonical(report), Date.now());
       })
       .immediate();
-    writeFileSync(
-      join(inv.source, ".product-repair-cutover.json"),
-      canonical({
-        version: 1,
-        installationId: store.installationId,
-        digest: inv.digest,
-        databasePath: options.paths.databasePath,
-        doNotStartLegacyWriter: true,
-      }),
-      { mode: 0o600, flag: "wx" },
+    writeCutoverMarker(
+      inv.source,
+      store.installationId,
+      inv.digest,
+      options.paths.databasePath,
     );
     return report;
   } finally {
