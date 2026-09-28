@@ -50,6 +50,44 @@ VM filesystem, or physical-device behavior.
    Check first-use greeting plus confetti only on a genuinely fresh installation;
    migrated onboarding provenance must not cause another celebration.
 
+## Offline reconciliation and consistent export
+
+Run from `bridge/` only after stopping dispatch and all writers. Select the same
+private `PHOTON_INSTANCE_DIR` used by the installation. Read an original operation
+with `bun run outbound-status -- --id "$OUTBOUND_ID"`. Store the reviewed resolution
+in a mode-0600 file under that private root; never paste real receipts into source.
+Accepted resolution has this shape, using the actual original outbound ID and
+provider reference:
+
+```json
+{"id":"original-outbound-id","state":"accepted","evidence":"Exact provider receipt inspected by operator","reference":{"messageId":"actual-provider-message-id"}}
+```
+
+Preserve returned `parts` and the complete `miniAppCardSession` in `reference` when
+the original operation supplies them. For explicit abandonment, use `cancelled`
+with a recorded reason. Cancellation never proves non-delivery or permits an
+automatic resend. An accepted resolution without an exact message reference is
+rejected. Both transitions apply only to an existing unknown operation.
+
+```sh
+python3 tools/with-instance-lock.py "$PHOTON_INSTANCE_DIR/runtime.lock" bun run src/outbound-status.ts --resolve-json-stdin < "$PRIVATE_RESOLUTION_FILE"
+bun run outbound-status -- --id "$OUTBOUND_ID"
+```
+
+Invoke source entry points directly under the lock. Package-script aliases may
+spawn a shell that loses the inherited lock descriptor and are rejected. Keep the
+instance stopped, preview a consistent export, then apply its returned plan ID:
+
+```sh
+bun run export-instance
+python3 tools/with-instance-lock.py "$PHOTON_INSTANCE_DIR/runtime.lock" bun run src/export-instance.ts --apply --plan-id "$PLAN_ID"
+```
+
+The returned export ID identifies `backups/export-<id>` under the private root.
+Verify its SQLite snapshot and retain its manifest with the source/lock digests.
+It includes private messages and operation evidence but excludes credentials.
+See [PRIVACY.md](PRIVACY.md) for scoped retention and backup handling.
+
 ## Rollback
 
 Stop and quiesce the new supervisor, wake entry points and all writers first.

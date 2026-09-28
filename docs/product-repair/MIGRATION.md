@@ -18,10 +18,10 @@ bun run migrate -- --source "$LEGACY_DATA_DIR" --line-id "$ORIGINAL_LINE_ID"
 Only after verified stopped writers and reviewed dry-run:
 
 ```sh
-python3 tools/with-instance-lock.py "$PHOTON_INSTANCE_DIR/runtime.lock" bun run migrate -- --source "$LEGACY_DATA_DIR" --line-id "$ORIGINAL_LINE_ID" --apply --writers-stopped
+python3 tools/with-instance-lock.py "$PHOTON_INSTANCE_DIR/runtime.lock" bun run src/migrate-legacy-state.ts --source "$LEGACY_DATA_DIR" --line-id "$ORIGINAL_LINE_ID" --apply --writers-stopped
 ```
 
-The explicit stopped-writers attestation is not a substitute for checking. The import hashes the immutable source, keeps a private backup, copies referenced media into a private archive, imports related state in one transaction and writes a cutover marker. Repeating the same source is idempotent; changed/conflicting source is rejected for reconciliation. Never remove the cutover marker to restart legacy queues.
+Invoke the TypeScript entry point directly under the Python lock. A package-script alias can spawn a shell that drops the inherited lock descriptor; the protected command then rejects the operation. The explicit stopped-writers attestation is not a substitute for checking. The import hashes the immutable source, keeps a private backup, copies referenced media into a private archive, imports related state in one transaction and writes a cutover marker. Repeating the same source is idempotent; changed/conflicting source is rejected for reconciliation. Never remove the cutover marker to restart legacy queues.
 
 Legacy queued sends are unknown/review-needed, not fresh retryable work. Old accepted references, poll metadata, full app sessions, option maps, task context and original conversation/line remain evidence. Legacy celebration suppresses duplicate confetti without being called a physical-device observation. Existing ambiguous task handoffs remain held.
 

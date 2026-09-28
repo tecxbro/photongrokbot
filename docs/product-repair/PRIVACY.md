@@ -31,8 +31,8 @@ bun run export-instance
 These are inspection/previews. Preview reports counts and a planId without dumping bodies. Apply requires the same preview plan, a fixed `--now` for prune, and the exclusive runtime lock while the runtime is stopped. Obtain paths from the canonical resolver; never bypass it to guess a lock location. For a selected private root, the lock is `$PHOTON_INSTANCE_DIR/runtime.lock`.
 
 ```sh
-python3 tools/with-instance-lock.py "$PHOTON_INSTANCE_DIR/runtime.lock" bun run prune-instance -- --apply --plan-id "$PLAN_ID" --now "$PREVIEW_NOW"
-python3 tools/with-instance-lock.py "$PHOTON_INSTANCE_DIR/runtime.lock" bun run export-instance -- --apply --plan-id "$PLAN_ID"
+python3 tools/with-instance-lock.py "$PHOTON_INSTANCE_DIR/runtime.lock" bun run src/prune-instance.ts --apply --plan-id "$PLAN_ID" --now "$PREVIEW_NOW"
+python3 tools/with-instance-lock.py "$PHOTON_INSTANCE_DIR/runtime.lock" bun run src/export-instance.ts --apply --plan-id "$PLAN_ID"
 ```
 
 Use `--delete-resolved` consistently in both preview and apply for immediate resolved-payload deletion. `--include-backups` is an explicit separate choice in both phases. For selected immutable migration snapshots, apply temporarily adds owner-write only to the exact reviewed snapshot directories, leaves files read-only, and restores surviving directory modes after a partial failure. Unselected snapshots keep their modes. The preview is revalidated before deletion; changed state rejects it. Failed artifact cleanup remains a durable cleanup intent. Never delete arbitrary files because they resemble an attachment name.
