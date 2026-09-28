@@ -4,9 +4,14 @@ import {
   constants,
   fsyncSync,
   openSync,
-  writeFileSync,
+  mkdtempSync,
+  fchmodSync,
+  readSync,
+  writeSync,
+  rmSync,
 } from "node:fs";
 import { resolveInstancePaths } from "../../shared/instance-paths.mjs";
+import { dirname, join } from "node:path";
 import type { Database } from "bun:sqlite";
 import type {
   AcceptInput,
@@ -139,11 +144,44 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
         constants.O_NOFOLLOW,
       0o600,
     );
+    let temporary: string | undefined;
     try {
-      writeFileSync(fd, this.db.serialize());
+      // VACUUM INTO creates a consistent standalone DELETE-journal snapshot.
+      // Apple SQLite rejects an already-existing output, including an empty file.
+      // Its default file mode may be 0644, so build only inside a private 0700
+      // directory, then copy to our exclusively created 0600 destination fd.
+      temporary = mkdtempSync(join(dirname(path), ".snapshot-"));
+      const snapshotPath = join(temporary, "bridge.sqlite");
+      this.db.query("VACUUM INTO ?").run(snapshotPath);
+      const source = openSync(
+        snapshotPath,
+        constants.O_RDONLY | constants.O_NOFOLLOW,
+      );
+      try {
+        fchmodSync(source, 0o600);
+        const chunk = Buffer.alloc(64 * 1024);
+        let count: number;
+        while ((count = readSync(source, chunk, 0, chunk.length, null)) > 0) {
+          let offset = 0;
+          while (offset < count) {
+            const written = writeSync(fd, chunk, offset, count - offset, null);
+            if (written <= 0) throw new Error("BACKUP_WRITE_FAILED");
+            offset += written;
+          }
+        }
+      } finally {
+        closeSync(source);
+      }
       fsyncSync(fd);
+      const directory = openSync(dirname(path), constants.O_RDONLY);
+      try {
+        fsyncSync(directory);
+      } finally {
+        closeSync(directory);
+      }
     } finally {
       closeSync(fd);
+      if (temporary) rmSync(temporary, { recursive: true, force: true });
     }
   }
   getMetadata<T>(kind: string, key: string): T | undefined {

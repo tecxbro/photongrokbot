@@ -8,6 +8,8 @@ import {
   openSync,
   writeSync,
   closeSync,
+  statSync,
+  symlinkSync,
 } from "node:fs";
 import { join } from "node:path";
 import { fixture, record, batch } from "./fixture.ts";
@@ -358,13 +360,60 @@ describe("transactional store", () => {
     expect(f.store.outboundStatus(item!.id)?.state).toBe("accepted");
     expect(f.store.enqueue.bind(f.store)).toBeDefined();
   });
-  test("backup includes committed WAL content and read diagnostics bounded", () => {
+  test("backup opens read-only before any write-open and preserves committed WAL contents", () => {
     const f = setup();
-    batch(f.store);
+    f.store.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+    const original = batch(f.store);
+    f.store.setMetadata("snapshot-fixture", "marker", {
+      value: "committed-before-export",
+    });
+    expect(statSync(`${f.paths.databasePath}-wal`).size).toBeGreaterThan(32);
     const backup = join(f.paths.backupsDir, "export.sqlite");
     f.store.backupTo(backup);
-    expect(readFileSync(backup).byteLength).toBeGreaterThan(1000);
+    const bytes = readFileSync(backup);
+    expect(bytes.byteLength).toBeGreaterThan(1000);
+    expect(statSync(backup).mode & 0o777).toBe(0o600);
+    expect(existsSync(`${backup}-wal`)).toBe(false);
+    expect(existsSync(`${backup}-shm`)).toBe(false);
+    // No write-open or journal-mode repair is permitted before this first query.
+    const snapshot = new Database(backup, { readonly: true, create: false });
+    try {
+      expect(snapshot.query("SELECT count(*) n FROM inbox").get()).toEqual({
+        n: 1,
+      });
+      expect(snapshot.query("SELECT id FROM batches").get()).toEqual({
+        id: original.batch.batchId,
+      });
+      expect(snapshot.query("PRAGMA integrity_check").all()).toEqual([
+        { integrity_check: "ok" },
+      ]);
+      expect(snapshot.query("PRAGMA journal_mode").get()).toEqual({
+        journal_mode: "delete",
+      });
+      f.store.setMetadata("snapshot-fixture", "marker", {
+        value: "changed-after-export",
+      });
+      expect(
+        snapshot
+          .query(
+            "SELECT value FROM metadata WHERE kind='snapshot-fixture' AND key='marker'",
+          )
+          .get(),
+      ).toEqual({ value: '{"value":"committed-before-export"}' });
+    } finally {
+      snapshot.close();
+    }
+    expect(readFileSync(backup)).toEqual(bytes);
+    expect(existsSync(`${backup}-wal`)).toBe(false);
+    expect(existsSync(`${backup}-shm`)).toBe(false);
+    expect(f.store.db.query("PRAGMA journal_mode").get()).toEqual({
+      journal_mode: "wal",
+    });
     expect(() => f.store.backupTo(backup)).toThrow();
+    const link = join(f.paths.backupsDir, "unsafe.sqlite");
+    symlinkSync(backup, link);
+    expect(() => f.store.backupTo(link)).toThrow("INSTANCE_SYMLINK_REJECTED");
+    expect(readFileSync(backup)).toEqual(bytes);
     expect(() => f.store.recentInbound(10001)).toThrow("LIMIT_INVALID");
   });
 });
