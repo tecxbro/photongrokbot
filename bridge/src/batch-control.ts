@@ -2,12 +2,34 @@ import { getStore } from "./storage.ts";
 import { recordDelegation } from "./task-bindings.ts";
 import { validateClaim, validateId } from "./storage.contract.ts";
 import type { BridgeStore } from "./contracts.ts";
+export async function boundedStdin(
+  stream: ReadableStream<Uint8Array> = Bun.stdin.stream(),
+): Promise<string> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let bytes = 0;
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > 65536) {
+        await reader.cancel();
+        throw new Error("INPUT_TOO_LARGE");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
 export async function control(
   args: string[],
   store: BridgeStore = getStore(),
-  stdin = () => Bun.stdin.text(),
+  stdin = boundedStdin,
 ): Promise<unknown> {
-  args = args.filter((x) => x !== "--");
+  args = args[0] === "--" ? args.slice(1) : [...args];
   const command = args.shift();
   if (command === "delegation-intent" || command === "delegation-receipt") {
     if (args.length !== 1 || args[0] !== "--json-stdin")

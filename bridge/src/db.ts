@@ -134,6 +134,12 @@ export function openDatabase(
         .query("SELECT name FROM sqlite_master WHERE type='table'")
         .all();
       if (tables.length) throw new Error("STORE_UNVERSIONED_NONEMPTY");
+      // Initialize WAL before the first schema write so read-only tools can use its sidecars.
+      if (
+        (db.query("PRAGMA journal_mode=WAL").get() as { journal_mode: string })
+          .journal_mode !== "wal"
+      )
+        throw new Error("STORE_WAL_REQUIRED");
       db.transaction(() => {
         db.exec(
           readFileSync(

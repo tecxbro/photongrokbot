@@ -432,3 +432,28 @@ test("progress completion preserves typing until final completion or lease expir
     .run(ctx.batch.batchId);
   expect(f.store.activeConversationWork()).toHaveLength(0);
 });
+test("bounded control input rejects oversized stream before EOF", async () => {
+  const { boundedStdin } = await import("../../batch-control.ts");
+  let cancelled = false;
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      controller.enqueue(new Uint8Array(65537));
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  await expect(boundedStdin(stream)).rejects.toThrow("INPUT_TOO_LARGE");
+  expect(cancelled).toBe(true);
+});
+test("D07 eligible operation reads use indexed outbox after retained history", () => {
+  const f = setup();
+  const rows = f.store.db
+    .query(
+      "EXPLAIN QUERY PLAN SELECT id FROM outbound WHERE state IN ('queued','retry_wait') AND next_at<=? ORDER BY seq LIMIT 1",
+    )
+    .all(Date.now()) as any[];
+  expect(rows.some((row) => row.detail.includes("outbound_eligible"))).toBe(
+    true,
+  );
+});

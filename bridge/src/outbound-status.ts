@@ -2,7 +2,8 @@ import { getStore } from "./storage.ts";
 import { validateId } from "./storage.contract.ts";
 if (import.meta.main) {
   try {
-    const args = process.argv.slice(2).filter((arg) => arg !== "--");
+    const raw = process.argv.slice(2);
+    const args = raw[0] === "--" ? raw.slice(1) : raw;
     if (args.length !== 2 || args[0] !== "--id")
       throw new Error("ARGUMENT_INVALID");
     validateId(args[1]);
