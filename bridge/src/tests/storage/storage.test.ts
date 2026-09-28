@@ -1111,3 +1111,47 @@ test("one registered task card reserves exactly one immutable initial operation"
   expect(f.store.listMetadata("task-card-operation")).toHaveLength(1);
   expect(f.store.listOutbound()).toHaveLength(1);
 });
+
+test("offline accepted-task recovery requires expired claim and fences original worker", () => {
+  const f = setup();
+  const ctx = presentationFixture(f);
+  const original = f.store.getTask(ctx.context.taskId)!;
+  expect(() =>
+    f.store.reconcileTask(original.taskId, {
+      state: "accepted",
+      receipt: "verified original native receipt",
+    }),
+  ).toThrow("EXPIRED_TASK_CLAIM_REQUIRED");
+  const deadline = f.store.claimSnapshot(original.batchId).leaseUntil!;
+  const oldNow = Date.now;
+  try {
+    Date.now = () => deadline + 1;
+    expect(() => f.store.assertClaim(ctx.claim)).toThrow("STALE_CLAIM");
+    expect(f.store.claimBatch(original.batchId)).toEqual({ status: "busy" });
+    const recovered = f.store.reconcileTask(original.taskId, {
+      state: "accepted",
+      receipt: "verified original native receipt",
+    });
+    expect(recovered).toMatchObject({
+      taskId: original.taskId,
+      batchId: original.batchId,
+      destination: original.destination,
+    });
+    const resumed = f.store.claimBatch(original.batchId);
+    expect(resumed.status).toBe("acquired");
+    expect(() => f.store.renewClaim(ctx.claim)).toThrow("STALE_CLAIM");
+    if (resumed.status === "acquired") {
+      expect(resumed.token.generation).toBeGreaterThan(ctx.claim.generation);
+      expect(() =>
+        f.store.bindTask(resumed.token, {
+          ...original,
+          taskId: "replacement",
+          state: "intent",
+        }),
+      ).toThrow("HANDOFF_ALREADY_RESERVED");
+      expect(f.store.tasksForBatch(original.batchId)).toHaveLength(1);
+    }
+  } finally {
+    Date.now = oldNow;
+  }
+});

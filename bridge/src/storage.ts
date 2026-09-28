@@ -1046,8 +1046,17 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       throw new Error("NATIVE_RECEIPT_REQUIRED");
     return this.tx("reconcile_task", () => {
       const binding = this.getTask(taskId);
-      if (!binding || binding.state !== "unknown")
-        throw new Error("UNKNOWN_TASK_REQUIRED");
+      if (!binding || !["unknown", "accepted"].includes(binding.state))
+        throw new Error("RECOVERABLE_TASK_REQUIRED");
+      if (binding.state === "accepted") {
+        const claim = this.claimSnapshot(binding.batchId);
+        if (
+          !["claimed", "delegated"].includes(claim.state) ||
+          claim.leaseUntil === null ||
+          claim.leaseUntil > now()
+        )
+          throw new Error("EXPIRED_TASK_CLAIM_REQUIRED");
+      }
       const updated = { ...binding, ...input };
       this.db
         .query("UPDATE tasks SET state=?,binding=?,updated_at=? WHERE id=?")
