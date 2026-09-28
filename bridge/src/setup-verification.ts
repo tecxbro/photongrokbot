@@ -20,7 +20,7 @@ export function parseLiveMiniEnv(text: string): { PUBLIC_BASE_URL: string; PUBLI
   }
   invariant(values.PUBLIC_BASE_URL && values.PUBLISHER_TOKEN, 'LIVE_ENV_MISSING_FIELD');
   let url: URL; try { url = new URL(values.PUBLIC_BASE_URL); } catch { throw new Error('LIVE_ENV_INVALID_URL'); }
-  invariant(url.protocol === 'https:' && !url.username && !url.password && !url.hash && !url.search, 'LIVE_ENV_INVALID_URL');
+  invariant(url.protocol === 'https:' && !url.username && !url.password && !url.hash && !url.search && url.pathname === '/', 'LIVE_ENV_INVALID_URL');
   return values as { PUBLIC_BASE_URL: string; PUBLISHER_TOKEN: string };
 }
 export function liveEnvironmentRevision(paths: Paths): string {

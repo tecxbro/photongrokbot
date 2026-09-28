@@ -194,7 +194,7 @@ describe('setup and privacy recovery edges', () => {
     expect(readInstanceDocument(paths).installationId).toBe(identity); acquireSetupLock(paths)();
   });
   test('S04 Live Mini env preserves keys and public URL, has no implicit enable, detects changed environment', async () => {
-    const paths = seeded(), text = 'PUBLIC_BASE_URL=https://example.invalid/host\nPUBLISHER_TOKEN=synthetic-publisher\n';
+    const paths = seeded(), text = 'PUBLIC_BASE_URL=https://example.invalid\nPUBLISHER_TOKEN=synthetic-publisher\n';
     await withSetupSession(paths, session => {
       expect(() => session.writeLiveEnvironment(text)).toThrow('LIVE_MINI_AUTHORIZATION_REQUIRED');
       session.authorizeLiveMini(true); const first = session.writeLiveEnvironment(text); expect(first.environmentRevision).toHaveLength(64);
@@ -218,4 +218,10 @@ describe('setup and privacy recovery edges', () => {
     expect(existsSync(join(paths.backupsDir, 'backup-0'))).toBe(false); expect(existsSync(join(paths.backupsDir, 'backup-1/database'))).toBe(true);
     expect(calls.at(-1)).toEqual({ resolvedBefore: now, intermediateBefore: now, intermediatePaths: [], apply: true }); expect(inspectPrivacy(paths, store).unresolved).toBe(2);
   });
+});
+
+
+test('Live Mini setup rejects a path-bearing publisher origin', () => {
+  expect(() => parseLiveMiniEnv('PUBLIC_BASE_URL=https://host.test/suffix\nPUBLISHER_TOKEN=synthetic-private-value\n')).toThrow('LIVE_ENV_INVALID_URL');
+  expect(parseLiveMiniEnv('PUBLIC_BASE_URL=https://host.test\nPUBLISHER_TOKEN=synthetic-private-value\n').PUBLIC_BASE_URL).toBe('https://host.test');
 });
