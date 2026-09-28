@@ -89,3 +89,18 @@ test('U04 SDK unknown union narrows locally; contact name objects and malformed 
   }
   expect(store.recentInbound()).toHaveLength(0); expect(store.listOutbound()).toHaveLength(0);
 });
+
+ test('D01 provider ID dedupe is scoped to actual conversation and line', () => {
+  const { store } = setup(), receiver = new InboundController({ store, authorizedSenderId: owner });
+  const contexts = [space('chat-one', 'shared'), space('chat-two', 'shared'), space('chat-one', '+15555550001')];
+  for (const context of contexts) {
+    const input = message('same-provider-id', 'a substantive request', context);
+    const first = receiver.receive(context, input);
+    expect(first.status === 'accepted' && first.result.duplicate).toBe(false);
+    const replay = receiver.receive(context, input);
+    expect(replay.status === 'accepted' && replay.result.duplicate).toBe(true);
+  }
+  const batches = receiver.flushAll(); expect(batches).toHaveLength(3);
+  expect(batches.map(batch => JSON.stringify(batch.destination)).sort()).toEqual(contexts.map(context => JSON.stringify({ spaceId: context.id, lineId: context.phone! })).sort());
+  expect(batches.every(batch => batch.messages.length === 1 && batch.messages[0]!.id === 'same-provider-id')).toBe(true);
+ });

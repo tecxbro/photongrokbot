@@ -60,7 +60,7 @@ export class InboundController {
     if (record.spaceId !== space.id || record.lineId !== space.phone || record.id !== message.id || record.senderId !== message.sender.id) throw new Error('INBOUND_ENRICHMENT_BINDING_CONFLICT');
     const mediaReference: MediaReference | undefined = shaped.kind === 'attachment' || shaped.kind === 'voice' ? { messageId: message.id, spaceId: space.id, lineId: space.phone, kind: shaped.kind, ...(shaped.attachmentId ? { attachmentId: shaped.attachmentId } : {}), ...(shaped.attachmentName ? { name: shaped.attachmentName } : {}), ...(shaped.attachmentMimeType ? { mimeType: shaped.attachmentMimeType } : {}), ...(shaped.attachmentBytes !== undefined ? { size: shaped.attachmentBytes } : {}), ...(shaped.attachmentDuration !== undefined ? { duration: shaped.attachmentDuration } : {}) } : undefined;
     if (mediaReference) record.mediaState = 'pending';
-    const eventKey = `imessage:${createHash('sha256').update(JSON.stringify([message.id, shaped.kind])).digest('hex')}`;
+    const eventKey = `imessage:${createHash('sha256').update(JSON.stringify(['imessage', space.id, space.phone, message.id, shaped.kind])).digest('hex')}`;
     const result = this.options.store.accept({ eventKey, record, destination, ...(mediaReference ? { media: mediaReference } : {}), ...onboardingAcceptance(record) });
     if (!result.duplicate) {
       const key = JSON.stringify([destination.spaceId, destination.lineId]), previous = this.due.get(key), first = previous?.first ?? now;
