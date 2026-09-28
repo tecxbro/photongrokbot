@@ -1,303 +1,53 @@
-import { ensureDataDir, enqueueOutbound } from "./storage.ts";
-import { OutboundTextError } from "./outbound-text.ts";
-import { OutboundPollError } from "./outbound-poll.ts";
-import { OutboundAppError } from "./outbound-app.ts";
-import { OutboundEffectError, prepareOutboundEffect } from "./outbound-effect.ts";
-import type { EnqueueOutboundInput, OutboundItem } from "./types.ts";
+import { getStore } from "./storage.ts";
+import { boundedStdin } from "./batch-control.ts";
+import { submitOutbound } from "./submit.ts";
+import { stageOutboundFile } from "./authorization.ts";
 
-function arg(name: string): string | undefined {
-  const idx = process.argv.indexOf(`--${name}`);
-  if (idx >= 0) return process.argv[idx + 1];
-  return undefined;
+/** Legacy syntax is only an adapter into the same fenced structured protocol. */
+export function parseLegacyArgs(raw: string[]): unknown {
+  const args = raw[0] === "--" ? raw.slice(1) : raw;
+  const values = new Map<string, string[]>();
+  const allowed = new Set(["space-id","text","attachment","effect","reply-to","react","target","typing","poll-title","option","voice","duration","app-url","app-update","live","batch-id","run-id","generation","action-key","purpose","task-id"]);
+  for (let i = 0; i < args.length; i++) {
+    const flag = args[i]!;
+    if (!flag.startsWith("--") || !allowed.has(flag.slice(2))) throw new Error("ARGUMENT_INVALID");
+    const name = flag.slice(2); const prior = values.get(name) ?? [];
+    if (prior.length && !["attachment","option"].includes(name)) throw new Error("ARGUMENT_DUPLICATE");
+    const value = name === "live" ? "true" : args[++i];
+    if (value === undefined || value.startsWith("--")) throw new Error("ARGUMENT_VALUE_REQUIRED");
+    values.set(name, [...prior,value]);
+  }
+  const get = (key: string) => values.get(key)?.[0];
+  for (const key of ["space-id","batch-id","run-id","generation","action-key","purpose"]) if (!get(key)) throw new Error("FENCED_CONTEXT_REQUIRED");
+  const modeFlags = ["reply-to","react","typing","poll-title","voice","app-update"].filter((k) => values.has(k));
+  if (values.has("app-url") && !values.has("app-update")) modeFlags.push("app-url");
+  if (modeFlags.length > 1) throw new Error("INCOMPATIBLE_ARGUMENTS");
+  const mode = modeFlags[0] ?? "text";
+  const context = new Set(["space-id","batch-id","run-id","generation","action-key","purpose","task-id"]);
+  const extras: Record<string,string[]> = { text:["text","attachment","effect"], "reply-to":["reply-to","text"], react:["react","target"], typing:["typing"], "poll-title":["poll-title","option"], voice:["voice","duration","text"], "app-url":["app-url","live"], "app-update":["app-update","app-url","live"] };
+  for (const key of values.keys()) if (!context.has(key) && !extras[mode]!.includes(key)) throw new Error("INCOMPATIBLE_ARGUMENTS");
+  const spaceId = get("space-id")!; let payload: Record<string,unknown>;
+  if (mode === "reply-to") payload = { kind:"reply", spaceId, targetMessageId:get(mode), text:get("text") };
+  else if (mode === "react") payload = { kind:"react", spaceId, targetMessageId:get("target"), emoji:get("react") };
+  else if (mode === "typing") payload = { kind:"typing", spaceId, state:get("typing") };
+  else if (mode === "poll-title") payload = { kind:"poll", spaceId, title:get(mode), options:values.get("option") ?? [] };
+  else if (mode === "voice") payload = { kind:"voice", spaceId, audioPath:get(mode), ...(get("text") ? {text:get("text")} : {}), ...(get("duration") !== undefined ? {durationSeconds:Number(get("duration"))} : {}) };
+  else if (mode === "app-url" || mode === "app-update") payload = { kind:mode === "app-url" ? "app" : "app_update", spaceId, url:get("app-url"), live:values.has("live"), ...(mode === "app-update" ? {targetMessageId:get("app-update")} : {}) };
+  else { const attachments = values.get("attachment") ?? []; if (attachments.length > 1) { if (values.has("effect")) throw new Error("INCOMPATIBLE_ARGUMENTS"); payload = {kind:"attachment_group",spaceId,attachmentPaths:attachments,...(get("text") ? {text:get("text")} : {})}; } else payload = {kind:"text",spaceId,text:get("text") ?? "",...(attachments[0] ? {attachmentPath:attachments[0]} : {}),...(get("effect") ? {effect:get("effect")} : {})}; }
+  return { version:1, batchId:get("batch-id"), claim:{batchId:get("batch-id"),runId:get("run-id"),generation:Number(get("generation"))}, actionKey:get("action-key"), purpose:get("purpose"), payload, ...(get("task-id") ? {taskId:get("task-id")} : {}) };
 }
-
-function argsAll(name: string): string[] {
-  const out: string[] = [];
-  const flag = `--${name}`;
-  for (let i = 0; i < process.argv.length; i++) {
-    if (process.argv[i] === flag && process.argv[i + 1] !== undefined) {
-      out.push(process.argv[i + 1]!);
-    }
+export async function enqueueMain(raw = process.argv.slice(2)): Promise<void> {
+  const args = raw[0] === "--" ? raw.slice(1) : raw;
+  if (args[0] === "--stage-file") {
+    if (args.length !== 2 || !args[1]) throw new Error("ARGUMENT_INVALID");
+    console.log(JSON.stringify({ stagedPath: await stageOutboundFile(args[1]) })); return;
   }
-  return out;
+  let submission: unknown;
+  if (args.includes("--json-stdin")) { if (args.length !== 1) throw new Error("INCOMPATIBLE_ARGUMENTS"); submission = JSON.parse(await boundedStdin()); }
+  else submission = parseLegacyArgs(args);
+  const statuses = await submitOutbound(submission, { store:getStore() });
+  console.log(JSON.stringify({ count:statuses.length, items:statuses.map(({id,state,attempts}) => ({id,state,attempts})) }));
 }
-
-function hasFlag(name: string): boolean {
-  return process.argv.includes(`--${name}`);
-}
-
-const USAGE =
-  "usage:\n" +
-  "  bun run enqueue -- --space-id <spaceId> --text <text> [--attachment <path>] [--effect <name>]\n" +
-  "  bun run enqueue -- --space-id <spaceId> [--text <caption>] --attachment <p1> --attachment <p2> [--attachment <p3> ...]\n" +
-  "  bun run enqueue -- --space-id <spaceId> --reply-to <messageId> --text <text>\n" +
-  "  bun run enqueue -- --space-id <spaceId> --react <emoji> --target <messageId>\n" +
-  "  bun run enqueue -- --space-id <spaceId> --poll-title <question> --option <a> --option <b> [...]\n" +
-  "  bun run enqueue -- --space-id <spaceId> --voice <audioPath> [--duration <seconds>]\n" +
-  "  bun run enqueue -- --space-id <spaceId> --app-url <url> [--live]\n" +
-  "  bun run enqueue -- --space-id <spaceId> --app-update <messageId> --app-url <url> [--live]\n" +
-  "  bun run enqueue -- --space-id <spaceId> --typing start|stop\n" +
-  "note: --effect applies to --text / single --attachment only (not --reply-to) for v1.\n" +
-  "note: effect names: slam,loud,gentle,invisible,confetti,fireworks,balloons,heart,lasers,celebration,sparkles,spotlight,echo\n" +
-  "note: two or more --attachment flags enqueue ONE attachment_group (Spectrum group → iMessage sendMultipart).\n" +
-  "note: poll follow-up acknowledgments use --text, not --reply-to <pollMessageId>";
-
-const spaceId = arg("space-id") ?? process.argv[2];
-const text = arg("text") ?? "";
-const attachmentPaths = argsAll("attachment");
-const attachmentPath = attachmentPaths[0];
-const replyTo = arg("reply-to");
-const reactEmoji = arg("react");
-const target = arg("target");
-const typingState = arg("typing");
-const pollTitle = arg("poll-title");
-const pollOptions = argsAll("option");
-const voicePath = arg("voice");
-const durationRaw = arg("duration");
-const appUrl = arg("app-url");
-const appUpdate = arg("app-update");
-const liveFlag = hasFlag("live");
-const effectRaw = arg("effect");
-
-if (!spaceId || spaceId.startsWith("--")) {
-  console.error(USAGE);
-  process.exit(1);
-}
-
-let effectName: string | undefined;
-if (effectRaw !== undefined || hasFlag("effect")) {
-  if (effectRaw === undefined) {
-    console.error("error: --effect requires a name (e.g. confetti, slam)\n" + USAGE);
-    process.exit(1);
-  }
-  try {
-    effectName = prepareOutboundEffect(effectRaw);
-  } catch (err) {
-    if (err instanceof OutboundEffectError) {
-      console.error(err.message);
-      process.exit(2);
-    }
-    throw err;
-  }
-}
-
-let input: EnqueueOutboundInput;
-
-if (effectName) {
-  const incompatible =
-    typingState !== undefined ||
-    hasFlag("typing") ||
-    reactEmoji !== undefined ||
-    hasFlag("react") ||
-    pollTitle !== undefined ||
-    hasFlag("poll-title") ||
-    voicePath !== undefined ||
-    hasFlag("voice") ||
-    appUrl !== undefined ||
-    hasFlag("app-url") ||
-    appUpdate !== undefined ||
-    hasFlag("app-update") ||
-    attachmentPaths.length >= 2;
-  if (incompatible) {
-    console.error(
-      "error: --effect only applies to --text (and single --attachment); not reply/react/poll/voice/app/group\n" +
-        USAGE,
-    );
-    process.exit(1);
-  }
-}
-
-if (typingState !== undefined || hasFlag("typing")) {
-  if (typingState !== "start" && typingState !== "stop") {
-    console.error("error: --typing requires start or stop\n" + USAGE);
-    process.exit(1);
-  }
-  input = { kind: "typing", spaceId, state: typingState };
-} else if (appUpdate !== undefined || hasFlag("app-update")) {
-  if (!appUpdate) {
-    console.error("error: --app-update requires a messageId\n" + USAGE);
-    process.exit(1);
-  }
-  if (!appUrl) {
-    console.error("error: --app-update requires --app-url <url>\n" + USAGE);
-    process.exit(1);
-  }
-  input = {
-    kind: "app_update",
-    spaceId,
-    targetMessageId: appUpdate,
-    url: appUrl,
-    live: liveFlag,
-  };
-} else if (appUrl !== undefined || hasFlag("app-url")) {
-  if (!appUrl) {
-    console.error("error: --app-url requires a URL\n" + USAGE);
-    process.exit(1);
-  }
-  input = {
-    kind: "app",
-    spaceId,
-    url: appUrl,
-    live: liveFlag,
-  };
-} else if (voicePath !== undefined || hasFlag("voice")) {
-  if (!voicePath) {
-    console.error("error: --voice requires an audio file path\n" + USAGE);
-    process.exit(1);
-  }
-  let durationSeconds: number | undefined;
-  if (durationRaw !== undefined) {
-    durationSeconds = Number(durationRaw);
-    if (!Number.isFinite(durationSeconds) || durationSeconds < 0) {
-      console.error("error: --duration must be a non-negative number\n" + USAGE);
-      process.exit(1);
-    }
-  }
-  input = {
-    kind: "voice",
-    spaceId,
-    audioPath: voicePath,
-    ...(durationSeconds !== undefined ? { durationSeconds } : {}),
-  };
-} else if (pollTitle !== undefined || hasFlag("poll-title")) {
-  if (!pollTitle) {
-    console.error("error: --poll-title requires a question\n" + USAGE);
-    process.exit(1);
-  }
-  if (pollOptions.length < 2) {
-    console.error(
-      "error: --poll-title requires at least two --option values\n" + USAGE,
-    );
-    process.exit(1);
-  }
-  input = {
-    kind: "poll",
-    spaceId,
-    title: pollTitle,
-    options: pollOptions,
-  };
-} else if (reactEmoji !== undefined || hasFlag("react")) {
-  if (!reactEmoji) {
-    console.error("error: --react requires an emoji\n" + USAGE);
-    process.exit(1);
-  }
-  if (!target) {
-    console.error("error: --react requires --target <messageId>\n" + USAGE);
-    process.exit(1);
-  }
-  input = {
-    kind: "react",
-    spaceId,
-    targetMessageId: target,
-    emoji: reactEmoji,
-  };
-} else if (replyTo !== undefined || hasFlag("reply-to")) {
-  if (!replyTo) {
-    console.error("error: --reply-to requires a messageId\n" + USAGE);
-    process.exit(1);
-  }
-  if (!text) {
-    console.error("error: --reply-to requires --text\n" + USAGE);
-    process.exit(1);
-  }
-  if (effectName) {
-    console.error(
-      "error: --effect is not supported with --reply-to in v1 (use --text --effect)\n" +
-        USAGE,
-    );
-    process.exit(1);
-  }
-  input = {
-    kind: "reply",
-    spaceId,
-    targetMessageId: replyTo,
-    text,
-  };
-} else {
-  if (!text && attachmentPaths.length === 0) {
-    console.error(USAGE);
-    process.exit(1);
-  }
-  if (attachmentPaths.length >= 2) {
-    // Wait for all files, then one grouped send — do not enqueue N separate attachments.
-    input = {
-      kind: "attachment_group",
-      spaceId,
-      attachmentPaths,
-      ...(text ? { text } : {}),
-    };
-  } else {
-    input = {
-      kind: "text",
-      spaceId,
-      text: text || (attachmentPath ? `[attachment] ${attachmentPath}` : ""),
-      ...(attachmentPath ? { attachmentPath } : {}),
-      ...(effectName ? { effect: effectName } : {}),
-    };
-  }
-}
-
-function summarize(item: OutboundItem): Record<string, unknown> {
-  const base: Record<string, unknown> = {
-    id: item.id,
-    spaceId: item.spaceId,
-    kind: item.kind ?? "text",
-    status: item.status,
-  };
-  if (item.kind === "react") {
-    base.emoji = item.emoji;
-    base.targetMessageId = item.targetMessageId;
-  } else if (item.kind === "reply") {
-    base.text = item.text;
-    base.targetMessageId = item.targetMessageId;
-  } else if (item.kind === "poll") {
-    base.title = item.title;
-    base.options = item.options;
-  } else if (item.kind === "voice") {
-    base.audioPath = item.audioPath;
-    if (item.durationSeconds !== undefined) base.durationSeconds = item.durationSeconds;
-  } else if (item.kind === "typing") {
-    base.state = item.state;
-  } else if (item.kind === "attachment_group") {
-    base.attachmentPaths = item.attachmentPaths;
-    base.count = item.attachmentPaths.length;
-  } else if (item.kind === "app") {
-    base.url = item.url;
-    base.live = item.live ?? false;
-  } else if (item.kind === "app_update") {
-    base.url = item.url;
-    base.live = item.live ?? false;
-    base.targetMessageId = item.targetMessageId;
-  } else {
-    base.text = item.text;
-    if (item.attachmentPath) base.attachmentPath = item.attachmentPath;
-    if (item.effect) base.effect = item.effect;
-  }
-  return base;
-}
-
-await ensureDataDir();
-try {
-  const items = await enqueueOutbound(input);
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        count: items.length,
-        items: items.map(summarize),
-      },
-      null,
-      2,
-    )}\n`,
-  );
-} catch (err) {
-  if (
-    err instanceof OutboundTextError ||
-    err instanceof OutboundPollError ||
-    err instanceof OutboundAppError ||
-    err instanceof OutboundEffectError
-  ) {
-    console.error(err.message);
-    process.exit(2);
-  }
-  throw err;
+if (import.meta.main) {
+  try { await enqueueMain(); } catch { console.error("OUTBOUND_SUBMISSION_REJECTED"); process.exitCode = 1; }
 }
