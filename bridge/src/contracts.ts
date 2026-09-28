@@ -37,7 +37,7 @@ export interface BridgeStore {
   settleOutbound(id: string, attemptId: string, outcome: ProviderOutcome): void;
   recoverSending(): number;
   outboundStatus(id: string): OutboundStatus | undefined;
-  claimWake(now?: number): WakeJob | undefined;
+  claimWake(now?: number, excludedBatchIds?: string[]): WakeJob | undefined;
   settleWake(job: WakeJob, result: { state: "acknowledged" | "retry_wait" | "failed"; code?: string; retryAfterMs?: number }): void;
   claimMedia(): MediaJob | undefined;
   settleMedia(jobId: string, result: MediaResult, attempt: number): void;
