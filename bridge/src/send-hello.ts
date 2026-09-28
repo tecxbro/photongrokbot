@@ -3,5 +3,11 @@ import { enqueueMain } from "./enqueue.ts";
  * connection or a default production destination. Fenced context is mandatory.
  */
 if (import.meta.main) {
-  try { await enqueueMain(); } catch { console.error("HELLO_REQUIRES_FENCED_SUBMISSION"); process.exitCode = 1; }
+    try {
+        await enqueueMain();
+    }
+    catch {
+        console.error("HELLO_REQUIRES_FENCED_SUBMISSION");
+        process.exitCode = 1;
+    }
 }
