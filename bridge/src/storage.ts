@@ -1045,8 +1045,15 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
         }
       : undefined;
   }
-  claimWake(at = now()): WakeJob | undefined {
+  claimWake(at = now(), excludedBatchIds: string[] = []): WakeJob | undefined {
     if (!Number.isFinite(at)) throw new Error("WAKE_TIME_INVALID");
+    if (!Array.isArray(excludedBatchIds) || excludedBatchIds.length > 32)
+      throw new Error("WAKE_EXCLUSIONS_INVALID");
+    excludedBatchIds.forEach((batchId) => validateId(batchId, "batch_id"));
+    const excluded = [...new Set(excludedBatchIds)];
+    const exclusion = excluded.length
+      ? ` AND w.batch_id NOT IN (${excluded.map(() => "?").join(",")})`
+      : "";
     return this.tx("claim_wake", () => {
       // A dead processing invocation may be re-notified, but recovering a
       // lease must never authorize a second native handoff or final send.
@@ -1082,9 +1089,9 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       }
       const row = this.db
         .query(
-          "SELECT w.* FROM wakes w JOIN batches b ON b.id=w.batch_id WHERE w.state IN ('pending','retry_wait','acknowledged') AND w.next_at<=? AND b.state='pending' ORDER BY b.formed_at LIMIT 1",
+          `SELECT w.* FROM wakes w JOIN batches b ON b.id=w.batch_id WHERE w.state IN ('pending','retry_wait','acknowledged') AND w.next_at<=? AND b.state='pending'${exclusion} ORDER BY b.formed_at LIMIT 1`,
         )
-        .get(at) as Row | null;
+        .get(at, ...excluded) as Row | null;
       if (!row) return;
       const attemptId = id("wake");
       this.db

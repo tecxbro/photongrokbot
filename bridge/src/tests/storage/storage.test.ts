@@ -989,3 +989,53 @@ test("presentation context and URL index roll back together on insertion failure
     ),
   ).toEqual({ cardId: ctx.context.cardId });
 });
+test("wake exclusions hold only unresolved HTTP batches while unrelated chats continue", () => {
+  const f = setup();
+  for (const spaceId of ["first", "second"])
+    f.store.accept({
+      eventKey: spaceId,
+      record: record(spaceId, spaceId),
+      destination: { spaceId, lineId: "line-1" },
+    });
+  f.store.formBatches();
+  const first = f.store.claimWake()!;
+  f.store.settleWake(first, {
+    state: "retry_wait",
+    code: "http_still_pending",
+    retryAfterMs: 0,
+  });
+  const second = f.store.claimWake(Date.now(), [first.batchId])!;
+  expect(second.batchId).not.toBe(first.batchId);
+  expect(f.store.claimWake(Date.now(), [first.batchId])).toBeUndefined();
+  const held = f.store.db
+    .query("SELECT state,attempts FROM wakes WHERE batch_id=?")
+    .get(first.batchId);
+  expect(held).toEqual({ state: "retry_wait", attempts: 1 });
+  const released = f.store.claimWake(Date.now(), []);
+  expect(released?.batchId).toBe(first.batchId);
+  expect(released?.attempts).toBe(2);
+});
+test("wake exclusion IDs and bounded list validate before any durable claim", () => {
+  const f = setup();
+  f.store.accept({
+    eventKey: "pending",
+    record: record(),
+    destination: { spaceId: "space-1", lineId: "line-1" },
+  });
+  const batch = f.store.formBatches()[0]!;
+  expect(() =>
+    f.store.claimWake(Date.now(), Array(33).fill(batch.batchId)),
+  ).toThrow("WAKE_EXCLUSIONS_INVALID");
+  expect(() =>
+    f.store.claimWake(Date.now(), [batch.batchId, "../escape"]),
+  ).toThrow("INVALID_BATCH_ID");
+  expect(
+    f.store.db
+      .query("SELECT state,attempts FROM wakes WHERE batch_id=?")
+      .get(batch.batchId),
+  ).toEqual({ state: "pending", attempts: 0 });
+  expect(
+    f.store.claimWake(Date.now(), [batch.batchId, batch.batchId]),
+  ).toBeUndefined();
+  expect(f.store.claimWake()?.batchId).toBe(batch.batchId);
+});
