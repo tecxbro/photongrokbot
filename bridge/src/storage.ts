@@ -154,15 +154,18 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
   listMetadata<T>(
     kind: string,
     limit = 1000,
+    afterKey?: string,
   ): Array<{ key: string; value: T }> {
     if (!Number.isInteger(limit) || limit < 1 || limit > 1000)
       throw new Error("LIMIT_INVALID");
+    if (afterKey !== undefined && (typeof afterKey !== "string" || afterKey.length > 8192 || afterKey.includes("\0")))
+      throw new Error("METADATA_CURSOR_INVALID");
     return (
       this.db
         .query(
-          "SELECT key,value FROM metadata WHERE kind=? ORDER BY key LIMIT ?",
+          "SELECT key,value FROM metadata WHERE kind=? AND (? IS NULL OR key>?) ORDER BY key LIMIT ?",
         )
-        .all(kind, limit) as Row[]
+        .all(kind, afterKey ?? null, afterKey ?? null, limit) as Row[]
     ).map((row) => ({ key: row.key, value: JSON.parse(row.value) }));
   }
   operationStatus(

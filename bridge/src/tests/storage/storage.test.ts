@@ -1039,3 +1039,15 @@ test("wake exclusion IDs and bounded list validate before any durable claim", ()
   ).toBeUndefined();
   expect(f.store.claimWake()?.batchId).toBe(batch.batchId);
 });
+
+test("metadata pagination advances beyond blocked first page without skipping keys", () => {
+  const f = setup();
+  for (const key of ["c", "a", "b", "d"]) f.store.setMetadata("pending", key, { key });
+  f.store.setMetadata("unrelated", "aa", true);
+  expect(f.store.listMetadata("pending", 2).map((entry) => entry.key)).toEqual(["a", "b"]);
+  expect(f.store.listMetadata("pending", 2, "b").map((entry) => entry.key)).toEqual(["c", "d"]);
+  expect(f.store.listMetadata("pending", 2, "d")).toEqual([]);
+  expect(f.store.listMetadata("pending")).toHaveLength(4);
+  expect(() => f.store.listMetadata("pending", 2, "x".repeat(8193))).toThrow("METADATA_CURSOR_INVALID");
+  expect(() => f.store.listMetadata("pending", 2, "bad\0cursor")).toThrow("METADATA_CURSOR_INVALID");
+});
