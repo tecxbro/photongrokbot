@@ -1,19 +1,24 @@
 {
+  "kind": "descriptive-template-not-native-tool-payload",
   "name": "Photon iMessage wake",
-  "folderId": "{{PHOTON_WAKE_ROUTINE_ID}}",
-  "note": "Webhook target on iMessage Front Door. Front Door bot creates this webhook routine (getting-started Step 8), then wires GROK_ORCHESTRATOR_WEBHOOK_URL + GROK_ORCHESTRATOR_WEBHOOK_KEY in bridge/.env. Human does not.",
-  "agentServerId": "{{FRONT_DOOR_BOT_ID}}",
-  "agentName": "iMessage Front Door",
-  "enabled": true,
-  "trigger": {
-    "type": "webhook"
-  },
-  "webhookUrl": "REDACTED \u2014 your Cursor/Grok webhook URL ending in /webhook/{{PHOTON_WAKE_ROUTINE_ID}}",
-  "webhookBearer": "REDACTED \u2014 paste into GROK_ORCHESTRATOR_WEBHOOK_KEY",
+  "ownerRole": "front-door",
+  "ownerBotTemplate": "{{FRONT_DOOR_BOT_ID}}",
+  "routineIdTemplate": "{{PHOTON_WAKE_ROUTINE_ID}}",
+  "trigger": "webhook",
   "bodyContract": {
-    "batchId": "<string>"
+    "batchId": "string"
   },
-  "prompt": "REDACTED_BODY \u2014 use skills/imessage-front-door-wake/SKILL.md as the operating procedure. Parse {\"batchId\"}, load data/unread/<batchId>.json under {{BRIDGE_ROOT}}, apply Step 2/3 from Front Door profile, enqueue via bun run enqueue. Do not echo Spectrum secrets.",
-  "skill": "imessage-front-door-wake",
-  "auth": "Authorization: Bearer <GROK_ORCHESTRATOR_WEBHOOK_KEY>"
+  "credentialStorage": "private instance secrets/bridge.env",
+  "procedure": "skills/imessage-front-door-wake/SKILL.md",
+  "order": [
+    "validate batch reference",
+    "acquire current processing claim",
+    "read bound batch",
+    "resolve task and context",
+    "choose reaction/effect/no reaction",
+    "direct answer or durable handoff",
+    "idempotent final enqueue and bookkeeping"
+  ],
+  "creationAuthority": "explicit bootstrap using inspected native tool schema; no normal-wake creation",
+  "acknowledgement": "HTTP 200 starts a run; not task completion"
 }

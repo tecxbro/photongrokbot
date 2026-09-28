@@ -1,128 +1,37 @@
-# Photon ↔ Grok iMessage — handoff pack (adopter)
+# Photon ↔ Grokbot iMessage
 
-You imported a **Grok bot** that can stand up a **Photon Spectrum hosted iMessage** line bridged to a Front Door + specialist graph. **You do not run engineer setup steps.** Tell the bot you want iMessage / Grokbot online; it follows `skills/getting-started/SKILL.md` and does the work on the **agent VM**.
+This product connects one Photon Spectrum hosted iMessage connection to six core Grokbot roles on the account's shared VM. Ask Front Door to set it up; the bot handles the technical work. You approve device login and provide your sender identity if it is not already known. After setup passes, text the bot's hosted line from that authorized identity. The first supported message gets one greeting with confetti; a real question also reaches Front Door.
 
-Packed: **2026-09-27** (PT). Scrubbed — no live secrets, phones, personal specialists, or runtime queues.
+Start with [getting started](skills/getting-started/SKILL.md). The [operating contract](docs/product-repair/OPERATING_CONTRACT.md) governs setup, claims, routing and delivery. [Architecture](01-ARCHITECTURE.md), [privacy](docs/product-repair/PRIVACY.md), [migration](docs/product-repair/MIGRATION.md), and [secret handling](02-SECRETS.md) describe the implementation boundaries.
 
-**Memory source of truth:** `bridge/orchestrator-memory/` (top-level `orchestrator-memory/` is a pointer only).
+The six required roles are Front Door, Master Orchestrator, Creator, Feature Add, Image Cards and App Sheet. Creator repairs existing behavior; Feature Add implements new capabilities. Front Door owns final user-facing responses. Roles share files and credentials on the same account VM; role names do not provide Unix isolation. Active identities come from the private verified setup registry, never from these templates.
 
----
+Moonshine setup is mandatory before first readiness. Models and private state are installed outside this checkout. If transcription later fails, accepted voice metadata remains durable and text continues. The bot reports the media failure accurately.
 
-## What the bot will do for you
+The bridge retains text, threaded replies, tapbacks, effects, polls, voice, attachments, grouped option cards, static app cards and supported app updates. Live Mini task cards are optional: enable only after explicit authorization, using the existing host/resources when present. Connecting Vercel alone does not authorize deployment. Initial task-card presentation uses the canonical helper/outbox; ordinary progress changes hosted JSON at the same URL.
 
-1. Point you at Photon CLI docs and install the **Photon CLI on the agent VM** (npm or standalone binary).
-2. Authenticate via the CLI with **device login**: on the VM the bot runs `photon login --no-browser`, then gives you the verification URL (typically `https://app.photon.codes/sign-in/device`) and the user code from the CLI; you approve in your browser.
-3. Create a Spectrum **free-plan** project named **`grokbot`**. If that name is taken, try `grokbot-A` … `grokbot-Z`, then provision the bot’s hosted iMessage line (**capture the number; do not invite you to text yet**).
-4. Install this pack’s **bridge** on the VM, fill `SPECTRUM_PROJECT_ID` / `SPECTRUM_PROJECT_SECRET` from CLI outputs. Leave webhook keys blank for now. Start work toward runtime after STT.
-5. **Download the Moonshine STT model** (required — weights are not in the tarball; see `stt/INSTALL.md`).
-6. **Create all sibling agents first** (Front Door + Master Orchestrator + Creator + Feature Add + Image Cards + App Sheet), attach skills, write bot cards.
-7. **Front Door finishes phone:** use your already-known phone, or ask once in E.164 (e.g. **`+19876543210`**) for `AUTHORIZED_SENDER_ID` / `photon spectrum users add`, and write it into `.env`.
-8. **Front Door finishes webhook:** create the **Photon iMessage wake** routine on Front Door, **write** `GROK_ORCHESTRATOR_WEBHOOK_URL` + `GROK_ORCHESTRATOR_WEBHOOK_KEY` into bridge `.env` itself, restart the runtime. **You are never asked to paste webhook URL, bearer, Authorization header, or POST body.**
-9. **Ready checklist passes**, then the bot gives you its hosted iMessage number. **First live proof:** text **anything** to that bot number from your authorized phone (not to your own number; suggest `hi` if you want a prompt). The bot replies once with a greeting such as **“it’s grokbot here”** plus an iMessage **confetti** message effect (`--effect confetti` / `setup-confetti` marker).
+## Install and verify code
 
-**Order matters:** bots → phone + webhook finish (bot writes `.env`) → restart → checklist → then first text. Setup finishes before any invite to text.
+Run from `bridge/` with the pinned Bun 1.4.2 runtime:
 
----
-
-## Photon CLI docs (for the bot)
-
-Primary index + CLI pages (ground commands here; do not invent flags):
-
-| Doc | URL |
-|---|---|
-| Docs index (includes CLI) | https://photon.codes/docs/llms.txt |
-| Full docs dump (CLI section inside) | https://photon.codes/docs/llms-full.txt |
-| CLI overview | https://photon.codes/docs/cli/overview |
-| Installation | https://photon.codes/docs/cli/installation |
-| Authentication | https://photon.codes/docs/cli/authentication |
-| Projects | https://photon.codes/docs/cli/projects |
-| Spectrum (users / lines) | https://photon.codes/docs/cli/spectrum |
-
-Note: `https://photon.codes/docs/llms-cli.txt` is the named CLI llms feed; if it 404s / “Asset not found”, use **`llms.txt` + the `/docs/cli/*` pages** or the CLI section of **`llms-full.txt`**.
-
-## Bundled Photon skills — install them on the VM
-
-The pack vendors scrubbed copies of the Photon skills from **https://github.com/photon-hq/skills.git**, especially:
-
-- `photon-skills/photon-cli/` — **https://github.com/photon-hq/skills/tree/main/skills/photon-cli**
-- `photon-skills/spectrum/` — **https://github.com/photon-hq/skills/tree/main/skills/spectrum**
-- `photon-skills/imessage/` — **https://github.com/photon-hq/skills/tree/main/skills/imessage**
-
-The bot must install these on the **agent VM** before setup, not just read them from the tarball. Follow the upstream skill install guidance first:
-
-```bash
-npx skills add photon-hq/skills --skill photon-cli
-npx skills add photon-hq/skills --skill spectrum
-npx skills add photon-hq/skills --skill imessage
+```sh
+bun install --frozen-lockfile
+bun run typecheck
+bun run scripts/check-instructions.ts
 ```
 
-If that installer is unavailable, copy the bundled skills into the VM's agent skills directory (replace `{{PACK_ROOT}}` with the unpacked path):
+Production instance state defaults to `/workspace/photongrokbot-state`, or an explicitly selected private directory under `/workspace` through `PHOTON_INSTANCE_DIR`. The code checkout is not the state root. The [setup guide](skills/getting-started/SKILL.md) performs authorized bootstrap, verifies all six roles and Moonshine, and starts the one locked runtime.
 
-```bash
-export AGENT_SKILLS_DIR="${AGENT_SKILLS_DIR:-$HOME/.agents/skills}"
-mkdir -p "$AGENT_SKILLS_DIR"
-for skill in photon-cli spectrum imessage; do
-  cp -a "{{PACK_ROOT}}/photon-skills/$skill" "$AGENT_SKILLS_DIR/"
-done
-```
+Developer checks must set `PHOTON_TEST_MODE=1` and an explicit synthetic private root before importing bridge modules. Use the repository test harness and [test matrix](docs/product-repair/packet/TEST_MATRIX.md); local tests do not establish provider delivery or device rendering.
 
-If the bundled copy is unavailable, clone/sparse-checkout the GitHub repository and copy `skills/photon-cli` (and the other two small skills) into `$AGENT_SKILLS_DIR`:
+## Included source
 
-```bash
-tmp_dir=$(mktemp -d)
-git clone --depth 1 --filter=blob:none --sparse \
-  https://github.com/photon-hq/skills.git "$tmp_dir"
-git -C "$tmp_dir" sparse-checkout set \
-  skills/photon-cli skills/spectrum skills/imessage
-for skill in photon-cli spectrum imessage; do
-  cp -a "$tmp_dir/skills/$skill" "$AGENT_SKILLS_DIR/"
-done
-```
+- [Agents](agents/README.md), [skills](skills/README.md), [routine contract](routines/README.md).
+- [Bridge](bridge/README.md) and compact policy references in [orchestrator memory](bridge/orchestrator-memory/README.md).
+- [Moonshine installation](stt/INSTALL.md) with pinned packages/model hashes.
+- [Optional Live Mini](live-mini/README.md), its host, and canonical VM helper.
+- Vendored [Photon CLI](photon-skills/photon-cli/SKILL.md), [Spectrum](photon-skills/spectrum/SKILL.md) and [iMessage](photon-skills/imessage/SKILL.md) references; inspect locked package source and matching official documentation before relying on unknown SDK behavior.
 
-Verify `$AGENT_SKILLS_DIR/photon-cli/SKILL.md`, read that installed skill, and then use **photon-cli** to drive Photon project creation, Spectrum setup, and iMessage line setup. Use the live docs above for flags; do not invent commands.
+No private state, credential values, personal worker registry or model weights belong in this repository. [Sharing boundaries](03-WHAT-NOT-IN-SHARE.md) apply to exports too. README.md and 00-README.md are checked as identical; regenerate inventory only after integration source is final.
 
----
-
-## Role map (placeholders → real ids after CreateAgent)
-
-| Role | Bot id placeholder | Agent UUID placeholder | Folder |
-|---|---|---|---|
-| Front Door | `{{FRONT_DOOR_BOT_ID}}` | `{{FRONT_DOOR_AGENT_UUID}}` | `agents/front-door/` |
-| Master Orchestrator | `{{ORCHESTRATOR_BOT_ID}}` | `{{ORCHESTRATOR_AGENT_UUID}}` | `agents/master-orchestrator/` |
-| Creator | `{{CREATOR_BOT_ID}}` | `{{CREATOR_AGENT_UUID}}` | `agents/creator/` |
-| Feature Add | `{{FEATURE_ADD_BOT_ID}}` | `{{FEATURE_ADD_AGENT_UUID}}` | `agents/feature-add/` |
-| Image Cards | `{{IMAGE_CARDS_BOT_ID}}` | `{{IMAGE_CARDS_AGENT_UUID}}` | `agents/image-cards/` |
-| App Sheet | `{{APP_SHEET_BOT_ID}}` | `{{APP_SHEET_AGENT_UUID}}` | `agents/app-sheet/` |
-| Live Mini (optional) | `{{LIVE_MINI_BOT_ID}}` | `{{LIVE_MINI_AGENT_UUID}}` | `agents/live-mini/` + `live-mini/` |
-| Wake routine | — | `{{PHOTON_WAKE_ROUTINE_ID}}` | `routines/` |
-
-**Live Mini** auto-deploys when the **Vercel connector** is already ready (`skills/live-mini-enable` deploy-all, no questionnaire); otherwise it is offered on fitting live-mini requests (human-facing Spectrum Apps + Vercel pitch — never a Spectrum install machine check). Core path is six agents + bridge + mandatory STT; Live Mini is an optional seventh when auto-enable runs.
-
----
-
-## Pack layout
-
-```text
-00-README.md                 ← you are here (adopter)
-01-ARCHITECTURE.md
-02-SECRETS.md                ← key NAMES; bot obtains values via CLI / ask
-03-WHAT-NOT-IN-SHARE.md
-MANIFEST.txt
-bridge/                      ← Spectrum Bun runtime (decision + enqueue/runtime)
-  src/                       ← inbound, enqueue, runtime, setup-confetti, voice-stt, …
-  orchestrator-memory/       ← REPLY_MODALITY, REACTIONS_EFFECTS, CHAT_VS_TASK, …
-skills/getting-started/      ← bot auto-setup playbook (run this first)
-photon-skills/photon-cli/     ← vendored GitHub Photon CLI skill (install on VM)
-photon-skills/spectrum/        ← vendored Photon Spectrum skill
-photon-skills/imessage/        ← vendored Photon iMessage skill
-skills/imessage-front-door-wake/  (+ other workflow skills)
-agents/{front-door,…}/
-routines/photon-imessage-wake.REDACTED.json
-stt/INSTALL.md               ← mandatory Moonshine download (bot runs)
-live-mini/                   ← live-task-cards host (auto-deploy when Vercel ready)
-skills/live-mini-enable/     ← deploy-all / offer path for Live Mini
-```
-
-## Intentionally omitted
-
-See **`03-WHAT-NOT-IN-SHARE.md`**. No live `.env`, phones, tokens, STT weights, or personal specialists.
+Developer source inventory is generated with `bun run scripts/refresh-manifests.ts` from bridge/ after every integrated source/report change. Verify without mutation with `bun run scripts/refresh-manifests.ts --check`, then run the host's `npm run verify:handoff` from live-mini/live-task-cards/. This regenerates source digests, not a Marketplace release or deployment archive.

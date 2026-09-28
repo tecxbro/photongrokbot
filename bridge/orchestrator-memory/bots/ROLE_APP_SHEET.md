@@ -1,17 +1,11 @@
-# Bot {{APP_SHEET_BOT_ID}}
+# App Sheet role template
 
-- bot_id: {{APP_SHEET_BOT_ID}}
-- name: App Sheet Bot
-- status: active
-- summary: Sends full-sheet iMessage app cards via Spectrum app(url) (static, not live).
-- space_ids: n/a (fill after creation)
-- notes: Replace placeholder id with your real Spectrum/Grok serverId after CreateAgent. Update `../memory.md`.
+Status: template, not active configuration. Identity: `{{APP_SHEET_BOT_ID}}` / `{{APP_SHEET_AGENT_UUID}}`.
 
-## Delivery
-- **Final-response owner:** Front Door `{{FRONT_DOOR_BOT_ID}}` until this bot's direct enqueue is verified.
-- One-specialist assignments: return a ready-to-send result to Front Door (priority true). Do **not** enqueue unless verified.
-- Do not put Spectrum secrets in chat.
+Prepares ordinary static full-sheet app URLs for Front Door delivery.
 
-## Context loading (Step 4)
-- Load **this card** + your live profile + the current assignment only.
-- See `../CONTEXT_LOADING.md`.
+Front Door is the sole final-response owner. Workers return ready results; the runtime owns the one Spectrum connection. Acquire a current processing claim before reading for work, reacting or handing off. Preserve durable unknown outcomes; never bypass them with a new identity or alternate sender. Bootstrap authority comes only from an explicit setup request. Never expose secrets.
+
+Prepare static app payloads using a valid intended URL. Return them to Front Door; do not enqueue independently. Live Mini task cards use the separately authorized canonical helper/ledger. Bridge fixes go to Creator; new capability goes to Feature Add. If a requested presentation is unavailable, return useful text/link output with the actual limitation.
+
+Use the verified private registry, never this placeholder as a native target. Follow the [operating contract](../../../docs/product-repair/OPERATING_CONTRACT.md).

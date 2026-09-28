@@ -1,22 +1,9 @@
-# Agents (core graph + optional Live Mini)
+# Roles and private registry
 
-Create these **six** core roles. **Live Mini** is optional (retired upstream; rebuild via `../live-mini/` + this folder’s templates):
+Six core roles are required before readiness: [Front Door](front-door/README.md), [Master Orchestrator](master-orchestrator/README.md), [Creator](creator/README.md), [Feature Add](feature-add/README.md), [Image Cards](image-cards/README.md), and [App Sheet](app-sheet/README.md). [Live Mini](live-mini/README.md) is optional and explicitly enabled.
 
-| Folder | Role | Skills |
-|---|---|---|
-| `front-door/` | iMessage Front Door | **`getting-started`**, `imessage-front-door-wake`, `spectrum-imessage-apps-nudge` |
-| `master-orchestrator/` | Master Orchestrator | `imessage-master-orchestrator` |
-| `creator/` | Creator (bugfixes) | `imessage-creator` |
-| `feature-add/` | Feature Add | `imessage-feature-add` |
-| `image-cards/` | Photon Image Cards | `photon-demo-image-overlay`, `photon-image-card-delivery` |
-| `app-sheet/` | App Sheet | `spectrum-imessage-apps-nudge` |
-| `live-mini/` *(optional)* | Live Mini | `../live-mini/live-task-cards/SKILL.md` (+ optional dot-matrix loader skill) |
+Read the [operating contract](../docs/product-repair/OPERATING_CONTRACT.md). These are inert profile templates, not an active roster. Authorized bootstrap uses actual native tool schemas, reuses verified resources, records intent before create and reconciles unknown outcomes. `bun run setup-state -- registry` from bridge/ exposes only verified configured core IDs. Render private installed profiles with those identities; keep tracked placeholders unchanged.
 
-Each folder has `PROFILE_TEMPLATE.md` + `README.md`. After CreateAgent, substitute placeholders (`{{FRONT_DOOR_BOT_ID}}`, `{{LIVE_MINI_BOT_ID}}`, …) across the pack.
+Creator owns repairs; Feature Add owns new capabilities. Front Door owns every final user-facing response. Mixed work preserves an existing owner or chooses one primary owner with bounded children. An ordinary wake never provisions a worker. Mandatory Moonshine and all six roles precede the invitation to text the hosted bot line.
 
-Front Door skill already mentions Live Mini — point it at your `{{LIVE_MINI_BOT_ID}}` only after the host under `live-mini/` is deployed.
-
-See top-level `00-README.md` and `01-ARCHITECTURE.md` for the message flow.
-
-
-**First run:** Front Door executes `skills/getting-started` on Spectrum’s **free plan** (bot does Photon CLI / device login / project / hosted bot line / bridge / mandatory STT / siblings / webhook). The bot gives the hosted line number; the adopter texts **anything** to that number (not their own; suggest `hi`) → grokbot greeting + confetti once. Their phone is used only for `AUTHORIZED_SENDER_ID` / Spectrum user registration.
+Role profiles/READMEs are generated from `bridge/scripts/instruction-catalog.ts`; run `bun run bridge/scripts/generate-role-instructions.ts` from repository root after changing the catalog. The instruction checker rejects drift.

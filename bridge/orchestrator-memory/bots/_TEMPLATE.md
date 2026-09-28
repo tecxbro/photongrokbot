@@ -1,13 +1,11 @@
-# Bot {{bot_id}}
+# Optional worker template
 
-- bot_id: 
-- name: 
-- status: active | idle | archived
-- summary: (≤20 words)
-- created_at: 
-- last_active: 
-- space_ids: 
-- notes:
+Status: template, disabled until verified private registration.
 
-## Polls (when to use)
-- See `../POLLS.md` — poll only for bounded authorized selections; else ordinary text.
+- Private worker identity: resolved from actual authorized native tool evidence.
+- Role summary: at most twenty concrete words describing permitted work.
+- Required access: verified before assignment.
+- Task owner: preserve the existing bound owner unless explicitly transferred.
+- Final-response owner: Front Door.
+
+Do not place real IDs/secrets or active task state in this source template. Follow the [operating contract](../../../docs/product-repair/OPERATING_CONTRACT.md), including current claims, durable handoff intent and unknown-outcome recovery. Normal wakes cannot create this worker.

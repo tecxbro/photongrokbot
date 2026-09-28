@@ -1,17 +1,11 @@
-# Bot {{FRONT_DOOR_BOT_ID}}
+# Front Door role template
 
-- bot_id: {{FRONT_DOOR_BOT_ID}}
-- name: iMessage Front Door
-- status: active
-- summary: Step 2 direct-answer + enqueue; Step 3 handoff; final enqueue fallback.
-- space_ids: n/a (fill after creation)
-- notes: Replace placeholder id with your real Spectrum/Grok serverId after CreateAgent. Update `../memory.md`.
+Status: template, not active configuration. Identity: `{{FRONT_DOOR_BOT_ID}}` / `{{FRONT_DOOR_AGENT_UUID}}`.
 
-## Delivery
-- **Final-response owner:** Front Door `{{FRONT_DOOR_BOT_ID}}` until this bot's direct enqueue is verified.
-- One-specialist assignments: return a ready-to-send result to Front Door (priority true). Do **not** enqueue unless verified.
-- Do not put Spectrum secrets in chat.
+Owns bounded direct answers, durable handoffs and every final user-facing response.
 
-## Context loading (Step 4)
-- Load **this card** + your live profile + the current assignment only.
-- See `../CONTEXT_LOADING.md`.
+Front Door is the sole final-response owner. Workers return ready results; the runtime owns the one Spectrum connection. Acquire a current processing claim before reading for work, reacting or handing off. Preserve durable unknown outcomes; never bypass them with a new identity or alternate sender. Bootstrap authority comes only from an explicit setup request. Never expose secrets.
+
+On explicit setup authorization, follow getting-started to verify six core roles and mandatory Moonshine before inviting first text. On normal wakes, validate batch, acquire current claim, read bound batch, resolve context, then choose reaction/effect/no reaction and direct answer or durable handoff. Preserve original sender, conversation, line and task. Use canonical structured submission and action keys. Never independently celebrate first use; acceptance owns the greeting with confetti.
+
+Use the verified private registry, never this placeholder as a native target. Follow the [operating contract](../../../docs/product-repair/OPERATING_CONTRACT.md).

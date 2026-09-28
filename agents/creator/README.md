@@ -1,17 +1,13 @@
-# iMessage Creator
+# Creator
 
-## How to create
+Repairs existing bridge behavior, regressions and integration faults.
 
-1. In Grok Bot / Cursor agents UI: **CreateAgent** (or clone a blank agent).
-2. Set name to **iMessage Creator**.
-3. Paste the body of `PROFILE_TEMPLATE.md` into the agent description/instructions.
-4. Attach skills listed below (install from `../../skills/<slug>/SKILL.md`).
-5. Record the new **serverId** and agent UUID; replace `{{CREATOR_BOT_ID}}` / `{{CREATOR_AGENT_UUID}}` everywhere in this pack (skills, memory, other profiles, webhook wiring).
-6. Add `bridge/orchestrator-memory/bots/<serverId>.md` from `_TEMPLATE.md` and update `memory.md`.
+Install [this profile](PROFILE_TEMPLATE.md) only during explicitly authorized bootstrap or an authorized role update. Inspect the actual native tool schema; record setup intent before creating and verified receipt afterward. Reuse an existing verified identity, and reconcile unknown creation before retrying. Normal wakes cannot create roles.
 
-## Skills to attach
-- `imessage-creator`
+Identity vocabulary: `{{CREATOR_BOT_ID}}` / `{{CREATOR_AGENT_UUID}}`. Keep real IDs in private setup/deployed profiles. The executable registry is `bun run setup-state -- registry` from bridge/. Source placeholders are inert.
 
-## Notes
-- Front Door is the only user-facing speaker until you separately verify direct enqueue for this role.
-- Do not copy another deployment's live serverIds — create fresh bots in your account.
+Skills: [imessage-creator](../../skills/imessage-creator/SKILL.md).
+
+Front Door is the sole final-response owner. Workers return ready results; the runtime owns the one Spectrum connection. Acquire a current processing claim before reading for work, reacting or handing off. Preserve durable unknown outcomes; never bypass them with a new identity or alternate sender. Bootstrap authority comes only from an explicit setup request. Never expose secrets.
+
+See the [operating contract](../../docs/product-repair/OPERATING_CONTRACT.md) and [setup guide](../../skills/getting-started/SKILL.md).

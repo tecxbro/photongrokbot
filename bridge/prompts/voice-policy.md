@@ -1,6 +1,6 @@
 ---
 name: imessage-voice-policy
-version: 0.3.1
+version: 0.4.0
 ---
 
 # iMessage voice policy
@@ -83,3 +83,7 @@ Do not mechanically slice prose at the character target:
 > Seedance did not generate the website. Seedance generated several pre-
 >
 > rendered films. The browser turns scrolling into a video-editing timeline.
+
+## Durable delivery
+
+Follow the [operating contract](../../docs/product-repair/OPERATING_CONTRACT.md). Compose complete intended bubbles within one logical submission. Queue acceptance, provider acceptance and device observation remain separate. Do not hide uncertainty, split exact identifiers, or add a second send merely to improve phrasing.

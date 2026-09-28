@@ -157,15 +157,6 @@ Deliver only what was requested. For finished assets, export one full-bleed imag
 **Final test: different images, one unmistakably consistent overlay system.**
 
 
-## 9. iMessage delivery (grouped batches)
+## 9. iMessage delivery
 
-Image **generation** follows sections 1–8. Image **delivery** is separate:
-
-1. Finish every file in the batch first. Do not enqueue mid-batch.
-2. Enqueue **one** `attachment_group` containing all N cards (N ≥ 4), with all absolute paths (or multiple `--attachment` flags on one `bun run enqueue`).
-3. Runtime sends `space.send(group(attachment(p1), …))` once. Spectrum’s iMessage provider uploads each file, collects attachment GUIDs, and calls **one** `messages.sendMultipart`.
-4. Only if Spectrum rejects a large group, split it into chunks of **at least 4** each — never create a 4+1 split or any single-card leftover. Never a collage.
-
-Reference and source of truth: `{{BRIDGE_ROOT}}/orchestrator-memory/ATTACHMENTS.md` (Grouped outbound images).
-
-Enqueue success is not the same as observing an iMessage stack — confirm the stack in Messages when verifying.
+The composition rules above govern artwork only. Follow [card delivery](../photon-image-card-delivery/SKILL.md) and the [operating contract](../../docs/product-repair/OPERATING_CONTRACT.md) for the actual protocol. Image Cards returns complete private staged assets and metadata to Front Door, the sole final-response owner. All N cards for N >= 4 form one logical attachment_group, including five/seven; never split an uncertain send. Missing price stays missing. Any added emoji on a known option returns its exact existing details, known price and direct URL, without sentiment routing or transactional approval.
