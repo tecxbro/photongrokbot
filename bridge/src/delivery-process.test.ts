@@ -71,3 +71,25 @@ test("cards-ready JSON CLI writes validated durable intent and rejects extra fie
         expect(flags.code).not.toBe(0);
     } finally { f.cleanup(); }
 });
+
+test("two CLI processes cannot reserve different initial sends for one registered task card", async () => {
+    const f = deliveryFixture();
+    try {
+        const origin = "https://cards.example.test";
+        const url = `${origin}/live-1/card-race?k=synthetic-card-capability`;
+        f.store.setMetadata("live-mini-host", "configured", { origin });
+        const task = { taskId: "task-card-race", batchId: f.batch.batchId, destination: f.destination, owner: "executor", finalOwner: "executor", state: "intent" as const };
+        f.store.bindTask(f.claim, task);
+        f.store.bindTask(f.claim, { ...task, state: "accepted", receipt: "synthetic-task-receipt" });
+        f.store.registerPresentation(f.claim, { cardId: "card-race", taskId: task.taskId, batchId: f.batch.batchId, destination: f.destination, viewUrl: url });
+        const submission = { ...f.submission({ kind: "app", spaceId: f.destination.spaceId, url, live: true }, "initial-a", "presentation"), taskId: task.taskId, presentation: { cardId: "card-race", taskId: task.taskId, viewUrl: url, claimId: "same-host-claim" } };
+        const results = await Promise.all([
+            result(spawn(f.root, [cli, "--json-stdin"], submission)),
+            result(spawn(f.root, [cli, "--json-stdin"], { ...submission, actionKey: "initial-b" })),
+        ]);
+        expect(results.filter((entry) => entry.code === 0)).toHaveLength(1);
+        expect(results.filter((entry) => entry.code !== 0)).toHaveLength(1);
+        expect(f.store.listOutbound()).toHaveLength(1);
+        expect(f.store.getMetadata("task-card-operation", "card-race")).toBeDefined();
+    } finally { f.cleanup(); }
+});

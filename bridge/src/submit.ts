@@ -139,7 +139,12 @@ export async function submitOutbound(raw: unknown, opts: SubmitOptions): Promise
         const registeredOriginal = originalApp?.url ? opts.store.getMetadata<{
             cardId: string;
         }>("task-card-url", originalApp.url) : undefined;
-        if (!submission.presentation && (indexed || registeredOriginal || (configured?.origin === parsed.origin && /^\/live-(?:[1-9]|10)\/[^/]+$/.test(parsed.pathname))))
+        const taskCard = indexed || registeredOriginal || (configured?.origin === parsed.origin && /^\/live-(?:[1-9]|10)\/[^/]+$/.test(parsed.pathname));
+        // Task-card milestones update the hosted JSON at the original URL. An
+        // edit invocation is not an authorized replacement for that lifecycle.
+        if (submission.payload.kind === "app_update" && (taskCard || submission.presentation))
+            throw new Error("TASK_CARD_JSON_UPDATES_ONLY");
+        if (!submission.presentation && taskCard)
             throw new Error("TASK_CARD_PRESENTATION_REQUIRED");
         if (submission.presentation) {
             const p = submission.presentation;

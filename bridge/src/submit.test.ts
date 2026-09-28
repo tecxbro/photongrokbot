@@ -98,12 +98,20 @@ test("task-card URL cannot bypass canonical original-task presentation binding",
         expect(await submitOutbound(valid, f)).toEqual(ids);
     const accepted = f.store.claimOutbound()!;
     f.store.settleOutbound(accepted.item.id, accepted.attemptId, { state: "accepted", evidence: "synthetic-app-reference", reference: { messageId: "task-app-message", miniAppCardSession: { chatGuid:f.destination.spaceId,messageGuid:"task-app-message",sessionId:"session",targetMessageGuid:"task-app-message" } } });
-    await expect(submitOutbound(f.submission({kind:"app_update",spaceId:f.destination.spaceId,targetMessageId:"task-app-message",url:"https://unrelated.example.test/static"}),f)).rejects.toThrow("TASK_CARD_PRESENTATION_REQUIRED");
+    await expect(submitOutbound(f.submission({kind:"app_update",spaceId:f.destination.spaceId,targetMessageId:"task-app-message",url:"https://unrelated.example.test/static"}),f)).rejects.toThrow("TASK_CARD_JSON_UPDATES_ONLY");
+        await expect(submitOutbound({ ...valid, actionKey: "edit-bypass", payload: { kind: "app_update", spaceId: f.destination.spaceId, targetMessageId: "task-app-message", url, live: true } }, f)).rejects.toThrow("TASK_CARD_JSON_UPDATES_ONLY");
+        await expect(submitOutbound({ ...valid, actionKey: "second-card" }, f)).rejects.toThrow("TASK_CARD_OPERATION_CONFLICT");
+        await expect(submitOutbound({ ...valid, actionKey: "changed-claim", presentation: { ...valid.presentation, claimId: "second-host-claim" } }, f)).rejects.toThrow("TASK_CARD_OPERATION_CONFLICT");
+        await expect(submitOutbound({ ...valid, payload: { ...valid.payload, live: false } }, f)).rejects.toThrow();
+        expect(f.store.listOutbound()).toHaveLength(1);
         await expect(submitOutbound({ ...valid, presentation: { ...valid.presentation, claimId: "changed" } }, f)).rejects.toThrow();
         await expect(submitOutbound({ ...valid, actionKey: "wrong", payload: { ...valid.payload, url: `${url}-changed` } }, f)).rejects.toThrow("TASK_CARD_CONTEXT_MISMATCH");
         f.store.setMetadata("live-mini-host", "configured", { origin: "https://new-host.example.test" });
         await expect(submitOutbound(f.submission({ kind: "app", spaceId: f.destination.spaceId, url }), f)).rejects.toThrow("TASK_CARD_PRESENTATION_REQUIRED");
         expect(await submitOutbound(f.submission({ kind: "app", spaceId: f.destination.spaceId, url: "https://unrelated.example.test/static" }), f)).toHaveLength(1);
+        const staticCard = f.store.claimOutbound()!;
+        f.store.settleOutbound(staticCard.item.id, staticCard.attemptId, { state: "accepted", evidence: "synthetic-static-app", reference: { messageId: "static-app-message", miniAppCardSession: { chatGuid: f.destination.spaceId, messageGuid: "static-app-message", sessionId: "static-session", targetMessageGuid: "static-app-message" } } });
+        expect(await submitOutbound(f.submission({ kind: "app_update", spaceId: f.destination.spaceId, targetMessageId: "static-app-message", url: "https://unrelated.example.test/static-updated" }), f)).toHaveLength(1);
     }
     finally {
         f.cleanup();
