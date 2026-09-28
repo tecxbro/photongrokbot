@@ -1,225 +1,193 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { constants, lstat, mkdir, open, rm } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
-import { heifToJpeg } from "heif2jpeg";
-import {
-  DATA_DIR,
-  INBOUND_ATTACHMENT_MAX_BYTES,
-} from "./types.ts";
+import { createHash, randomUUID } from "node:crypto";
+import { resolveInstancePaths, ensureInstancePaths, assertPrivateFile } from "../../shared/instance-paths.mjs";
+import { INBOUND_ATTACHMENT_MAX_BYTES } from "./types.ts";
+import { convertHeifIsolated, publishMediaFile } from "./subprocess.ts";
 
-export const INBOUND_ATTACHMENTS_DIR = join(DATA_DIR, "inbound-attachments");
-
+type InstancePaths = ReturnType<typeof resolveInstancePaths>;
+/** Compatibility path; resolver is pure and performs no IO mutation. */
+export const INBOUND_ATTACHMENTS_DIR = resolveInstancePaths().inboundAttachmentsDir;
 export class InboundAttachmentError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InboundAttachmentError";
-  }
+  constructor(public readonly code: string) { super(code); this.name = "InboundAttachmentError"; }
 }
 
-/** Readable attachment-like Spectrum content (attachment or voice). */
+/** Locked Spectrum 12.8.0 exposes stream() with cancellation and read(). */
 export type ReadableAttachmentContent = {
-  type: string;
-  id?: string;
-  name?: string;
-  mimeType?: string;
-  size?: number;
-  read?: () => Promise<Buffer | Uint8Array>;
+  type: string; id?: string; name?: string; mimeType?: string; size?: number;
+  read?: (signal?: AbortSignal) => Promise<Buffer | Uint8Array>;
+  stream?: () => Promise<ReadableStream<Uint8Array>> | ReadableStream<Uint8Array>;
 };
-
 export type SavedInboundAttachment = {
-  path: string;
-  bytes: number;
-  name: string;
-  mimeType: string;
-  attachmentId?: string;
-  /** Present when HEIC/HEIF was converted; original bytes kept on disk. */
-  originalPath?: string;
-  originalMimeType?: string;
-  convertedFromHeif?: boolean;
+  path: string; bytes: number; name: string; mimeType: string; attachmentId?: string;
+  originalPath?: string; originalMimeType?: string; convertedFromHeif?: boolean;
+  conversionError?: string;
+};
+export type AttachmentOptions = {
+  paths?: InstancePaths; jobId?: string; signal?: AbortSignal;
+  fallbackRead?: (signal?: AbortSignal) => Promise<Buffer | Uint8Array>;
+  maxBytes?: number; downloadTimeoutMs?: number; decodeTimeoutMs?: number;
+  heifJpegQuality?: number; cgroup?: string;
 };
 
-function sanitizeFileName(name: string): string {
+export function sanitizeFileName(name: string): string {
   const base = basename(name).replace(/[^\w.\-()+ ]+/g, "_").trim();
-  return base.length > 0 ? base.slice(0, 180) : "attachment";
+  if (base === "." || base === "..") throw new InboundAttachmentError("unsafe_attachment_name");
+  return base ? base.slice(0, 180) : "attachment";
+}
+function extensionForMime(mime: string): string {
+  const extensions: Record<string, string> = { "image/jpeg": ".jpg", "image/png": ".png", "image/gif": ".gif", "image/heic": ".heic", "image/heif": ".heif", "image/webp": ".webp", "application/pdf": ".pdf", "audio/mp4": ".m4a", "audio/m4a": ".m4a", "audio/mpeg": ".mp3", "audio/x-caf": ".caf", "audio/wav": ".wav", "video/mp4": ".mp4", "video/quicktime": ".mov" };
+  return extensions[mime.toLowerCase()] ?? "";
+}
+function looksLikeHeif(mime: string, name: string, bytes: Buffer): boolean {
+  return /^image\/hei[cf]/i.test(mime) || /\.(heic|heif)$/i.test(name) || (bytes.subarray(4, 8).toString("ascii") === "ftyp" && ["heic", "heix", "heif", "mif1", "msf1"].includes(bytes.subarray(8, 12).toString("ascii")));
 }
 
-function extensionForMime(mimeType: string): string {
-  const map: Record<string, string> = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/gif": ".gif",
-    "image/heic": ".heic",
-    "image/heif": ".heif",
-    "image/webp": ".webp",
-    "application/pdf": ".pdf",
-    "audio/mp4": ".m4a",
-    "audio/m4a": ".m4a",
-    "audio/mpeg": ".mp3",
-    "audio/x-caf": ".caf",
-    "video/mp4": ".mp4",
-    "video/quicktime": ".mov",
+/** Abort the losing operation and clean up late returned streams. SDK metadata/read
+ * calls lack AbortSignal: cap outstanding calls so timeouts cannot grow them forever.
+ */
+const outstandingBufferedReads = new Set<Promise<unknown>>();
+export async function withMediaDeadline<T>(operation: (signal: AbortSignal) => Promise<T>, timeoutMs: number, parent?: AbortSignal, lateCleanup?: (value: T) => void): Promise<T> {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new InboundAttachmentError("invalid_media_deadline");
+  const controller = new AbortController();
+  let expired = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let rejectAbort: (reason: Error) => void = () => undefined;
+  const abort = () => {
+    expired = true;
+    controller.abort();
+    rejectAbort(new InboundAttachmentError(parent?.aborted ? "media_aborted" : "media_timeout"));
   };
-  return map[mimeType] ?? "";
+  const cancelled = new Promise<never>((_, reject) => { rejectAbort = reject; });
+  parent?.addEventListener("abort", abort, { once: true });
+  if (parent?.aborted) abort();
+  else timer = setTimeout(abort, timeoutMs);
+  const work = Promise.resolve().then(() => {
+    controller.signal.throwIfAborted();
+    return operation(controller.signal);
+  }).then((value) => { if (expired) lateCleanup?.(value); return value; });
+  try { return await Promise.race([work, cancelled]); }
+  finally { if (timer) clearTimeout(timer); parent?.removeEventListener("abort", abort); }
 }
 
-function looksLikeHeif(mimeType: string, name: string, buf: Buffer): boolean {
-  const mime = mimeType.toLowerCase();
-  if (mime === "image/heic" || mime === "image/heif" || mime === "image/heic-sequence") {
-    return true;
-  }
-  const lower = name.toLowerCase();
-  if (lower.endsWith(".heic") || lower.endsWith(".heif")) return true;
-  // ISO BMFF: bytes 4..8 often "ftyp", then brand heic/heif/mif1
-  if (buf.byteLength >= 12) {
-    const brand = buf.subarray(4, 8).toString("ascii");
-    if (brand === "ftyp") {
-      const major = buf.subarray(8, 12).toString("ascii");
-      if (
-        major === "heic" ||
-        major === "heix" ||
-        major === "heif" ||
-        major === "mif1" ||
-        major === "msf1"
-      ) {
-        return true;
+async function readBytes(content: ReadableAttachmentContent, opts: AttachmentOptions, maxBytes: number): Promise<Buffer> {
+  return withMediaDeadline(async (signal) => {
+    if (typeof content.stream === "function") {
+      if (outstandingBufferedReads.size >= 2) throw new InboundAttachmentError("buffered_reader_capacity");
+      const opening = Promise.resolve().then(() => content.stream!());
+      outstandingBufferedReads.add(opening);
+      void opening.finally(() => outstandingBufferedReads.delete(opening)).catch(() => undefined);
+      const stream = await opening;
+      if (signal.aborted) { void stream.cancel().catch(() => undefined); signal.throwIfAborted(); }
+      const reader = stream.getReader();
+      const cancel = () => { void reader.cancel().catch(() => undefined); };
+      signal.addEventListener("abort", cancel, { once: true });
+      const chunks: Buffer[] = [];
+      let total = 0;
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          signal.throwIfAborted();
+          if (done) break;
+          total += value.byteLength;
+          if (total > maxBytes) { cancel(); throw new InboundAttachmentError("attachment_too_large"); }
+          chunks.push(Buffer.from(value));
+        }
+        return Buffer.concat(chunks, total);
+      } finally { signal.removeEventListener("abort", cancel); reader.releaseLock(); }
+    }
+    const readers = [content.read, opts.fallbackRead].filter((fn): fn is NonNullable<typeof content.read> => typeof fn === "function");
+    for (const read of readers) {
+      signal.throwIfAborted();
+      if (outstandingBufferedReads.size >= 2) throw new InboundAttachmentError("buffered_reader_capacity");
+      const operation = Promise.resolve().then(() => read(signal));
+      outstandingBufferedReads.add(operation);
+      void operation.finally(() => outstandingBufferedReads.delete(operation)).catch(() => undefined);
+      try {
+        const bytes = await operation;
+        signal.throwIfAborted();
+        if (!(bytes instanceof Uint8Array)) throw new InboundAttachmentError("invalid_attachment_bytes");
+        if (bytes.byteLength > maxBytes) throw new InboundAttachmentError("attachment_too_large");
+        return Buffer.from(bytes);
+      } catch (error) {
+        if (signal.aborted || error instanceof InboundAttachmentError) throw error;
       }
     }
-  }
-  return false;
+    throw new InboundAttachmentError("attachment_read_unavailable");
+  }, opts.downloadTimeoutMs ?? 30_000, opts.signal);
 }
 
-function jpegNameFrom(name: string): string {
-  const base = name.replace(/\.(heic|heif)$/i, "");
-  const stem = extname(base) ? base.slice(0, -extname(base).length) : base;
-  return `${stem || "photo"}.jpg`;
+async function atomicMediaWrite(path: string, bytes: Buffer, signal?: AbortSignal): Promise<void> {
+  const temporary = `${path}.${randomUUID()}.partial`;
+  const handle = await open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+  try {
+    for (let offset = 0; offset < bytes.byteLength; offset += 1024 * 1024) {
+      signal?.throwIfAborted();
+      await handle.writeFile(bytes.subarray(offset, offset + 1024 * 1024));
+    }
+    await handle.sync();
+    signal?.throwIfAborted();
+    await handle.close();
+    await publishMediaFile(temporary, path);
+  } finally {
+    await handle.close().catch(() => undefined);
+    await rm(temporary, { force: true });
+  }
 }
 
-/**
- * Download attachment bytes via content.read() and write under
- * data/inbound-attachments/<messageId>/.
- * HEIC/HEIF is converted to JPEG (heif2jpeg); original kept alongside.
- */
-export async function persistInboundAttachment(
-  messageId: string,
-  content: ReadableAttachmentContent,
-  opts?: {
-    /** Fallback reader when content.read is missing/fails (e.g. im.getAttachment). */
-    fallbackRead?: () => Promise<Buffer | Uint8Array>;
-    maxBytes?: number;
-    heifJpegQuality?: number;
-  },
-): Promise<SavedInboundAttachment> {
-  const maxBytes = opts?.maxBytes ?? INBOUND_ATTACHMENT_MAX_BYTES;
-  let mimeType =
-    typeof content.mimeType === "string" && content.mimeType.length > 0
-      ? content.mimeType
-      : "application/octet-stream";
-  let name =
-    typeof content.name === "string" && content.name.trim().length > 0
-      ? sanitizeFileName(content.name.trim())
-      : "attachment";
-  if (!extname(name)) {
-    const ext = extensionForMime(mimeType);
-    if (ext) name = `${name}${ext}`;
-  }
-
-  if (typeof content.size === "number" && content.size > maxBytes) {
-    throw new InboundAttachmentError(
-      `attachment too large: ${content.size} bytes (max ${maxBytes})`,
-    );
-  }
-
-  let bytes: Buffer | Uint8Array | undefined;
-  let lastErr: unknown;
-  if (typeof content.read === "function") {
-    try {
-      bytes = await content.read();
-    } catch (err) {
-      lastErr = err;
+/** Persist a complete file atomically under a unique private job directory. */
+export async function persistInboundAttachment(messageId: string, content: ReadableAttachmentContent, opts: AttachmentOptions = {}): Promise<SavedInboundAttachment> {
+  if (!messageId || messageId === "." || messageId === "..") throw new InboundAttachmentError("invalid_message_id");
+  const maxBytes = opts.maxBytes ?? INBOUND_ATTACHMENT_MAX_BYTES;
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || maxBytes > INBOUND_ATTACHMENT_MAX_BYTES) throw new InboundAttachmentError("invalid_byte_limit");
+  if (content.size !== undefined && (!Number.isFinite(content.size) || content.size < 0 || content.size > maxBytes)) throw new InboundAttachmentError("attachment_too_large");
+  let mimeType = content.mimeType?.trim() || "application/octet-stream";
+  let name = sanitizeFileName(content.name?.trim() || "attachment");
+  if (!extname(name)) name += extensionForMime(mimeType);
+  const bytes = await readBytes(content, opts, maxBytes);
+  if (!bytes.byteLength) throw new InboundAttachmentError("attachment_empty");
+  opts.signal?.throwIfAborted();
+  const paths = opts.paths ?? resolveInstancePaths();
+  await ensureInstancePaths(paths);
+  const hash = createHash("sha256").update(JSON.stringify([messageId, opts.jobId ?? content.id ?? "attachment"])).digest("hex").slice(0, 24);
+  const dir = join(paths.inboundAttachmentsDir, `media-job-${hash}-${randomUUID()}`);
+  await mkdir(dir, { mode: 0o700 });
+  const stat = await lstat(dir);
+  if (!stat.isDirectory() || stat.isSymbolicLink()) throw new InboundAttachmentError("unsafe_attachment_directory");
+  let savedPath = join(dir, name);
+  try {
+    await atomicMediaWrite(savedPath, bytes, opts.signal);
+    await assertPrivateFile(savedPath, paths.inboundAttachmentsDir);
+    opts.signal?.throwIfAborted();
+    const common = content.id ? { attachmentId: content.id } : {};
+    if (looksLikeHeif(mimeType, name, bytes)) {
+      const originalPath = savedPath;
+      const originalMimeType = mimeType.startsWith("image/") ? mimeType : "image/heic";
+      const jpegName = `${name.replace(/\.[^.]*$/, "") || "photo"}.jpg`;
+      const jpegPath = join(dir, jpegName === name ? `converted-${jpegName}` : jpegName);
+      const tempPath = join(dir, `.${randomUUID()}.partial.jpg`);
+      try {
+        await convertHeifIsolated(originalPath, tempPath, maxBytes, opts.heifJpegQuality ?? 85, { timeoutMs: opts.decodeTimeoutMs ?? 30_000, signal: opts.signal, cgroup: opts.cgroup });
+        const verified = await assertPrivateFile(tempPath, paths.inboundAttachmentsDir);
+        const convertedBytes = (await lstat(verified)).size;
+        if (convertedBytes <= 0 || convertedBytes > maxBytes) throw new InboundAttachmentError("invalid_converted_size");
+        opts.signal?.throwIfAborted();
+        await publishMediaFile(tempPath, jpegPath);
+        savedPath = jpegPath; name = basename(jpegPath); mimeType = "image/jpeg";
+        return { path: savedPath, name, mimeType, bytes: convertedBytes, originalPath, originalMimeType, convertedFromHeif: true, ...common };
+      } catch {
+        opts.signal?.throwIfAborted();
+        return { path: originalPath, name, mimeType: originalMimeType, bytes: bytes.byteLength, conversionError: "heif_conversion_failed", ...common };
+      } finally { await rm(tempPath, { force: true }); }
     }
+    return { path: savedPath, name, mimeType, bytes: bytes.byteLength, ...common };
+  } catch (error) {
+    // This is a freshly-created, randomly named directory belonging to this job.
+    await rm(dir, { recursive: true, force: true });
+    throw error;
   }
-  if (bytes === undefined && opts?.fallbackRead) {
-    try {
-      bytes = await opts.fallbackRead();
-    } catch (err) {
-      lastErr = err;
-    }
-  }
-  if (bytes === undefined) {
-    throw new InboundAttachmentError(
-      `failed to read attachment bytes: ${String(lastErr ?? "no reader")}`,
-    );
-  }
-
-  let buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
-  if (buf.byteLength === 0) {
-    throw new InboundAttachmentError("attachment download returned empty bytes");
-  }
-  if (buf.byteLength > maxBytes) {
-    throw new InboundAttachmentError(
-      `attachment too large after download: ${buf.byteLength} bytes (max ${maxBytes})`,
-    );
-  }
-
-  const safeMsg = messageId.replace(/[^\w.\-:+]/g, "_").slice(0, 120);
-  const dir = join(INBOUND_ATTACHMENTS_DIR, safeMsg);
-  await mkdir(dir, { recursive: true });
-
-  let originalPath: string | undefined;
-  let originalMimeType: string | undefined;
-  let convertedFromHeif = false;
-
-  if (looksLikeHeif(mimeType, name, buf)) {
-    const heicPath = join(dir, name.endsWith(".heic") || name.endsWith(".heif") ? name : `${name}.heic`);
-    await writeFile(heicPath, buf, { mode: 0o600 });
-    originalPath = heicPath;
-    originalMimeType = mimeType.startsWith("image/") ? mimeType : "image/heic";
-    try {
-      const jpeg = await heifToJpeg(buf, {
-        quality: opts?.heifJpegQuality ?? 85,
-      });
-      buf = Buffer.isBuffer(jpeg) ? jpeg : Buffer.from(jpeg);
-      name = jpegNameFrom(name);
-      mimeType = "image/jpeg";
-      convertedFromHeif = true;
-    } catch (err) {
-      // Keep HEIC as the delivered file if conversion fails.
-      return {
-        path: heicPath,
-        bytes: buf.byteLength,
-        name: basename(heicPath),
-        mimeType: originalMimeType,
-        ...(typeof content.id === "string" && content.id
-          ? { attachmentId: content.id }
-          : {}),
-      };
-    }
-  }
-
-  const path = join(dir, name);
-  await writeFile(path, buf, { mode: 0o600 });
-
-  return {
-    path,
-    bytes: buf.byteLength,
-    name,
-    mimeType,
-    ...(typeof content.id === "string" && content.id
-      ? { attachmentId: content.id }
-      : {}),
-    ...(originalPath ? { originalPath } : {}),
-    ...(originalMimeType ? { originalMimeType } : {}),
-    ...(convertedFromHeif ? { convertedFromHeif: true } : {}),
-  };
 }
 
-export function attachmentDisplayText(
-  name: string,
-  mimeType: string,
-  bytes?: number,
-): string {
-  const size =
-    typeof bytes === "number" && bytes > 0
-      ? `, ${bytes} bytes`
-      : "";
-  return `[attachment] ${name} (${mimeType}${size})`;
+export function attachmentDisplayText(name: string, mimeType: string, bytes?: number): string {
+  return `[attachment] ${name} (${mimeType}${typeof bytes === "number" && bytes > 0 ? `, ${bytes} bytes` : ""})`;
 }
