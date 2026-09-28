@@ -96,6 +96,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       this.paths,
       options.create ?? false,
       this.readOnly,
+      { verifyIntegrity: options.verifyIntegrity },
     );
     this.db = opened.db;
     this.installationId = opened.installationId;

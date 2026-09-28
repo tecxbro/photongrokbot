@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { existsSync, readFileSync, writeFileSync, chmodSync } from "node:fs";
+import { Database } from "bun:sqlite";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  chmodSync,
+  openSync,
+  writeSync,
+  closeSync,
+} from "node:fs";
 import { join } from "node:path";
 import { fixture, record, batch } from "./fixture.ts";
 import { openStore } from "../../storage.ts";
@@ -1153,5 +1162,56 @@ test("offline accepted-task recovery requires expired claim and fences original 
     }
   } finally {
     Date.now = oldNow;
+  }
+});
+
+test("ordinary opens avoid full integrity scans; explicit diagnostics traverse and reject retained corruption", () => {
+  const f = setup();
+  f.store.db.exec(
+    "CREATE TABLE integrity_probe(id INTEGER PRIMARY KEY, value TEXT); INSERT INTO integrity_probe(value) VALUES('retained private content'); PRAGMA wal_checkpoint(TRUNCATE)",
+  );
+  const rootPage = (
+    f.store.db
+      .query("SELECT rootpage FROM sqlite_master WHERE name='integrity_probe'")
+      .get() as { rootpage: number }
+  ).rootpage;
+  const pageSize = (
+    f.store.db.query("PRAGMA page_size").get() as { page_size: number }
+  ).page_size;
+  f.store.close();
+  const original = Database.prototype.query;
+  let scans = 0;
+  (Database.prototype as any).query = function (
+    sql: string,
+    ...args: unknown[]
+  ) {
+    if (/quick_check/i.test(sql)) scans++;
+    return (original as any).call(this, sql, ...args);
+  };
+  try {
+    const normal = openStore({ paths: f.paths });
+    normal.close();
+    expect(scans).toBe(0);
+    const checked = openStore({ paths: f.paths, verifyIntegrity: true });
+    checked.close();
+    expect(scans).toBe(1);
+    // Corrupt an unrelated retained b-tree page, preserving schema and instance identity.
+    const fd = openSync(f.paths.databasePath, "r+");
+    try {
+      writeSync(fd, Buffer.from([0xff]), 0, 1, (rootPage - 1) * pageSize);
+    } finally {
+      closeSync(fd);
+    }
+    const corrupted = readFileSync(f.paths.databasePath);
+    const bounded = openStore({ paths: f.paths });
+    bounded.close();
+    expect(scans).toBe(1);
+    expect(() =>
+      openStore({ paths: f.paths, verifyIntegrity: true }),
+    ).toThrow();
+    expect(scans).toBe(2);
+    expect(readFileSync(f.paths.databasePath)).toEqual(corrupted);
+  } finally {
+    Database.prototype.query = original;
   }
 });

@@ -12,6 +12,8 @@ export type StoreOptions = {
   paths?: DatabasePaths;
   create?: boolean;
   readOnly?: boolean;
+  /** Full database traversal for runtime startup/explicit diagnostics, not each CLI. */
+  verifyIntegrity?: boolean;
   testMode?: boolean;
   /** Injected only in tests; never environment-triggered. */ fault?: (
     transition: string,

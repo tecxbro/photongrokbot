@@ -66,6 +66,7 @@ export function openDatabase(
   paths: DatabasePaths,
   create = false,
   readonly = false,
+  options: { verifyIntegrity?: boolean } = {},
 ): { db: Database; installationId: string; evidence: DatabaseEvidence } {
   assertPrivateDatabasePath(paths.configPath, paths.root);
   assertPrivateDatabasePath(paths.databasePath, paths.root);
@@ -159,6 +160,7 @@ export function openDatabase(
     if (identity?.installation_id !== config.installationId)
       throw new Error("INSTANCE_ID_MISMATCH");
     if (
+      options.verifyIntegrity === true &&
       (db.query("PRAGMA quick_check").get() as { quick_check: string })
         .quick_check !== "ok"
     )
@@ -186,7 +188,7 @@ export function openDatabase(
 
 /** Diagnostic inspection: no mkdir, identity writes, permission repair or journal changes. */
 export function inspectDatabase(paths: DatabasePaths) {
-  const opened = openDatabase(paths, false, true);
+  const opened = openDatabase(paths, false, true, { verifyIntegrity: true });
   try {
     return {
       installationId: opened.installationId,
