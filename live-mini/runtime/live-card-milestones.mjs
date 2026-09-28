@@ -1,5 +1,13 @@
 /** Private Node 22 publisher helper. All physical sends use the existing bridge outbox. */
-import { readFileSync, existsSync } from "node:fs";
+import {
+  readFileSync,
+  existsSync,
+  openSync,
+  fstatSync,
+  readSync,
+  closeSync,
+  constants,
+} from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
@@ -44,21 +52,59 @@ const hash = (value) =>
 
 export function loadEnvFile(path, root = dirname(path)) {
   if (!existsSync(path)) return {};
-  const out = {};
-  for (const line of readFileSync(assertPrivateFile(path, root), "utf8").split(
-    "\n",
-  )) {
-    if (!line.trim() || line.trim().startsWith("#")) continue;
-    const index = line.indexOf("=");
-    if (index < 1) fail("CONFIG_ERROR");
-    const key = line.slice(0, index).trim();
-    let value = line.slice(index + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    )
+  let fd;
+  let raw;
+  try {
+    fd = openSync(
+      assertPrivateFile(path, root),
+      constants.O_RDONLY | constants.O_NOFOLLOW,
+    );
+    const stat = fstatSync(fd);
+    if (!stat.isFile() || (stat.mode & 0o077) !== 0 || stat.size > LIMIT)
+      fail("CONFIG_ERROR");
+    const bytes = Buffer.alloc(stat.size);
+    let offset = 0;
+    while (offset < bytes.length) {
+      const count = readSync(fd, bytes, offset, bytes.length - offset, offset);
+      if (!count) fail("CONFIG_ERROR");
+      offset += count;
+    }
+    if (fstatSync(fd).size !== stat.size) fail("CONFIG_ERROR");
+    raw = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    fail("CONFIG_ERROR");
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
+  const out = Object.create(null);
+  for (const rawLine of raw.split(/\r?\n/)) {
+    if (/[\x00-\x1f\x7f]/.test(rawLine)) fail("CONFIG_ERROR");
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const match = /^(PUBLIC_BASE_URL|PUBLISHER_TOKEN)\s*=\s*(.*)$/.exec(line);
+    if (!match || Object.hasOwn(out, match[1])) fail("CONFIG_ERROR");
+    let value = match[2];
+    if (/^["']/.test(value)) {
+      if (value.length < 2 || value.at(-1) !== value[0]) fail("CONFIG_ERROR");
       value = value.slice(1, -1);
-    out[key] = value;
+    }
+    if (!value || /[\x00-\x20\x7f"']/.test(value)) fail("CONFIG_ERROR");
+    out[match[1]] = value; // Literal values only: no expansion, interpolation or shell evaluation.
+  }
+  if (!out.PUBLIC_BASE_URL || !out.PUBLISHER_TOKEN) fail("CONFIG_ERROR");
+  try {
+    const url = new URL(out.PUBLIC_BASE_URL);
+    if (
+      url.protocol !== "https:" ||
+      url.pathname !== "/" ||
+      url.username ||
+      url.password ||
+      url.hash ||
+      url.search
+    )
+      fail("CONFIG_ERROR");
+  } catch {
+    fail("CONFIG_ERROR");
   }
   return out;
 }
@@ -375,12 +421,14 @@ export function createLiveCardMilestones(opts = {}) {
       let ctx = load();
       if (ctx && serialize(ctx.creation) !== serialize(payload))
         fail("IDEMPOTENCY_CONFLICT");
-      if (!ctx) {
+      if (!ctx?.cardId) {
         await control("task-context", {
           taskId: task.taskId,
           batchId: task.batchId,
           claim: task.claim,
         });
+      }
+      if (!ctx) {
         ctx = save({
           version: 1,
           identity,
@@ -587,17 +635,18 @@ export function createLiveCardMilestones(opts = {}) {
         serialize(journal.body) !== serialize(updateBody)
       )
         fail("IDEMPOTENCY_CONFLICT");
+      // Reject stale workers before they can leave an unsent journal blocking a successor.
+      await control("task-context", {
+        taskId: task.taskId,
+        batchId: task.batchId,
+        claim: task.claim,
+      });
       // Journal separately: changed URL/conflict cannot overwrite the prior card context.
       check();
       atomicPrivateWrite(
         journalPath,
         JSON.stringify({ body: updateBody, done: false }),
       );
-      await control("task-context", {
-        taskId: task.taskId,
-        batchId: task.batchId,
-        claim: task.claim,
-      });
       check();
       let record;
       try {

@@ -2,16 +2,24 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
-import { readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+  existsSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import {
   createLiveCardMilestones,
+  loadEnvFile,
   runBridgeControl,
   withContextLock,
 } from "./live-card-milestones.mjs";
 import { resolveInstancePaths } from "../../shared/instance-paths.mjs";
+import { PublisherClient } from "../live-task-cards/src/client.mjs";
 import { CardService } from "../live-task-cards/src/service.mjs";
 import { FileStore } from "../live-task-cards/src/store.mjs";
 import { createHandler } from "../live-task-cards/src/http.mjs";
@@ -595,4 +603,152 @@ test("lock holder death fences the live helper before any subsequent local write
     }),
     { code: "CONTEXT_LOCK_LOST" },
   );
+});
+
+test("private helper env rejects duplicate, unknown, malformed and oversized configuration without secret errors", async (t) => {
+  const f = await setup(t);
+  const secret = "seeded-private-token-never-print-0123456789";
+  const valid = `PUBLIC_BASE_URL=https://cards.example.test\nPUBLISHER_TOKEN=${secret}\n`;
+  for (const content of [
+    `${valid}PUBLISHER_TOKEN=${secret}-duplicate\n`,
+    `${valid}UNKNOWN_KEY=${secret}\n`,
+    `PUBLIC_BASE_URL=https://cards.example.test\nPUBLISHER_TOKEN="${secret}\n`,
+    `PUBLIC_BASE_URL=https://cards.example.test\nPUBLISHER_TOKEN=${secret}'\n`,
+    `PUBLIC_BASE_URL=https://cards.example.test\nPUBLISHER_TOKEN=\n`,
+    `PUBLIC_BASE_URL=https://cards.example.test\nPUBLISHER_TOKEN=${secret}\0\n`,
+    `PUBLIC_BASE_URL=https://cards.example.test\nPUBLISHER_TOKEN=${secret}\tinside\n`,
+    `PUBLIC_BASE_URL=https://cards.example.test\nPUBLISHER_TOKEN=${secret}\t\n`,
+    `PUBLIC_BASE_URL=https://cards.example.test/private\nPUBLISHER_TOKEN=${secret}\n`,
+    `${valid}#${"x".repeat(65536)}`,
+  ]) {
+    writeFileSync(f.paths.liveMiniEnv, content, { mode: 0o600 });
+    assert.throws(
+      () => f.make(),
+      (error) =>
+        error.code === "CONFIG_ERROR" &&
+        !error.message.includes(secret) &&
+        !error.message.includes("https://"),
+    );
+  }
+  const literal = "$HOME-${LITERAL}-$(never-execute)-0123456789";
+  writeFileSync(
+    f.paths.liveMiniEnv,
+    `PUBLIC_BASE_URL='https://cards.example.test'\r\nPUBLISHER_TOKEN="${literal}"\r\n`,
+    { mode: 0o600 },
+  );
+  assert.equal(
+    loadEnvFile(f.paths.liveMiniEnv, f.root).PUBLISHER_TOKEN,
+    literal,
+  );
+  assert.doesNotThrow(() =>
+    f.make({ baseUrl: undefined, publisherToken: undefined }),
+  );
+});
+
+test("expired saved create intent cannot allocate a host card and cannot overwrite its context", async (t) => {
+  const f = await setup(t);
+  const helper = f.make({
+    fetchImpl: async () => {
+      throw new Error("fixture before host request");
+    },
+  });
+  await assert.rejects(helper.createCard(f.create, key), {
+    code: "HOST_UNAVAILABLE",
+  });
+  const name = readdirSync(f.paths.liveMiniContextDir).find((name) =>
+    /^[a-f0-9]{64}\.json$/.test(name),
+  );
+  const path = join(f.paths.liveMiniContextDir, name),
+    before = readFileSync(path, "utf8");
+  await bunCode(
+    `import {getStore} from './src/storage.ts';const s=getStore();s.db.query("UPDATE batches SET lease_until=0").run();console.log('{}');s.close();`,
+    f.root,
+  );
+  await assert.rejects(f.make().createCard(f.create, key), {
+    code: "BRIDGE_REJECTED",
+  });
+  assert.equal(f.traffic.length, 0);
+  assert.equal(readFileSync(path, "utf8"), before);
+  assert.equal(
+    (await f.service.slots()).some((slot) => slot.occupied),
+    false,
+  );
+});
+
+test("expired update cannot create an unsent journal blocking a newly fenced successor", async (t) => {
+  const f = await setup(t),
+    { helper, record } = await started(f);
+  const name = readdirSync(f.paths.liveMiniContextDir).find((name) =>
+    /^[a-f0-9]{64}\.json$/.test(name),
+  );
+  const path = join(f.paths.liveMiniContextDir, name),
+    before = readFileSync(path, "utf8");
+  await bunCode(
+    `import {getStore} from './src/storage.ts';const s=getStore();s.db.query("UPDATE batches SET lease_until=0").run();console.log('{}');s.close();`,
+    f.root,
+  );
+  await assert.rejects(
+    helper.updateMilestone(
+      record.id,
+      {
+        requestId: "stale-unsent",
+        expectedRevision: 1,
+        content: f.create.content,
+      },
+      key,
+    ),
+    { code: "BRIDGE_REJECTED" },
+  );
+  assert.equal(f.traffic.filter((call) => call.method === "PUT").length, 0);
+  assert.equal(existsSync(`${path}.update.json`), false);
+  assert.equal(readFileSync(path, "utf8"), before);
+  const token = await bunCode(
+    `import {getStore} from './src/storage.ts';const s=getStore();s.reconcileTask('task-1',{state:'accepted',receipt:'verified native receipt'});const result=s.claimBatch(${JSON.stringify(f.task.batchId)});console.log(JSON.stringify(result.token));s.close();`,
+    f.root,
+  );
+  const successor = f.make({
+    taskContext: { ...f.options.taskContext, claim: token },
+  });
+  const result = await successor.updateMilestone(
+    record.id,
+    {
+      requestId: "new-owner-authored",
+      expectedRevision: 1,
+      content: { ...f.create.content, title: "Successor reviewed content" },
+    },
+    key,
+  );
+  assert.equal(result.record.content.title, "Successor reviewed content");
+});
+
+test("publisher client preserves known conflict codes while discarding remote secret text and unknown codes", async () => {
+  const secret =
+    "seeded-token https://cards.example.test/live-1/private?k=secret-key";
+  for (const [body, code] of [
+    [
+      { error: { code: "REVISION_CONFLICT", message: secret } },
+      "REVISION_CONFLICT",
+    ],
+    [
+      { error: { code: "IDEMPOTENCY_CONFLICT", message: secret } },
+      "IDEMPOTENCY_CONFLICT",
+    ],
+    [{ error: { code: secret, message: secret } }, "HOST_ERROR"],
+    [null, "HOST_ERROR"],
+  ]) {
+    const client = new PublisherClient({
+      baseUrl: "https://cards.example.test",
+      token: "p".repeat(40),
+      fetchImpl: async () => Response.json(body, { status: 409 }),
+    });
+    await assert.rejects(
+      client.get("card"),
+      (error) =>
+        error.code === code &&
+        error.status === 409 &&
+        !error.message.includes("seeded") &&
+        !error.message.includes("https://") &&
+        !error.message.includes("secret-key"),
+    );
+  }
 });
