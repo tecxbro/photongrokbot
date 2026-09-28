@@ -1,6 +1,8 @@
 import { test, expect } from "bun:test";
 import { deliveryFixture } from "./delivery-fixture.ts";
 import { openStore } from "./storage.ts";
+import { batch } from "./tests/storage/fixture.ts";
+import { submitOutbound } from "./submit.ts";
 import { formatChildId, parseChildTargetId, buildAttachmentGroupParts, resolveReactionOption, applyResolvedOptionToInbound, formatOptionSelection, optionSelectionActionKey, optionNamesFromParts } from "./reaction-option.ts";
 function presentation(f: ReturnType<typeof deliveryFixture>) { const paths = Array.from({ length: 5 }, () => f.asset()); const cards = paths.map((_, i) => ({ optionId: `id-${i}`, title: `Title ${i}`, details: `Detailed description ${i}`, url: `https://example.test/original/${i}?original=1`, ...(i === 2 ? { price: "$42", priceQualifier: "per night" } : {}) })); const items = f.store.enqueue({ kind: "attachment_group", spaceId: f.destination.spaceId, attachmentPaths: paths, cards, batchId: f.batch.batchId }, { destination: f.destination, claim: f.claim, actionKey: "cards", purpose: "final" }); const c = f.store.claimOutbound()!; f.store.settleOutbound(c.item.id, c.attemptId, { state: "accepted", evidence: "synthetic-returned-reference", reference: { messageId: "parent-guid", parts: buildAttachmentGroupParts({ parentMessageId: "parent-guid", paths, cards }) } }); return { items, paths, cards }; }
 test("child IDs roundtrip and malformed/unsafe indexes rejected", () => { expect(parseChildTargetId(formatChildId(2, "parent"))).toEqual({ partIndex: 2, parentGuid: "parent" }); for (const s of ["parent", "p:-1/parent", "p:1/", "p:99999999999999999999/x", "p:01/x"])
@@ -69,3 +71,38 @@ test("incomplete/shifted map and missing option identity stay ambiguous", () => 
 finally {
     f.cleanup();
 } });
+
+test("ordinary reactions remain unchanged without known option presentation evidence", () => {
+    const f = deliveryFixture();
+    try {
+        for (const target of [undefined, "ordinary-message", "p:0/ordinary-group"]) {
+            const inbound = { ...f.batch.messages[0]!, kind: "reaction" as const, emoji: "❤️", targetMessageId: target };
+            const applied = applyResolvedOptionToInbound(inbound, resolveReactionOption(f.store, f.destination, target));
+            expect(applied).toBe(inbound);
+            expect(Object.hasOwn(applied, "optionAmbiguous")).toBe(false);
+            expect(formatOptionSelection(applied)).toBeUndefined();
+        }
+        presentation(f);
+        const ordinary = f.store.getMetadata<any>("presentation", f.batch.batchId);
+        ordinary.parts = ordinary.parts.map(({ partIndex, path, childId }: {partIndex: number; path: string; childId: string}) => ({ partIndex, path, childId }));
+        f.store.setMetadata("presentation", f.batch.batchId, ordinary);
+        const inbound = { ...f.batch.messages[0]!, kind: "reaction" as const, emoji: "😂", targetMessageId: "p:0/parent-guid" };
+        expect(applyResolvedOptionToInbound(inbound, resolveReactionOption(f.store, f.destination, inbound.targetMessageId))).toBe(inbound);
+    } finally { f.cleanup(); }
+});
+
+test("K06 repeated ambiguous option reactions across batches enqueue one clarification", async () => {
+    const f = deliveryFixture();
+    try {
+        presentation(f);
+        const ids: string[] = [];
+        for (const emoji of ["❤️", "👎"]) {
+            const context = batch(f.store, f.destination.spaceId);
+            const record = applyResolvedOptionToInbound({ ...context.batch.messages[0]!, kind: "reaction", emoji, targetMessageId: "parent-guid" }, resolveReactionOption(f.store, f.destination, "parent-guid"));
+            const statuses = await submitOutbound({ version: 1, batchId: context.batch.batchId, claim: context.claim, purpose: "final", actionKey: optionSelectionActionKey(record), payload: { kind: "text", spaceId: context.destination.spaceId, text: formatOptionSelection(record)! } }, f);
+            ids.push(statuses[0]!.id);
+        }
+        expect(ids[0]).toBe(ids[1]);
+        expect(f.store.listOutbound()).toHaveLength(2); // Original card group and one clarification.
+    } finally { f.cleanup(); }
+});

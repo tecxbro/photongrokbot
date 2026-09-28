@@ -76,6 +76,10 @@ export function resolveReactionOption(store: BridgeStore, destination: Destinati
     const parent = parsed?.parentGuid ?? target;
     const presentation = loadPresentationByMessageId(store, destination, parent);
     const common = { parentMessageId: parent, ...(parsed ? { partIndex: parsed.partIndex, childId: target } : {}), ...(presentation ? { batchId: presentation.batchId } : {}) };
+    // An ordinary attachment group also has provider parts. Option identity is
+    // required before treating reactions as an option-selection conversation.
+    if (presentation && !presentation.parts.some((part) => [part.optionId, part.title, part.url].some((value) => value?.trim())))
+        return { ambiguous: true, optionNames: [], reason: "not-option-presentation", parentMessageId: parent };
     if (!presentation)
         return { ambiguous: true, optionNames: [], reason: "missing-presentation", ...common };
     if (!parsed)
@@ -90,6 +94,8 @@ export function resolveReactionOption(store: BridgeStore, destination: Destinati
 }
 export function applyResolvedOptionToInbound(record: InboundRecord, resolved: ResolveReactionOptionResult): InboundRecord {
     if (record.kind !== "reaction" || record.reactionSelected === false)
+        return record;
+    if (resolved.ambiguous && !resolved.batchId)
         return record;
     if (resolved.ambiguous)
         return { ...record, optionAmbiguous: true, optionNames: resolved.optionNames, reactedPartIndex: resolved.partIndex, reactedParentMessageId: resolved.parentMessageId, reactedChildId: resolved.childId, optionBatchId: resolved.batchId };
