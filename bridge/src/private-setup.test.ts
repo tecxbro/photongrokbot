@@ -225,3 +225,24 @@ test('Live Mini setup rejects a path-bearing publisher origin', () => {
   expect(() => parseLiveMiniEnv('PUBLIC_BASE_URL=https://host.test/suffix\nPUBLISHER_TOKEN=synthetic-private-value\n')).toThrow('LIVE_ENV_INVALID_URL');
   expect(parseLiveMiniEnv('PUBLIC_BASE_URL=https://host.test\nPUBLISHER_TOKEN=synthetic-private-value\n').PUBLIC_BASE_URL).toBe('https://host.test');
 });
+
+
+test('P08 approved retention rotates 0500 migration snapshots and retains unselected immutable modes', () => {
+  const paths=seeded(),store=fakeStore(paths),now=Date.now(),old=(now-40*86400000)/1000;
+  const dirs:string[]=[];
+  for(let index=0;index<4;index++){
+    const group=join(paths.backupsDir,`immutable-${index}`),nested=join(group,'source');
+    mkdirSync(group,{mode:0o700});mkdirSync(nested,{mode:0o700});dirs.push(group,nested);
+    for(const path of [join(group,'manifest.json'),join(nested,'legacy.json')]){atomicPrivateWrite(path,'synthetic retained evidence');chmodSync(path,0o400);utimesSync(path,old+index,old+index);}
+    for(const path of [nested,group]){utimesSync(path,old+index,old+index);chmodSync(path,0o500);}
+  }
+  try{
+    const plan=pruneInstance(paths,store,{now,includeBackups:true});expect(plan.ancillaryFiles).toBe(2);
+    expect(lstatSync(dirs[0]!).mode&0o777).toBe(0o500);
+    pruneInstance(paths,store,{now,includeBackups:true,apply:true,planId:plan.planId});
+    expect(existsSync(dirs[0]!)).toBe(false);
+    for(const path of dirs.slice(2))expect(lstatSync(path).mode&0o777).toBe(0o500);
+    expect(lstatSync(join(dirs[2]!,'manifest.json')).mode&0o777).toBe(0o400);
+    expect(lstatSync(paths.backupsDir).mode&0o777).toBe(0o700);
+  }finally{for(const path of dirs)if(existsSync(path))chmodSync(path,0o700);}
+});

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, readdirSync, rmdirSync, unlinkSync } from 'node:fs';
+import { chmodSync, existsSync, lstatSync, readdirSync, rmdirSync, unlinkSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { assertPrivateFile, resolveInstancePaths } from '../../shared/instance-paths.mjs';
 import { readInstanceDocument } from './setup-state.ts';
@@ -55,6 +55,17 @@ function eligibleFiles(paths: Paths, now: number, includeBackups: boolean) {
   }
   return selected;
 }
+function selectedBackupDirectories(paths: Paths, files: { path: string }[]) {
+  const directories = new Set<string>();
+  for (const file of files) if (file.path.startsWith(`${paths.backupsDir}/`)) {
+    for (let parent = dirname(file.path); parent !== paths.backupsDir; parent = dirname(parent)) directories.add(parent);
+  }
+  return [...directories].sort().map(path => {
+    const stat = lstatSync(path);
+    invariant(stat.isDirectory() && !stat.isSymbolicLink() && (stat.mode & 0o077) === 0, 'PRIVATE_DIRECTORY_PERMISSIONS');
+    return { path, mode: stat.mode & 0o777, dev: stat.dev, ino: stat.ino, mtime: stat.mtimeMs };
+  });
+}
 function intermediateCandidates(paths: Paths) {
   const uuid = '[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}';
   const ownedJob = new RegExp(`^media-job-[a-f0-9]{24}-${uuid}/`);
@@ -85,7 +96,8 @@ export function pruneInstance(paths: Paths, store: PrivacyStore, options: { now?
   const artifacts = [...new Set(preview.artifactPaths)].sort();
   for (const path of artifacts) validateArtifact(paths, path);
   const files = eligibleFiles(paths, now, options.includeBackups === true);
-  const planId = createHash('sha256').update(JSON.stringify({ installationId: store.installationId, now, preview, files, includeBackups: options.includeBackups === true, deleteResolved: options.deleteResolved === true })).digest('hex');
+  const backupDirectories = selectedBackupDirectories(paths, files);
+  const planId = createHash('sha256').update(JSON.stringify({ installationId: store.installationId, now, preview, files, backupDirectories, includeBackups: options.includeBackups === true, deleteResolved: options.deleteResolved === true })).digest('hex');
   const report = { planId, now, applied: false, events: preview.events, outbound: preview.outbound, assets: artifacts.length, ancillaryFiles: files.length, backupsIncluded: options.includeBackups === true, mode: options.deleteResolved ? 'delete-resolved' : 'retention', policy: RETENTION_POLICY };
   if (!options.apply) return report;
   invariant(options.planId === planId, 'PRIVACY_PREVIEW_REQUIRED_OR_CHANGED');
@@ -96,11 +108,30 @@ export function pruneInstance(paths: Paths, store: PrivacyStore, options: { now?
     try { unlinkSync(path); } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw new Error('PRIVACY_ASSET_DELETE_FAILED'); }
     store.acknowledgePrunedArtifacts([path]);
   }
-  for (const file of files) { assertPrivateFile(file.path, paths.root); const current = lstatSync(file.path); invariant(current.mtimeMs === file.mtime && current.size === file.bytes, 'PRIVACY_FILE_CHANGED'); unlinkSync(file.path);
-    if (file.path.startsWith(`${paths.backupsDir}/`)) {
-      for (let parent = dirname(file.path); parent !== paths.backupsDir; parent = dirname(parent)) {
-        try { rmdirSync(parent); } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOTEMPTY') break; throw error; }
+  // Migration snapshots are deliberately 0500/0400. The reviewed whole-group
+  // plan permits owner-write only on its exact selected directories for unlink.
+  // Never make files writable; retained groups and the backup root are unchanged.
+  for (const file of files) { assertPrivateFile(file.path, paths.root); const current = lstatSync(file.path); invariant(current.mtimeMs === file.mtime && current.size === file.bytes, 'PRIVACY_FILE_CHANGED'); }
+  const changed: typeof backupDirectories = [];
+  try {
+    for (const directory of backupDirectories) {
+      const stat = lstatSync(directory.path);
+      invariant(stat.isDirectory() && !stat.isSymbolicLink() && stat.dev === directory.dev && stat.ino === directory.ino && stat.mtimeMs === directory.mtime && (stat.mode & 0o777) === directory.mode, 'PRIVACY_FILE_CHANGED');
+      if (!(directory.mode & 0o200)) { chmodSync(directory.path, directory.mode | 0o200); changed.push(directory); }
+    }
+    for (const file of files) {
+      assertPrivateFile(file.path, paths.root); unlinkSync(file.path);
+      if (file.path.startsWith(`${paths.backupsDir}/`)) {
+        for (let parent = dirname(file.path); parent !== paths.backupsDir; parent = dirname(parent)) {
+          try { rmdirSync(parent); } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOTEMPTY') break; throw error; }
+        }
       }
+    }
+  } finally {
+    // Partial failure retains private immutable modes on any surviving snapshot.
+    for (const directory of changed.reverse()) {
+      try { const stat = lstatSync(directory.path); invariant(stat.isDirectory() && !stat.isSymbolicLink() && stat.dev === directory.dev && stat.ino === directory.ino, 'PRIVACY_FILE_CHANGED'); chmodSync(directory.path, directory.mode); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
     }
   }
   return { ...report, applied: true, events: actual.events, outbound: actual.outbound, assets: actual.artifactPaths.length };

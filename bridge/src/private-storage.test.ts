@@ -2,9 +2,9 @@ import { afterEach, expect, test } from 'bun:test';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { atomicPrivateWrite, ensureInstancePaths, resolveInstancePaths } from '../../shared/instance-paths.mjs';
-import { CORE_ROLES, assertRuntimeReady, initializeSetup, initializeStorage, readInstanceDocument, withSetupSession } from './setup-state.ts';
+import { CORE_ROLES, recoverSetupLock, assertRuntimeReady, initializeSetup, initializeStorage, readInstanceDocument, withSetupSession } from './setup-state.ts';
 import { openStore } from './storage.ts';
 import { pruneInstance } from './privacy.ts';
 
@@ -100,4 +100,48 @@ test('S05 runtime gates first setup on six roles and Moonshine proof, later medi
   expect(assertRuntimeReady(paths, store)).toEqual({ ready: true, mediaDegraded: false });
   await withSetupSession(paths, session => session.mediaFailed(), store);
   expect(assertRuntimeReady(paths, store)).toEqual({ ready: true, mediaDegraded: true });
+});
+
+// These processes materialize each equivalent interrupted disk state, then are
+// SIGKILLed. They do not claim injection at a specific SQLite instruction.
+for (const stage of ['intent-only', 'exclusive-empty-file', 'schema-before-ready'] as const) {
+  test(`R01 interrupted first database creation resumes ${stage} with original identity`, async () => {
+    const root = mkdtempSync(join(realpathSync(tmpdir()), 'photon-bootstrap-crash-'));
+    cleanup.push(() => rmSync(root, {recursive:true,force:true}));
+    const env = {...process.env, PHOTON_TEST_MODE:'1', PHOTON_INSTANCE_DIR:root};
+    const paths = resolveInstancePaths({instanceDir:root,env,testMode:true}); ensureInstancePaths(paths);
+    const identity = initializeSetup(paths,{authorized:true}).installationId;
+    const script = `
+      import {openSync,closeSync,constants} from 'node:fs';
+      import {resolveInstancePaths,atomicPrivateWrite} from ${JSON.stringify(join(import.meta.dir,'../../shared/instance-paths.mjs'))};
+      import {acquireSetupLock,readInstanceDocument} from ${JSON.stringify(join(import.meta.dir,'setup-state.ts'))};
+      import {openStore} from ${JSON.stringify(join(import.meta.dir,'storage.ts'))};
+      const paths=resolveInstancePaths(); acquireSetupLock(paths);
+      const document=readInstanceDocument(paths); document.database={status:'intent'};
+      atomicPrivateWrite(paths.configPath,JSON.stringify(document));
+      if (${JSON.stringify(stage)}==='exclusive-empty-file') closeSync(openSync(paths.databasePath,constants.O_CREAT|constants.O_EXCL|constants.O_WRONLY|constants.O_NOFOLLOW,0o600));
+      if (${JSON.stringify(stage)}==='schema-before-ready') openStore({paths,create:true});
+      console.log('INTERRUPTED_STATE_READY'); setInterval(()=>{},1000);
+    `;
+    const child=spawn(process.execPath,['--eval',script],{env,stdio:['ignore','pipe','pipe']});
+    cleanup.push(()=>{if(child.exitCode===null)child.kill('SIGKILL');});
+    await new Promise<void>((done,fail)=>{ const timer=setTimeout(()=>{child.kill('SIGKILL');fail(new Error('bootstrap fixture timeout'));},5000);child.stdout.once('data',()=>{clearTimeout(timer);done();});child.once('error',fail); });
+    const exited=new Promise(done=>child.once('exit',done));child.kill('SIGKILL');await exited;
+    const preview=recoverSetupLock(paths); recoverSetupLock(paths,{apply:true,nonce:preview.nonce});
+    expect(initializeSetup(paths,{authorized:true}).installationId).toBe(identity);
+    const result=spawnSync(process.execPath,['run',join(import.meta.dir,'setup-state.ts'),'--','initialize-storage'],{env,encoding:'utf8',timeout:10000});
+    expect(result.status).toBe(0);expect(JSON.parse(result.stdout)).toEqual({initialized:true});
+    expect(readInstanceDocument(paths).database).toEqual({status:'ready'});
+    const store=openStore({paths});try{expect(store.installationId).toBe(identity);}finally{store.close();}
+  });
+}
+test('R01 initial intent cannot replace nonempty unversioned or corrupt database', async()=>{
+  const root=mkdtempSync(join(realpathSync(tmpdir()),'photon-bootstrap-reject-')); cleanup.push(()=>rmSync(root,{recursive:true,force:true}));
+  const paths=resolveInstancePaths({instanceDir:root,testMode:true,env:{PHOTON_TEST_MODE:'1'}});ensureInstancePaths(paths);
+  const doc=initializeSetup(paths,{authorized:true});doc.database={status:'intent'};atomicPrivateWrite(paths.configPath,JSON.stringify(doc));
+  const {Database}=await import('bun:sqlite');atomicPrivateWrite(paths.databasePath,'');const raw=new Database(paths.databasePath);raw.exec('CREATE TABLE unrelated(value TEXT)');raw.close();
+  await expect(initializeStorage(paths)).rejects.toThrow('STORE_UNVERSIONED_NONEMPTY');
+  expect(readInstanceDocument(paths).database).toEqual({status:'intent'});
+  atomicPrivateWrite(paths.databasePath,'corrupt synthetic database');await expect(initializeStorage(paths)).rejects.toThrow();
+  expect(readFileSync(paths.databasePath,'utf8')).toBe('corrupt synthetic database');
 });

@@ -25,6 +25,7 @@ export function readInstanceDocument(paths: Paths): InstanceDocument {
     document = JSON.parse(readFileSync(file, 'utf8'));
   } catch { throw new Error('INSTANCE_CONFIG_MISSING_OR_INVALID'); }
   invariant(document.version === 1 && /^[A-Za-z0-9_-]{8,128}$/.test(document.installationId), 'INSTANCE_IDENTITY_INVALID');
+  if (document.database !== undefined) invariant(document.database && typeof document.database === 'object' && ['intent', 'ready'].includes((document.database as { status?: string }).status ?? ''), 'INSTANCE_DATABASE_RECOVERY_REQUIRED');
   invariant(document.setup?.version === 1 && document.setup.resources && typeof document.setup.resources === 'object', 'SETUP_STATE_INVALID');
   for (const [key, value] of Object.entries(document.setup.resources)) {
     resourceKey(key);
@@ -71,7 +72,7 @@ export function initializeSetup(paths: Paths, options: { authorized: boolean }):
   try {
     if (existsSync(paths.configPath)) {
       const existing = readInstanceDocument(paths);
-      invariant(!existing.database || existsSync(paths.databasePath), 'INSTANCE_DATABASE_RECOVERY_REQUIRED');
+      invariant(!existing.database || (existing.database as { status: string }).status === 'intent' || existsSync(paths.databasePath), 'INSTANCE_DATABASE_RECOVERY_REQUIRED');
       return existing;
     }
     invariant(![paths.databasePath, paths.bridgeEnv, paths.liveMiniEnv].some(path => existsSync(path)), 'INSTANCE_IDENTITY_RECOVERY_REQUIRED');
@@ -227,9 +228,12 @@ export async function initializeStorage(paths: Paths) {
     const document = readInstanceDocument(paths);
     invariant(document.setup.authorizedAt, 'SETUP_AUTHORIZATION_REQUIRED');
     const existed = existsSync(paths.databasePath);
-    invariant(existed || !document.database, 'INSTANCE_DATABASE_RECOVERY_REQUIRED');
-    if (!existed) { document.database = { status: 'intent' }; atomicPrivateWrite(paths.configPath, JSON.stringify(document, null, 2) + '\n'); }
-    const store = (await import('./storage.ts')).openStore({ paths, create: !existed });
+    const initialIntent = (document.database as { status?: string } | undefined)?.status === 'intent';
+    invariant(existed || !document.database || initialIntent, 'INSTANCE_DATABASE_RECOVERY_REQUIRED');
+    if (!existed && !initialIntent) { document.database = { status: 'intent' }; atomicPrivateWrite(paths.configPath, JSON.stringify(document, null, 2) + '\n'); }
+    // Only the persisted first-creation intent can initialize a missing or empty DB.
+    // openStore validates schema emptiness and installation identity; ready state never creates.
+    const store = (await import('./storage.ts')).openStore({ paths, create: !existed || initialIntent });
     try {
       invariant(store.installationId === document.installationId, 'INSTANCE_IDENTITY_CONFLICT');
       if (!store.getMetadata('setup', 'checkpoint')) store.setMetadata('setup', 'checkpoint', document.setup);
