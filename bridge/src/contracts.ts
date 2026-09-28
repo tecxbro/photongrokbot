@@ -1,0 +1,45 @@
+/** Internal product protocol v1. No provider calls or state opened on import. */
+import type { EnqueueOutboundInput, InboundRecord, OutboundItem, UnreadBatch } from "./types.ts";
+export const CONTRACT_VERSION = 1 as const;
+export type Destination = { spaceId: string; lineId: string };
+export type ClaimToken = { batchId: string; runId: string; generation: number };
+export type ClaimResult = { status: "acquired"; token: ClaimToken; leaseUntil: number } | { status: "busy" | "completed" };
+export type DeliveryState = "queued" | "sending" | "accepted" | "retry_wait" | "unknown" | "failed" | "skipped" | "cancelled";
+export type ProviderReference = { messageId?: string; parts?: unknown[]; miniAppCardSession?: {chatGuid:string;messageGuid:string;sessionId:string;targetMessageGuid:string} };
+export type ProviderOutcome = { state: "accepted"; reference?: ProviderReference; evidence: string } | { state: "unknown" | "failed" | "skipped"; code: string; reference?: ProviderReference } | { state: "retry_wait"; code: string; retryAfterMs: number };
+export type MediaReference = { messageId: string; attachmentId?: string; spaceId: string; lineId: string; kind: "voice" | "attachment"; name?: string; mimeType?: string; size?: number; duration?: number };
+export type MediaJob = { id: string; eventId: string; reference: MediaReference; state: "pending" | "processing" | "ready" | "failed" | "unavailable"; attempts: number };
+export type MediaResult = { state: "ready"; patch: Partial<InboundRecord> } | { state: "failed" | "unavailable"; code: string };
+export type Submission = { version: 1; batchId: string; taskId?: string; claim: ClaimToken; actionKey: string; purpose: "progress" | "final" | "control" | "presentation"; payload: EnqueueOutboundInput; presentation?: { cardId: string; taskId: string; viewUrl: string; claimId: string } };
+export type OutboundStatus = { id: string; state: DeliveryState; attempts: number; reference?: ProviderReference; code?: string };
+export type WakeJob = { batchId: string; attemptId: string; attempts: number };
+export type OutboundClaim = { item: OutboundItem; attemptId: string; destination: Destination };
+export type AcceptInput = { eventKey: string; record: InboundRecord; destination: Destination; media?: MediaReference; onboarding?: boolean; greetingOnly?: boolean };
+export type AcceptResult = { eventId: string; duplicate: boolean; onboardingCreated: boolean };
+export type TaskBinding = { taskId: string; batchId: string; destination: Destination; owner: string; finalOwner: string; state: "intent" | "accepted" | "unknown" | "completed"; receipt?: string };
+/** Frozen port; implementation may add methods, coordinator approves signature revisions. */
+export interface BridgeStore {
+  readonly installationId: string;
+  close(): void;
+  accept(input: AcceptInput): AcceptResult;
+  formBatches(now?: number): UnreadBatch[];
+  readBatch(batchId: string): UnreadBatch;
+  claimBatch(batchId: string, leaseMs?: number): ClaimResult;
+  renewClaim(token: ClaimToken, leaseMs?: number): void;
+  completeClaim(token: ClaimToken): void;
+  assertClaim(token: ClaimToken): void;
+  bindTask(token: ClaimToken, binding: TaskBinding): void;
+  getTask(taskId: string): TaskBinding | undefined;
+  enqueue(input: EnqueueOutboundInput, context: { actionKey: string; destination: Destination; purpose: string; claim?: ClaimToken; taskId?: string }): OutboundItem[];
+  claimOutbound(now?: number): OutboundClaim | undefined;
+  settleOutbound(id: string, attemptId: string, outcome: ProviderOutcome): void;
+  recoverSending(): number;
+  outboundStatus(id: string): OutboundStatus | undefined;
+  claimWake(now?: number): WakeJob | undefined;
+  settleWake(job: WakeJob, result: { state: "acknowledged" | "retry_wait" | "failed"; code?: string; retryAfterMs?: number }): void;
+  claimMedia(): MediaJob | undefined;
+  settleMedia(jobId: string, result: MediaResult): void;
+  knownTarget(destination: Destination, messageId: string): boolean;
+  getMetadata<T>(kind: string, key: string): T | undefined;
+  setMetadata(kind: string, key: string, value: unknown): void;
+}

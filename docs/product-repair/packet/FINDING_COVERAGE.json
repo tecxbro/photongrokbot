@@ -1,0 +1,538 @@
+{
+  "repository": "tecxbro/photongrokbot",
+  "base": "8c710413c99a6fd8022727326ca682d267393953",
+  "findings": [
+    {
+      "finding": "REL-01",
+      "title": "The handoff is not a packaged Marketplace plugin",
+      "owners": [
+        "DEFERRED-MARKETPLACE"
+      ],
+      "status": "deferred-by-scope",
+      "existing_targets": [
+        "REPOSITORY ROOT",
+        "skills/imessage-front-door-wake/SKILL.md",
+        "skills/photon-demo-image-overlay/SKILL.md",
+        "agents/front-door/PROFILE_TEMPLATE.md"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/skills/imessage-front-door-wake/SKILL.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/skills/photon-demo-image-overlay/SKILL.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/front-door/PROFILE_TEMPLATE.md"
+      ],
+      "reason": "Marketplace packaging/publication is explicitly later."
+    },
+    {
+      "finding": "SEC-01",
+      "title": "Default Live Mini secret and state paths are not Git-ignored",
+      "owners": [
+        "01",
+        "07"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        ".gitignore",
+        "bridge/.gitignore",
+        "live-mini/runtime/live-card-milestones.mjs"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/.gitignore",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/.gitignore",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/runtime/live-card-milestones.mjs"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "INS-01",
+      "title": "Personal deployment residue remains in active routing instructions",
+      "owners": [
+        "08"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "agents/front-door/PROFILE_TEMPLATE.md",
+        "agents/master-orchestrator/PROFILE_TEMPLATE.md",
+        "bridge/orchestrator-memory/CHAT_VS_TASK.md",
+        "bridge/orchestrator-memory/memory.md",
+        "03-WHAT-NOT-IN-SHARE.md"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/front-door/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/master-orchestrator/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/orchestrator-memory/CHAT_VS_TASK.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/orchestrator-memory/memory.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/03-WHAT-NOT-IN-SHARE.md"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "DAT-01",
+      "title": "Normal bridge queue writers can overwrite each other",
+      "owners": [
+        "02",
+        "06"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/storage.ts",
+        "bridge/src/enqueue.ts",
+        "bridge/src/runtime.ts"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/storage.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/enqueue.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/runtime.ts"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "DAT-02",
+      "title": "Inbound persistence order creates crash-loss windows",
+      "owners": [
+        "02",
+        "05"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/runtime.ts",
+        "bridge/src/storage.ts"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/runtime.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/storage.ts"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "DAT-03",
+      "title": "Corrupt durable state is silently treated as empty",
+      "owners": [
+        "02"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/storage.ts"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/storage.ts"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "UX-01",
+      "title": "The casual fast path consumes contextual answers and mixed reactions",
+      "owners": [
+        "05"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/greeting.ts",
+        "bridge/src/greeting.test.ts",
+        "bridge/src/runtime.ts"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/greeting.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/greeting.test.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/runtime.ts"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "UX-02",
+      "title": "First-text confetti ownership contradicts the greeting shortcut",
+      "owners": [
+        "05",
+        "06",
+        "08"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "skills/getting-started/SKILL.md",
+        "skills/imessage-front-door-wake/SKILL.md",
+        "bridge/src/runtime.ts",
+        "bridge/src/setup-confetti.ts",
+        "bridge/orchestrator-memory/REACTIONS_EFFECTS.md"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/skills/getting-started/SKILL.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/skills/imessage-front-door-wake/SKILL.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/runtime.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/setup-confetti.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/orchestrator-memory/REACTIONS_EFFECTS.md"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "REL-02",
+      "title": "Batch ownership is described but not enforced in the wake path",
+      "owners": [
+        "02",
+        "05",
+        "08"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/batch-claim.ts",
+        "skills/imessage-front-door-wake/SKILL.md",
+        "routines/photon-imessage-wake.REDACTED.json",
+        "bridge/src/runtime.ts"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/batch-claim.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/skills/imessage-front-door-wake/SKILL.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/routines/photon-imessage-wake.REDACTED.json",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/runtime.ts"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "REL-03",
+      "title": "Unknown provider outcomes are retried as ordinary failures",
+      "owners": [
+        "06"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/runtime.ts",
+        "bridge/src/reply-fallback.ts",
+        "bridge/src/types.ts"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/runtime.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/reply-fallback.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/types.ts"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "REL-04",
+      "title": "Image-card delivery has competing check-then-enqueue paths",
+      "owners": [
+        "06"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/cards-ready.ts",
+        "skills/imessage-front-door-wake/SKILL.md",
+        "agents/front-door/PROFILE_TEMPLATE.md",
+        "bridge/src/enqueue.ts"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/cards-ready.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/skills/imessage-front-door-wake/SKILL.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/front-door/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/enqueue.ts"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "LIV-01",
+      "title": "Blob registry creation bypasses compare-and-swap",
+      "owners": [
+        "04"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "live-mini/live-task-cards/src/store.mjs",
+        "live-mini/live-task-cards/src/vercel-blob-lite.mjs"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/live-task-cards/src/store.mjs",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/live-task-cards/src/vercel-blob-lite.mjs"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "LIV-02",
+      "title": "The milestone helper overwrites conflicts instead of reconciling them",
+      "owners": [
+        "07"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "live-mini/runtime/live-card-milestones.mjs",
+        "live-mini/live-task-cards/src/service.mjs"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/runtime/live-card-milestones.mjs",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/live-task-cards/src/service.mjs"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "INS-02",
+      "title": "Routing and placeholder contracts disagree across files",
+      "owners": [
+        "08",
+        "01"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "skills/getting-started/SKILL.md",
+        "agents/front-door/PROFILE_TEMPLATE.md",
+        "agents/creator/PROFILE_TEMPLATE.md",
+        "agents/feature-add/PROFILE_TEMPLATE.md",
+        "bridge/orchestrator-memory/memory.md"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/skills/getting-started/SKILL.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/front-door/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/creator/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/feature-add/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/orchestrator-memory/memory.md"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "SEC-02",
+      "title": "Connected Vercel access is treated as blanket deployment consent",
+      "owners": [
+        "01",
+        "08"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "skills/live-mini-enable/SKILL.md",
+        "skills/getting-started/SKILL.md",
+        "agents/live-mini/PROFILE_TEMPLATE.md",
+        "live-mini/migration/DEPLOY-NOTES.md"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/skills/live-mini-enable/SKILL.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/skills/getting-started/SKILL.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/live-mini/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/migration/DEPLOY-NOTES.md"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "CTX-01",
+      "title": "Conversation boundaries and reply context are incomplete",
+      "owners": [
+        "05",
+        "06"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/runtime.ts",
+        "bridge/src/inbound.ts",
+        "bridge/src/types.ts"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/runtime.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/inbound.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/types.ts"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "MED-01",
+      "title": "Voice processing blocks the serial inbound event loop",
+      "owners": [
+        "03",
+        "05"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/runtime.ts",
+        "bridge/src/voice-stt.ts",
+        "bridge/tools/moonshine_stt.py",
+        "bridge/src/inbound-attachment.ts"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/runtime.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/voice-stt.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/tools/moonshine_stt.py",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/inbound-attachment.ts"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "SEC-03",
+      "title": "Bridge privacy retention is weaker than the Live Mini host policy",
+      "owners": [
+        "01",
+        "02"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/storage.ts",
+        "bridge/src/inbound-attachment.ts",
+        "bridge/src/voice-stt.ts",
+        "live-mini/live-task-cards/docs/SECURITY.md"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/storage.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/inbound-attachment.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/voice-stt.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/live-task-cards/docs/SECURITY.md"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "SET-01",
+      "title": "Setup is a procedural transcript rather than a resumable installer",
+      "owners": [
+        "01",
+        "08"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "skills/getting-started/SKILL.md",
+        "bridge/.env.example",
+        "bridge/src/config.ts",
+        "bridge/scripts/start-runtime.sh",
+        "bridge/package.json"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/skills/getting-started/SKILL.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/.env.example",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/config.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/scripts/start-runtime.sh",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/package.json"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "OPS-01",
+      "title": "Retries, scheduling and shutdown need explicit bounds",
+      "owners": [
+        "00",
+        "05",
+        "06"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/runtime.ts",
+        "bridge/scripts/start-runtime.sh",
+        "bridge/src/cards-ready.ts"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/runtime.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/scripts/start-runtime.sh",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/cards-ready.ts"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "LIV-03",
+      "title": "The public profile exposes a lower-level send path than the safe presenter",
+      "owners": [
+        "07",
+        "06",
+        "08"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "agents/live-mini/PROFILE_TEMPLATE.md",
+        "live-mini/runtime/live-card-milestones.mjs",
+        "live-mini/live-task-cards/src/spectrum-presenter.mjs"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/live-mini/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/runtime/live-card-milestones.mjs",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/live-task-cards/src/spectrum-presenter.mjs"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "LIV-04",
+      "title": "Same-URL verification happens after overwriting its prior value",
+      "owners": [
+        "07"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "live-mini/runtime/live-card-milestones.mjs"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/runtime/live-card-milestones.mjs"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "LIV-05",
+      "title": "Custom Blob protocol client increases the compatibility burden",
+      "owners": [
+        "04"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "live-mini/live-task-cards/src/vercel-blob-lite.mjs",
+        "live-mini/live-task-cards/src/store.mjs"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/live-task-cards/src/vercel-blob-lite.mjs",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/live-task-cards/src/store.mjs"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "SEC-04",
+      "title": "Operational role prompts are not authorization boundaries",
+      "owners": [
+        "06"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/src/enqueue.ts",
+        "bridge/src/storage.ts",
+        "bridge/src/runtime.ts",
+        "agents/creator/PROFILE_TEMPLATE.md",
+        "agents/feature-add/PROFILE_TEMPLATE.md"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/enqueue.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/storage.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/runtime.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/creator/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/feature-add/PROFILE_TEMPLATE.md"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "TST-01",
+      "title": "Current release evidence does not prove the critical failure paths",
+      "owners": [
+        "00",
+        "09"
+      ],
+      "status": "implementation-required",
+      "existing_targets": [
+        "bridge/package.json",
+        "bridge/src/greeting.test.ts",
+        "live-mini/live-task-cards/evidence/clean-install.txt",
+        "NEW FILES"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/package.json",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/src/greeting.test.ts",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/live-mini/live-task-cards/evidence/clean-install.txt"
+      ],
+      "reason": "Implement and close with integrated regression evidence; not yet fixed by this packet."
+    },
+    {
+      "finding": "EFF-01",
+      "title": "Simplify role and context overhead only after correctness",
+      "owners": [
+        "DEFERRED-REDESIGN"
+      ],
+      "status": "deferred-by-scope",
+      "existing_targets": [
+        "skills/getting-started/SKILL.md",
+        "agents/creator/PROFILE_TEMPLATE.md",
+        "agents/feature-add/PROFILE_TEMPLATE.md",
+        "agents/app-sheet/PROFILE_TEMPLATE.md",
+        "bridge/orchestrator-memory/memory.md"
+      ],
+      "source_urls": [
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/skills/getting-started/SKILL.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/creator/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/feature-add/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/agents/app-sheet/PROFILE_TEMPLATE.md",
+        "https://github.com/tecxbro/photongrokbot/blob/8c710413c99a6fd8022727326ca682d267393953/bridge/orchestrator-memory/memory.md"
+      ],
+      "reason": "Preserve six roles and mandatory STT; role/lazy-setup redesign is not needed for correctness."
+    }
+  ]
+}
