@@ -17,6 +17,7 @@ export type OutboundClaim = { item: OutboundItem; attemptId: string; destination
 export type AcceptInput = { eventKey: string; record: InboundRecord; destination: Destination; media?: MediaReference; onboarding?: boolean; greetingOnly?: boolean };
 export type AcceptResult = { eventId: string; duplicate: boolean; onboardingCreated: boolean };
 export type TaskBinding = { taskId: string; batchId: string; destination: Destination; owner: string; finalOwner: string; state: "intent" | "accepted" | "unknown" | "completed"; receipt?: string };
+export type PresentationContext = { cardId: string; taskId: string; batchId: string; destination: Destination; viewUrl: string };
 /** Frozen port; implementation may add methods, coordinator approves signature revisions. */
 export interface BridgeStore {
   readonly installationId: string;
@@ -30,6 +31,7 @@ export interface BridgeStore {
   assertClaim(token: ClaimToken): void;
   bindTask(token: ClaimToken, binding: TaskBinding): void;
   getTask(taskId: string): TaskBinding | undefined;
+  registerPresentation(token: ClaimToken, context: PresentationContext): void;
   enqueue(input: EnqueueOutboundInput, context: { actionKey: string; destination: Destination; purpose: string; claim?: ClaimToken; taskId?: string; presentation?: Submission["presentation"] }): OutboundItem[];
   claimOutbound(now?: number): OutboundClaim | undefined;
   settleOutbound(id: string, attemptId: string, outcome: ProviderOutcome): void;
