@@ -42,6 +42,8 @@ export type InboundRecord = {
   senderId: string;
   lineId?: string;
   replyToMessageId?: string;
+  pollMessageId?: string;
+  pollOptionId?: string;
   reactionSelected?: boolean;
   mediaState?: "pending" | "processing" | "ready" | "failed" | "unavailable";
   mediaJobId?: string;
