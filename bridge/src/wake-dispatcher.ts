@@ -1,8 +1,9 @@
 import type { BridgeStore, WakeJob } from './contracts.ts';
 
+export type WakeFetch = (input: Parameters<typeof fetch>[0], init?: RequestInit) => Promise<Response>;
 type WakeStore = Pick<BridgeStore, 'claimWake' | 'settleWake'>;
 export type WakeDispatcherOptions = {
-  store: WakeStore; url: string; key: string; fetch?: typeof fetch; clock?: () => number;
+  store: WakeStore; url: string; key: string; fetch?: WakeFetch; clock?: () => number;
   timeoutMs?: number; maxAttempts?: number; acknowledgementGraceMs?: number;
   baseBackoffMs?: number; maxBackoffMs?: number; random?: () => number;
   onStatus?: (status: { code: string; attempts: number }) => void;
@@ -10,7 +11,7 @@ export type WakeDispatcherOptions = {
 
 /** HTTP acknowledgement records receipt only; store claims fence actual work. */
 export class WakeDispatcher {
-  private readonly fetcher: typeof fetch;
+  private readonly fetcher: WakeFetch;
   private readonly timeout: number;
   private readonly maxAttempts: number;
   private readonly grace: number;

@@ -81,3 +81,11 @@ test('D03 batches above storage page size retain a due continuation across recov
   const first = receiver.flushAll(); expect(first[0]!.messages).toHaveLength(250);
   const second = receiver.flushDue(); expect(second[0]!.messages).toHaveLength(1); expect(receiver.flushDue()).toHaveLength(0);
 });
+
+test('U04 SDK unknown union narrows locally; contact name objects and malformed media are ignored without casting', () => {
+  const { store } = setup(), receiver = new InboundController({ store, authorizedSenderId: owner });
+  for (const content of [{ type: 'contact', name: { given: 'Synthetic' } }, { type: 'attachment', name: { unexpected: true } }, { type: 'text', text: 42 }, null]) {
+    const input = { ...message('unsupported-sdk-union', ''), content }; expect(receiver.receive(space(), input).status).toBe('ignored');
+  }
+  expect(store.recentInbound()).toHaveLength(0); expect(store.listOutbound()).toHaveLength(0);
+});

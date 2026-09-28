@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
 import type { AcceptResult, BridgeStore, Destination, MediaReference } from './contracts.ts';
 import type { InboundRecord, UnreadBatch } from './types.ts';
-import { shapeInboundContent, toInboundRecord, type ContentLike } from './inbound.ts';
+import { shapeInboundContent, snapshotInboundContent, toInboundRecord, type ContentLike } from './inbound.ts';
 import { onboardingAcceptance } from './onboarding.ts';
 
 /** Exact fields consumed from spectrum-ts/imessage 12.8.0's exposed records. */
 export type InboundSpace = { id: string; phone?: string; type?: string };
-export type InboundMessage = { id: string; direction: string; platform: string; sender?: { id: string }; timestamp: Date; content: ContentLike; space?: { id: string; phone?: string } };
+export type InboundMessage = { id: string; direction: string; platform: string; sender?: { id: string }; timestamp: Date; content: unknown; space?: { id: string; phone?: string } };
 export type ReceiveResult = { status: 'ignored'; reason: 'stopped' | 'outbound' | 'platform' | 'unauthorized' | 'invalid-context' | 'unsupported' } | { status: 'accepted'; result: AcceptResult; record: InboundRecord; destination: Destination; mediaReference?: MediaReference; readableContent?: ContentLike };
 type Store = Pick<BridgeStore, 'accept' | 'formBatches'>;
 export type InboundControllerOptions = { store: Store; authorizedSenderId: string; clock?: () => number; debounceMs?: number; maxDebounceMs?: number; enrichInbound?: (record: InboundRecord, destination: Destination) => InboundRecord };
@@ -49,8 +49,10 @@ export class InboundController {
     if (message.sender?.id !== this.options.authorizedSenderId) return { status: 'ignored', reason: 'unauthorized' };
     if (!space.id || !space.phone || !message.id || (message.space && (message.space.id !== space.id || (message.space.phone !== undefined && message.space.phone !== space.phone)))) return { status: 'ignored', reason: 'invalid-context' };
     const destination = { spaceId: space.id, lineId: space.phone };
-    if (!targetScopeMatches(message.content, destination)) return { status: 'ignored', reason: 'invalid-context' };
-    const shaped = shapeInboundContent(message.content); if (!shaped) return { status: 'ignored', reason: 'unsupported' };
+    const content = snapshotInboundContent(message.content);
+    if (!content) return { status: 'ignored', reason: 'unsupported' };
+    if (!targetScopeMatches(content, destination)) return { status: 'ignored', reason: 'invalid-context' };
+    const shaped = shapeInboundContent(content); if (!shaped) return { status: 'ignored', reason: 'unsupported' };
     if (shaped.kind === 'text' && !shaped.text.trim()) return { status: 'ignored', reason: 'unsupported' };
     const now = this.clock();
     let record = toInboundRecord(shaped, { id: message.id, spaceId: space.id, lineId: space.phone, senderId: message.sender.id, timestamp: message.timestamp.toISOString(), receivedAt: new Date(now).toISOString(), ...(shaped.kind === 'poll_vote' ? pollIdentity(message, shaped.pollSelected) : {}) });
@@ -64,7 +66,7 @@ export class InboundController {
       const key = JSON.stringify([destination.spaceId, destination.lineId]), previous = this.due.get(key), first = previous?.first ?? now;
       this.due.set(key, { destination, first, due: Math.min(now + this.debounce, first + this.maximum) });
     }
-    return { status: 'accepted', result, record, destination, ...(mediaReference ? { mediaReference, readableContent: plainContent(message.content) } : {}) };
+    return { status: 'accepted', result, record, destination, ...(mediaReference ? { mediaReference, readableContent: plainContent(content) } : {}) };
   }
   flushDue(now = this.clock()): UnreadBatch[] {
     const due = [...this.due.entries()].filter(([, value]) => value.due <= now);

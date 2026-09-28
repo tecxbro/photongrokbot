@@ -220,3 +220,50 @@ export function toInboundRecord(
     ...(extras?.transcript ? { transcript: extras.transcript } : {}),
   };
 }
+
+/** Narrow the real SDK Content union at the boundary; unsupported content is never cast into a media shape. */
+export function snapshotInboundContent(value: unknown, depth = 0): ContentLike | undefined {
+  if (!value || typeof value !== 'object' || depth > 8) return;
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.type !== 'string' || !['text', 'markdown', 'reply', 'reaction', 'poll_option', 'attachment', 'voice'].includes(raw.type)) return;
+  const content: ContentLike = { type: raw.type };
+  for (const key of ['text', 'markdown', 'emoji', 'title', 'id', 'name', 'mimeType'] as const) {
+    if (raw[key] !== undefined) { if (typeof raw[key] !== 'string') return; content[key] = raw[key]; }
+  }
+  for (const key of ['size', 'duration'] as const) {
+    if (raw[key] !== undefined) { if (typeof raw[key] !== 'number' || !Number.isFinite(raw[key]) || raw[key] < 0) return; content[key] = raw[key]; }
+  }
+  if (raw.selected !== undefined) { if (typeof raw.selected !== 'boolean') return; content.selected = raw.selected; }
+  if (raw.read !== undefined) {
+    if (typeof raw.read !== 'function') return;
+    content.read = raw.read.bind(value) as () => Promise<Buffer | Uint8Array>;
+  }
+  if (raw.target !== undefined) {
+    if (!raw.target || typeof raw.target !== 'object') return;
+    const target = raw.target as Record<string, unknown>;
+    if (typeof target.id !== 'string') return;
+    content.target = { id: target.id };
+    if (target.space !== undefined) {
+      if (!target.space || typeof target.space !== 'object') return;
+      const space = target.space as Record<string, unknown>;
+      if (typeof space.id !== 'string' || (space.phone !== undefined && typeof space.phone !== 'string')) return;
+      content.target.space = { id: space.id, ...(typeof space.phone === 'string' ? { phone: space.phone } : {}) };
+    }
+  }
+  if (raw.type === 'reply') {
+    const nested = snapshotInboundContent(raw.content, depth + 1); if (!nested) return; content.content = nested;
+  }
+  if (raw.type === 'poll_option') {
+    if (raw.option !== undefined) {
+      if (!raw.option || typeof raw.option !== 'object' || typeof (raw.option as Record<string, unknown>).title !== 'string') return;
+      content.option = { title: (raw.option as { title: string }).title };
+    }
+    if (raw.poll !== undefined) {
+      if (!raw.poll || typeof raw.poll !== 'object') return;
+      const poll = raw.poll as Record<string, unknown>;
+      if (typeof poll.title !== 'string') return;
+      content.poll = { type: 'poll', title: poll.title };
+    }
+  }
+  return content;
+}
