@@ -823,3 +823,169 @@ for (const state of ["intent", "accepted", "unknown"] as const) {
     );
   });
 }
+function presentationFixture(f: ReturnType<typeof fixture>) {
+  const ctx = batch(f.store);
+  const task = {
+    taskId: "presentation-task",
+    batchId: ctx.batch.batchId,
+    destination: ctx.destination,
+    owner: "worker",
+    finalOwner: "front-door",
+    state: "intent" as const,
+  };
+  f.store.bindTask(ctx.claim, task);
+  f.store.bindTask(ctx.claim, {
+    ...task,
+    state: "accepted",
+    receipt: "native recorded receipt",
+  });
+  f.store.setMetadata("live-mini-host", "configured", {
+    origin: "https://live.example.test",
+  });
+  return {
+    ...ctx,
+    context: {
+      cardId: "card-1",
+      taskId: task.taskId,
+      batchId: ctx.batch.batchId,
+      destination: ctx.destination,
+      viewUrl: "https://live.example.test/live-10/card-1?k=private-view-token",
+    },
+  };
+}
+test("presentation registration binds exact original task and private full URL idempotently", () => {
+  const f = setup();
+  const ctx = presentationFixture(f);
+  f.store.registerPresentation(ctx.claim, ctx.context);
+  f.store.registerPresentation(ctx.claim, ctx.context);
+  expect(
+    f.store.getMetadata<typeof ctx.context>(
+      "task-card-context",
+      ctx.context.cardId,
+    ),
+  ).toEqual(ctx.context);
+  expect(
+    f.store.getMetadata<{ cardId: string }>(
+      "task-card-url",
+      ctx.context.viewUrl,
+    ),
+  ).toEqual({ cardId: ctx.context.cardId });
+  expect(f.store.listMetadata("task-card-context")).toHaveLength(1);
+  expect(f.store.listMetadata("task-card-url")).toHaveLength(1);
+  expect(f.store.listOutbound()).toHaveLength(0);
+  const changed = {
+    ...ctx.context,
+    viewUrl: "https://live.example.test/live-10/card-1?k=other-token",
+  };
+  expect(() => f.store.registerPresentation(ctx.claim, changed)).toThrow(
+    "PRESENTATION_IDENTITY_CONFLICT",
+  );
+  expect(f.store.getMetadata("task-card-url", changed.viewUrl)).toBeUndefined();
+  expect(
+    f.store.getMetadata<typeof ctx.context>(
+      "task-card-context",
+      ctx.context.cardId,
+    ),
+  ).toEqual(ctx.context);
+});
+test("presentation registration rejects other task, conversation, batch and expired invocation", () => {
+  const f = setup();
+  const ctx = presentationFixture(f);
+  expect(() =>
+    f.store.registerPresentation(ctx.claim, {
+      ...ctx.context,
+      taskId: "missing-task",
+    }),
+  ).toThrow("PRESENTATION_TASK_MISMATCH");
+  expect(() =>
+    f.store.registerPresentation(ctx.claim, {
+      ...ctx.context,
+      batchId: "other-batch",
+    }),
+  ).toThrow("PRESENTATION_BINDING_MISMATCH");
+  expect(() =>
+    f.store.registerPresentation(ctx.claim, {
+      ...ctx.context,
+      destination: { ...ctx.destination, spaceId: "other" },
+    }),
+  ).toThrow("PRESENTATION_BINDING_MISMATCH");
+  const other = batch(f.store, "other-space");
+  const binding = {
+    taskId: "other-native-task",
+    batchId: other.batch.batchId,
+    destination: other.destination,
+    owner: "worker",
+    finalOwner: "front",
+    state: "intent" as const,
+  };
+  f.store.bindTask(other.claim, binding);
+  expect(() =>
+    f.store.registerPresentation(ctx.claim, {
+      ...ctx.context,
+      taskId: binding.taskId,
+    }),
+  ).toThrow("PRESENTATION_TASK_MISMATCH");
+  f.store.db
+    .query("UPDATE batches SET lease_until=0 WHERE id=?")
+    .run(ctx.batch.batchId);
+  expect(() => f.store.registerPresentation(ctx.claim, ctx.context)).toThrow(
+    "STALE_CLAIM",
+  );
+  expect(f.store.listMetadata("task-card-context")).toHaveLength(0);
+  expect(f.store.listMetadata("task-card-url")).toHaveLength(0);
+});
+test("presentation URL must match configured HTTPS origin, host route and exact card ID", () => {
+  const f = setup();
+  const ctx = presentationFixture(f);
+  for (const viewUrl of [
+    "https://other.example.test/live-10/card-1?k=secret",
+    "http://live.example.test/live-10/card-1?k=secret",
+    "https://user:secret@live.example.test/live-10/card-1?k=secret",
+    "https://live.example.test/live-11/card-1?k=secret",
+    "https://live.example.test/live-10/other-card?k=secret",
+    "https://live.example.test/live-10/card-1",
+    "https://live.example.test/live-10/card-1?k=one&k=two",
+    "https://live.example.test/live-10/card-1?k=secret#fragment",
+    "https://live.example.test/live-10/card-1?k=secret&unrelated=true",
+    " https://live.example.test/live-10/card-1?k=secret",
+    "not a url",
+  ])
+    expect(() =>
+      f.store.registerPresentation(ctx.claim, { ...ctx.context, viewUrl }),
+    ).toThrow();
+  expect(() =>
+    f.store.registerPresentation(ctx.claim, {
+      ...ctx.context,
+      cardId: "../escape",
+    }),
+  ).toThrow("PRESENTATION_CONTEXT_INVALID");
+  f.store.deleteMetadata("live-mini-host", "configured");
+  expect(() => f.store.registerPresentation(ctx.claim, ctx.context)).toThrow(
+    "PRESENTATION_HOST_MISMATCH",
+  );
+  expect(f.store.listMetadata("task-card-context")).toHaveLength(0);
+});
+test("presentation context and URL index roll back together on insertion failure", () => {
+  let fail = false;
+  const f = setup({
+    fault: (transition: string) => {
+      if (fail && transition === "register_presentation:context")
+        throw new Error("fixture index failure");
+    },
+  });
+  const ctx = presentationFixture(f);
+  fail = true;
+  expect(() => f.store.registerPresentation(ctx.claim, ctx.context)).toThrow(
+    "fixture index failure",
+  );
+  expect(f.store.listMetadata("task-card-context")).toHaveLength(0);
+  expect(f.store.listMetadata("task-card-url")).toHaveLength(0);
+  fail = false;
+  f.store.registerPresentation(ctx.claim, ctx.context);
+  expect(
+    f.store.getMetadata<{ cardId: string }>(
+      "task-card-url",
+      ctx.context.viewUrl,
+    ),
+  ).toEqual({ cardId: ctx.context.cardId });
+});

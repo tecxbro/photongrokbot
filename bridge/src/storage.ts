@@ -18,6 +18,7 @@ import type {
   MediaResult,
   ProviderOutcome,
   ProviderReference,
+  PresentationContext,
   Submission,
   TaskBinding,
   WakeJob,
@@ -523,6 +524,100 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
     if (value.taskId !== taskId || !value.destination)
       throw new Error("TASK_RECORD_INVALID");
     return value;
+  }
+  registerPresentation(token: ClaimToken, context: PresentationContext): void {
+    if (
+      !context ||
+      Object.keys(context).some(
+        (key) =>
+          !["cardId", "taskId", "batchId", "destination", "viewUrl"].includes(
+            key,
+          ),
+      ) ||
+      typeof context.cardId !== "string" ||
+      !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(context.cardId) ||
+      typeof context.taskId !== "string" ||
+      !context.taskId ||
+      typeof context.viewUrl !== "string" ||
+      context.viewUrl.length > 8192
+    )
+      throw new Error("PRESENTATION_CONTEXT_INVALID");
+    validateDestination(context.destination);
+    let view: URL;
+    try {
+      view = new URL(context.viewUrl);
+    } catch {
+      throw new Error("PRESENTATION_URL_INVALID");
+    }
+    // Preserve the entire signed URL, while checking the host service's exact
+    // route/card relationship. Registration is local policy, not host proof.
+    const route = /^\/live-(?:[1-9]|10)\/([^/]+)$/.exec(view.pathname);
+    if (
+      view.protocol !== "https:" ||
+      view.username ||
+      view.password ||
+      view.hash ||
+      view.href !== context.viewUrl ||
+      route?.[1] !== context.cardId ||
+      view.searchParams.getAll("k").length !== 1 ||
+      !view.searchParams.get("k") ||
+      [...view.searchParams.keys()].some((key) => key !== "k")
+    )
+      throw new Error("PRESENTATION_URL_INVALID");
+    this.tx("register_presentation", () => {
+      this.assertClaim(token);
+      if (
+        context.batchId !== token.batchId ||
+        canonical(context.destination) !==
+          canonical(this.batchDestination(token.batchId))
+      )
+        throw new Error("PRESENTATION_BINDING_MISMATCH");
+      const task = this.getTask(context.taskId);
+      if (
+        !task ||
+        task.batchId !== context.batchId ||
+        canonical(task.destination) !== canonical(context.destination)
+      )
+        throw new Error("PRESENTATION_TASK_MISMATCH");
+      const configured = this.getMetadata<{ origin?: unknown }>(
+        "live-mini-host",
+        "configured",
+      );
+      if (
+        !configured ||
+        typeof configured.origin !== "string" ||
+        view.origin !== configured.origin
+      )
+        throw new Error("PRESENTATION_HOST_MISMATCH");
+      const existing = this.getMetadata<PresentationContext>(
+        "task-card-context",
+        context.cardId,
+      );
+      const indexed = this.getMetadata<{ cardId: string }>(
+        "task-card-url",
+        context.viewUrl,
+      );
+      if (existing) {
+        if (
+          canonical(existing) !== canonical(context) ||
+          indexed?.cardId !== context.cardId
+        )
+          throw new Error("PRESENTATION_IDENTITY_CONFLICT");
+        return;
+      }
+      if (indexed) throw new Error("PRESENTATION_IDENTITY_CONFLICT");
+      this.db
+        .query(
+          "INSERT INTO metadata(kind,key,value) VALUES('task-card-context',?,?)",
+        )
+        .run(context.cardId, canonical(context));
+      this.fault?.("register_presentation:context");
+      this.db
+        .query(
+          "INSERT INTO metadata(kind,key,value) VALUES('task-card-url',?,?)",
+        )
+        .run(context.viewUrl, canonical({ cardId: context.cardId }));
+    });
   }
   enqueue(
     input: EnqueueOutboundInput,
