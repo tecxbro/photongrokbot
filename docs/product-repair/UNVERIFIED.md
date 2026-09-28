@@ -20,6 +20,8 @@ source inspection, HTTP acknowledgment, or a provider-accepted reference.
 | Physical phone | First authorized greeting and confetti, text/replies, effects/reactions, polls, audio, attachments, grouped option cards, app cards and edits where supported |
 | Option selection | Actual provider parent/part identities and added-reaction stream on the phone; removal is not inferred from synthetic fields |
 | Migration cutover | Actual stopped old writers, complete private legacy inventory, backup verification and exact uncertain-operation reconciliation |
+| Optional custom-loader browser | The unchanged custom-loader browser script is outside the package test commands and was not run; local Canvas/device rendering is not established |
+| Historical code rollback | M06 does not execute the old runtime after cutover; old JSON writers remain stopped after new activity, with forward repair/reconciliation required |
 | Asset/Marketplace rights | Shipped asset rights and Marketplace packaging/publication remain deferred by scope; local byte inspection is not a rights grant |
 
 The supported local outcomes distinguish queued, sending, accepted, unknown,
