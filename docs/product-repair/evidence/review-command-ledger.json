@@ -1,0 +1,852 @@
+{
+  "sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+  "orchestrator": {
+    "command": [
+      "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/node",
+      "scripts/test-product.mjs",
+      "all"
+    ],
+    "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review",
+    "environment": {
+      "PHOTON_TEST_BUN": "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+      "PATH": "pinned executable directory prepended to inherited PATH",
+      "PHOTON_TEST_REPORT": "packet/.review-evidence/full.json"
+    },
+    "exit": 0
+  },
+  "commands": [
+    {
+      "label": "bridge frozen install",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "install",
+        "--frozen-lockfile"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {},
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/batch-claim.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/batch-claim.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/cards-ready.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/cards-ready.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/attachment-group.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/attachment-group.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/greeting.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/greeting.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/inbound-attachment.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/inbound-attachment.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/inbound-controller.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/inbound-controller.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/inbound-process.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/inbound-process.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/inbound-stream.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/inbound-stream.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/inbound.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/inbound.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/delivery-process.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/delivery-process.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/instance-lock.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/instance-lock.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/job-loop.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/job-loop.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/media-worker.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/media-worker.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/outbound-app.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/outbound-app.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/outbound-dispatcher.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/outbound-dispatcher.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/outbound-effect.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/outbound-effect.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/instruction-consistency.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/instruction-consistency.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/outbound-poll.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/outbound-poll.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/outbound-text.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/outbound-text.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/presentation-config.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/presentation-config.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/private-setup.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/private-setup.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/outbound-jpeg.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/outbound-jpeg.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/reaction-option.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/reaction-option.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/reply-fallback.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/reply-fallback.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/runtime.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/runtime.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/private-storage.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/private-storage.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/setup-confetti.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/setup-confetti.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/submit.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/submit.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/subprocess.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/subprocess.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/tests/presentation-control.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/tests/presentation-control.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/tests/storage/media-integration.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/tests/storage/media-integration.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/tests/acceptance/review.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/tests/acceptance/review.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/tests/storage/migration.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/tests/storage/migration.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/tests/storage/storage.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/tests/storage/storage.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/activity.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/activity.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/wake-dispatcher.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/wake-dispatcher.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/voice-stt.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/voice-stt.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge/src/tests/storage/process.test.ts",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge/src/tests/storage/process.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_INSTANCE_DIR": "unique canonical mkdtemp /private/.../photon-suite-*; removed after process"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "bridge typecheck",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "run",
+        "typecheck"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "environment": {},
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "host frozen install",
+      "command": [
+        "npm",
+        "ci"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/live-mini/live-task-cards",
+      "environment": {},
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "host tests",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/live-mini/live-task-cards",
+      "environment": {},
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "host skill tests",
+      "command": [
+        "npm",
+        "run",
+        "test:skill"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/live-mini/live-task-cards",
+      "environment": {},
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "host check",
+      "command": [
+        "npm",
+        "run",
+        "check"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/live-mini/live-task-cards",
+      "environment": {},
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "host build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/live-mini/live-task-cards",
+      "environment": {},
+      "exit": 0,
+      "output_source": "review-full.json"
+    },
+    {
+      "label": "Live Mini helper",
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/node",
+        "--test",
+        "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/live-mini/runtime/live-card-milestones.test.mjs"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review",
+      "environment": {
+        "PHOTON_TEST_MODE": "1",
+        "NODE_ENV": "test",
+        "PHOTON_BUN_BIN": "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "fixtures": "helper creates distinct private synthetic roots"
+      },
+      "exit": 0,
+      "output_source": "review-full.json"
+    }
+  ],
+  "repeat_commands": [
+    {
+      "iteration": 1,
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/tests/storage/process.test.ts"
+      ],
+      "cwd": "bridge",
+      "exit": 0,
+      "elapsed_seconds": 2.771,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/tests/storage/process.test.ts:\n(pass) D01 real concurrent enqueue and settlement processes preserve every acknowledged child [128.18ms]\n(pass) C01 separate processes with same bot claim one invocation winner [29.56ms]\n(pass) D02 crash before_commit input/onboarding transition remains atomic [25.25ms]\n(pass) D03 crash before_commit batch/wake transition keeps recoverable input [24.37ms]\n(pass) crash before_commit fenced claim cannot produce two valid owners [22.99ms]\n(pass) D06 crash before_commit multi-bubble commit has all or no children [22.73ms]\n(pass) crash before_commit dispatch attempt is queued or unknown, never automatically repeated [22.84ms]\n(pass) crash before_commit settlement preserves reference/evidence together [23.34ms]\n(pass) crash before_commit task reservation cannot blindly duplicate handoff [22.07ms]\n(pass) crash before_commit wake acknowledgement leaves batch actionable [20.77ms]\n(pass) crash before_commit media enrichment remains correlated to same batch [22.53ms]\n(pass) D02 crash after_commit input/onboarding transition remains atomic [23.95ms]\n(pass) D03 crash after_commit batch/wake transition keeps recoverable input [25.41ms]\n(pass) crash after_commit fenced claim cannot produce two valid owners [20.63ms]\n(pass) D06 crash after_commit multi-bubble commit has all or no children [22.54ms]\n(pass) crash after_commit dispatch attempt is queued or unknown, never automatically repeated [21.27ms]\n(pass) crash after_commit settlement preserves reference/evidence together [24.59ms]\n(pass) crash after_commit task reservation cannot blindly duplicate handoff [23.49ms]\n(pass) crash after_commit wake acknowledgement leaves batch actionable [21.95ms]\n(pass) crash after_commit media enrichment remains correlated to same batch [21.63ms]\n(pass) D08 separate writer lock contention fails within bounded busy timeout [2045.27ms]\n(pass) presentation ledger and outbox share one durable commit across crash before_commit [55.45ms]\n(pass) presentation ledger and outbox share one durable commit across crash after_commit [31.23ms]\n\n 23 pass\n 0 fail\n 153 expect() calls\nRan 23 tests across 1 file. [2.76s]\n"
+    },
+    {
+      "iteration": 1,
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/delivery-process.test.ts"
+      ],
+      "cwd": "bridge",
+      "exit": 0,
+      "elapsed_seconds": 0.845,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/delivery-process.test.ts:\n(pass) O01/X04 two separate JSON CLI processes atomically enqueue same operation [51.84ms]\n(pass) O01 two dispatch processes cannot emit one provider operation twice [401.67ms]\n(pass) O04 SIGKILL after fake provider effect leaves sending, recovery unknown never replays [283.13ms]\n(pass) cards-ready JSON CLI writes validated durable intent and rejects extra fields or flags [58.63ms]\n(pass) two CLI processes cannot reserve different initial sends for one registered task card [30.20ms]\n\n 5 pass\n 0 fail\n 28 expect() calls\nRan 5 tests across 1 file. [837.00ms]\n"
+    },
+    {
+      "iteration": 1,
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/inbound-process.test.ts"
+      ],
+      "cwd": "bridge",
+      "exit": 0,
+      "elapsed_seconds": 0.155,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/inbound-process.test.ts:\n(pass) D02 receiver SIGKILL before_commit preserves exactly one accepted input and onboarding action on replay [30.43ms]\n(pass) D03 controller SIGKILL before_commit batch formation preserves one input membership and wake [25.25ms]\n(pass) D02 receiver SIGKILL after_commit preserves exactly one accepted input and onboarding action on replay [25.34ms]\n(pass) D03 controller SIGKILL after_commit batch formation preserves one input membership and wake [24.69ms]\n(pass) W03 separate wake processes behind deterministic barrier make one request for the same job [32.67ms]\n\n 5 pass\n 0 fail\n 32 expect() calls\nRan 5 tests across 1 file. [149.00ms]\n"
+    },
+    {
+      "iteration": 2,
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/tests/storage/process.test.ts"
+      ],
+      "cwd": "bridge",
+      "exit": 0,
+      "elapsed_seconds": 2.68,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/tests/storage/process.test.ts:\n(pass) D01 real concurrent enqueue and settlement processes preserve every acknowledged child [76.80ms]\n(pass) C01 separate processes with same bot claim one invocation winner [30.22ms]\n(pass) D02 crash before_commit input/onboarding transition remains atomic [24.55ms]\n(pass) D03 crash before_commit batch/wake transition keeps recoverable input [24.18ms]\n(pass) crash before_commit fenced claim cannot produce two valid owners [23.16ms]\n(pass) D06 crash before_commit multi-bubble commit has all or no children [25.02ms]\n(pass) crash before_commit dispatch attempt is queued or unknown, never automatically repeated [24.17ms]\n(pass) crash before_commit settlement preserves reference/evidence together [24.86ms]\n(pass) crash before_commit task reservation cannot blindly duplicate handoff [23.82ms]\n(pass) crash before_commit wake acknowledgement leaves batch actionable [23.66ms]\n(pass) crash before_commit media enrichment remains correlated to same batch [25.52ms]\n(pass) D02 crash after_commit input/onboarding transition remains atomic [24.57ms]\n(pass) D03 crash after_commit batch/wake transition keeps recoverable input [26.30ms]\n(pass) crash after_commit fenced claim cannot produce two valid owners [24.41ms]\n(pass) D06 crash after_commit multi-bubble commit has all or no children [24.83ms]\n(pass) crash after_commit dispatch attempt is queued or unknown, never automatically repeated [23.57ms]\n(pass) crash after_commit settlement preserves reference/evidence together [25.29ms]\n(pass) crash after_commit task reservation cannot blindly duplicate handoff [23.70ms]\n(pass) crash after_commit wake acknowledgement leaves batch actionable [22.86ms]\n(pass) crash after_commit media enrichment remains correlated to same batch [23.77ms]\n(pass) D08 separate writer lock contention fails within bounded busy timeout [2042.15ms]\n(pass) presentation ledger and outbox share one durable commit across crash before_commit [47.58ms]\n(pass) presentation ledger and outbox share one durable commit across crash after_commit [30.95ms]\n\n 23 pass\n 0 fail\n 153 expect() calls\nRan 23 tests across 1 file. [2.67s]\n"
+    },
+    {
+      "iteration": 2,
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/delivery-process.test.ts"
+      ],
+      "cwd": "bridge",
+      "exit": 0,
+      "elapsed_seconds": 0.636,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/delivery-process.test.ts:\n(pass) O01/X04 two separate JSON CLI processes atomically enqueue same operation [54.93ms]\n(pass) O01 two dispatch processes cannot emit one provider operation twice [202.67ms]\n(pass) O04 SIGKILL after fake provider effect leaves sending, recovery unknown never replays [274.57ms]\n(pass) cards-ready JSON CLI writes validated durable intent and rejects extra fields or flags [56.54ms]\n(pass) two CLI processes cannot reserve different initial sends for one registered task card [29.69ms]\n\n 5 pass\n 0 fail\n 28 expect() calls\nRan 5 tests across 1 file. [629.00ms]\n"
+    },
+    {
+      "iteration": 2,
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/inbound-process.test.ts"
+      ],
+      "cwd": "bridge",
+      "exit": 0,
+      "elapsed_seconds": 0.154,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/inbound-process.test.ts:\n(pass) D02 receiver SIGKILL before_commit preserves exactly one accepted input and onboarding action on replay [28.27ms]\n(pass) D03 controller SIGKILL before_commit batch formation preserves one input membership and wake [25.03ms]\n(pass) D02 receiver SIGKILL after_commit preserves exactly one accepted input and onboarding action on replay [25.67ms]\n(pass) D03 controller SIGKILL after_commit batch formation preserves one input membership and wake [24.71ms]\n(pass) W03 separate wake processes behind deterministic barrier make one request for the same job [34.70ms]\n\n 5 pass\n 0 fail\n 32 expect() calls\nRan 5 tests across 1 file. [148.00ms]\n"
+    },
+    {
+      "iteration": 3,
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/tests/storage/process.test.ts"
+      ],
+      "cwd": "bridge",
+      "exit": 0,
+      "elapsed_seconds": 2.694,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/tests/storage/process.test.ts:\n(pass) D01 real concurrent enqueue and settlement processes preserve every acknowledged child [76.40ms]\n(pass) C01 separate processes with same bot claim one invocation winner [29.84ms]\n(pass) D02 crash before_commit input/onboarding transition remains atomic [24.57ms]\n(pass) D03 crash before_commit batch/wake transition keeps recoverable input [22.92ms]\n(pass) crash before_commit fenced claim cannot produce two valid owners [23.06ms]\n(pass) D06 crash before_commit multi-bubble commit has all or no children [24.92ms]\n(pass) crash before_commit dispatch attempt is queued or unknown, never automatically repeated [23.18ms]\n(pass) crash before_commit settlement preserves reference/evidence together [25.14ms]\n(pass) crash before_commit task reservation cannot blindly duplicate handoff [23.64ms]\n(pass) crash before_commit wake acknowledgement leaves batch actionable [24.09ms]\n(pass) crash before_commit media enrichment remains correlated to same batch [23.64ms]\n(pass) D02 crash after_commit input/onboarding transition remains atomic [22.74ms]\n(pass) D03 crash after_commit batch/wake transition keeps recoverable input [21.94ms]\n(pass) crash after_commit fenced claim cannot produce two valid owners [21.04ms]\n(pass) D06 crash after_commit multi-bubble commit has all or no children [24.17ms]\n(pass) crash after_commit dispatch attempt is queued or unknown, never automatically repeated [25.63ms]\n(pass) crash after_commit settlement preserves reference/evidence together [31.20ms]\n(pass) crash after_commit task reservation cannot blindly duplicate handoff [29.34ms]\n(pass) crash after_commit wake acknowledgement leaves batch actionable [25.23ms]\n(pass) crash after_commit media enrichment remains correlated to same batch [26.21ms]\n(pass) D08 separate writer lock contention fails within bounded busy timeout [2051.31ms]\n(pass) presentation ledger and outbox share one durable commit across crash before_commit [45.82ms]\n(pass) presentation ledger and outbox share one durable commit across crash after_commit [32.95ms]\n\n 23 pass\n 0 fail\n 153 expect() calls\nRan 23 tests across 1 file. [2.69s]\n"
+    },
+    {
+      "iteration": 3,
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/delivery-process.test.ts"
+      ],
+      "cwd": "bridge",
+      "exit": 0,
+      "elapsed_seconds": 0.657,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/delivery-process.test.ts:\n(pass) O01/X04 two separate JSON CLI processes atomically enqueue same operation [52.67ms]\n(pass) O01 two dispatch processes cannot emit one provider operation twice [191.56ms]\n(pass) O04 SIGKILL after fake provider effect leaves sending, recovery unknown never replays [307.98ms]\n(pass) cards-ready JSON CLI writes validated durable intent and rejects extra fields or flags [57.09ms]\n(pass) two CLI processes cannot reserve different initial sends for one registered task card [29.01ms]\n\n 5 pass\n 0 fail\n 28 expect() calls\nRan 5 tests across 1 file. [650.00ms]\n"
+    },
+    {
+      "iteration": 3,
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/inbound-process.test.ts"
+      ],
+      "cwd": "bridge",
+      "exit": 0,
+      "elapsed_seconds": 0.159,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/inbound-process.test.ts:\n(pass) D02 receiver SIGKILL before_commit preserves exactly one accepted input and onboarding action on replay [30.42ms]\n(pass) D03 controller SIGKILL before_commit batch formation preserves one input membership and wake [25.28ms]\n(pass) D02 receiver SIGKILL after_commit preserves exactly one accepted input and onboarding action on replay [25.72ms]\n(pass) D03 controller SIGKILL after_commit batch formation preserves one input membership and wake [24.94ms]\n(pass) W03 separate wake processes behind deterministic barrier make one request for the same job [35.91ms]\n\n 5 pass\n 0 fail\n 32 expect() calls\nRan 5 tests across 1 file. [153.00ms]\n"
+    },
+    {
+      "iteration": 2,
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/node",
+        "--test",
+        "live-mini/runtime/live-card-milestones.test.mjs"
+      ],
+      "cwd": ".",
+      "exit": 0,
+      "output": "TAP version 13\n# Subtest: H01/H02 explicit stale revisions and changed content never rebase or mint a fresh request\nok 1 - H01/H02 explicit stale revisions and changed content never rebase or mint a fresh request\n  ---\n  duration_ms: 818.92575\n  type: 'test'\n  ...\n# Subtest: H03 token changes preserve previous context byte-for-byte without secret errors\nok 2 - H03 token changes preserve previous context byte-for-byte without secret errors\n  ---\n  duration_ms: 178.212417\n  type: 'test'\n  ...\n# Subtest: H03 path changes preserve previous context byte-for-byte without secret errors\nok 3 - H03 path changes preserve previous context byte-for-byte without secret errors\n  ---\n  duration_ms: 175.07175\n  type: 'test'\n  ...\n# Subtest: H04 missing context, wrong full URL and original space reject before enqueue\nok 4 - H04 missing context, wrong full URL and original space reject before enqueue\n  ---\n  duration_ms: 216.21125\n  type: 'test'\n  ...\n# Subtest: H05 lost create acknowledgement recovers same card, claim and physical send\nok 5 - H05 lost create acknowledgement recovers same card, claim and physical send\n  ---\n  duration_ms: 478.637541\n  type: 'test'\n  ...\n# Subtest: H05 lost claim acknowledgement recovers same card, claim and physical send\nok 6 - H05 lost claim acknowledgement recovers same card, claim and physical send\n  ---\n  duration_ms: 443.731875\n  type: 'test'\n  ...\n# Subtest: H05 lost enqueue acknowledgement recovers same card, claim and physical send\nok 7 - H05 lost enqueue acknowledgement recovers same card, claim and physical send\n  ---\n  duration_ms: 410.291167\n  type: 'test'\n  ...\n# Subtest: H05 lost settle acknowledgement recovers same card, claim and physical send\nok 8 - H05 lost settle acknowledgement recovers same card, claim and physical send\n  ---\n  duration_ms: 440.463291\n  type: 'test'\n  ...\n# Subtest: H06 unknown retains occupancy and never creates another outbox action\nok 9 - H06 unknown retains occupancy and never creates another outbox action\n  ---\n  duration_ms: 406.28975\n  type: 'test'\n  ...\n# Subtest: H07 progress stays at same URL and terminal release needs no edit or resend\nok 10 - H07 progress stays at same URL and terminal release needs no edit or resend\n  ---\n  duration_ms: 447.233333\n  type: 'test'\n  ...\n# Subtest: H08 bounded Node child controls ignore raw legacy queue and redact rejected output\nok 11 - H08 bounded Node child controls ignore raw legacy queue and redact rejected output\n  ---\n  duration_ms: 637.523084\n  type: 'test'\n  ...\n# Subtest: hashed identity avoids lossy task-key collision; initialized context and secrets stay private\nok 12 - hashed identity avoids lossy task-key collision; initialized context and secrets stay private\n  ---\n  duration_ms: 234.723916\n  type: 'test'\n  ...\n# Subtest: two real Node owners serialize and SIGKILL releases the per-task lock without stealing\nok 13 - two real Node owners serialize and SIGKILL releases the per-task lock without stealing\n  ---\n  duration_ms: 138.81875\n  type: 'test'\n  ...\n# Subtest: expired workers cannot author host content but may reconcile a previously accepted send\nok 14 - expired workers cannot author host content but may reconcile a previously accepted send\n  ---\n  duration_ms: 439.2215\n  type: 'test'\n  ...\n# Subtest: H05 real Node SIGKILL after create commit recovers original identities\nok 15 - H05 real Node SIGKILL after create commit recovers original identities\n  ---\n  duration_ms: 458.756167\n  type: 'test'\n  ...\n# Subtest: H05 real Node SIGKILL after claim commit recovers original identities\nok 16 - H05 real Node SIGKILL after claim commit recovers original identities\n  ---\n  duration_ms: 526.998875\n  type: 'test'\n  ...\n# Subtest: H05 real Node SIGKILL after enqueue commit recovers original identities\nok 17 - H05 real Node SIGKILL after enqueue commit recovers original identities\n  ---\n  duration_ms: 515.903166\n  type: 'test'\n  ...\n# Subtest: H05 real Node SIGKILL after settle commit recovers original identities\nok 18 - H05 real Node SIGKILL after settle commit recovers original identities\n  ---\n  duration_ms: 537.282375\n  type: 'test'\n  ...\n# Subtest: lock holder death fences the live helper before any subsequent local write\nok 19 - lock holder death fences the live helper before any subsequent local write\n  ---\n  duration_ms: 76.691167\n  type: 'test'\n  ...\n# Subtest: private helper env rejects duplicate, unknown, malformed and oversized configuration without secret errors\nok 20 - private helper env rejects duplicate, unknown, malformed and oversized configuration without secret errors\n  ---\n  duration_ms: 33.560375\n  type: 'test'\n  ...\n# Subtest: expired saved create intent cannot allocate a host card and cannot overwrite its context\nok 21 - expired saved create intent cannot allocate a host card and cannot overwrite its context\n  ---\n  duration_ms: 154.974416\n  type: 'test'\n  ...\n# Subtest: expired update cannot create an unsent journal blocking a newly fenced successor\nok 22 - expired update cannot create an unsent journal blocking a newly fenced successor\n  ---\n  duration_ms: 269.895042\n  type: 'test'\n  ...\n# Subtest: publisher client preserves known conflict codes while discarding remote secret text and unknown codes\nok 23 - publisher client preserves known conflict codes while discarding remote secret text and unknown codes\n  ---\n  duration_ms: 0.415167\n  type: 'test'\n  ...\n1..23\n# tests 23\n# suites 0\n# pass 23\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 8124.369584\n"
+    }
+  ],
+  "notes": [
+    "Temporary paths are intentionally not retained as instance identifiers; test harness and fixture code define creation and removal.",
+    "Repeat records include exact selected Bun executable.",
+    "Review report delta has not been rerun as if it were the earlier tested commit."
+  ]
+}

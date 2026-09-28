@@ -1,0 +1,66 @@
+{
+  "original_scanned_sha": "1e565a42396564959bb7461be7d82b40a10a7ef9",
+  "supplemental_source_sha": "c550d051453db80c3f338dbee19e5f9674b46782",
+  "scope": "Changed tracked files since original scan plus pending report/evidence additions; no history or private instance",
+  "text_files_inspected": 21,
+  "binary_changes": [],
+  "candidate_locations": [
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 911,
+      "category": "capability-url"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 937,
+      "category": "capability-url"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 1000,
+      "category": "capability-url"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 1001,
+      "category": "capability-url"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 1002,
+      "category": "capability-url"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 1003,
+      "category": "capability-url"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 1004,
+      "category": "capability-url"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 1006,
+      "category": "capability-url"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 1007,
+      "category": "capability-url"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 1008,
+      "category": "capability-url"
+    },
+    {
+      "path": "bridge/src/tests/storage/storage.test.ts",
+      "line": 1009,
+      "category": "capability-url"
+    }
+  ],
+  "manual_result": "No actual credential/private key or real capability identified in source fix, synthetic acceptance changes, or review evidence. Prior scan classifications remain applicable.",
+  "limitations": "Heuristic text scan and manual context review; not service credential validation or a guarantee of absence."
+}

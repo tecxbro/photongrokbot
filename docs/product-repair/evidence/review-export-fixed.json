@@ -1,0 +1,11 @@
+{
+  "sha": "c550d051453db80c3f338dbee19e5f9674b46782",
+  "command": [
+    "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+    "run",
+    ".review-evidence/export-probe-fixed.ts"
+  ],
+  "exit": 0,
+  "output": "{\"sha\":\"c550d051453db80c3f338dbee19e5f9674b46782\",\"exportApplied\":true,\"sidecarsBefore\":0,\"headerReadVersion\":1,\"expected\":\"first read-only SELECT on standalone exported snapshot succeeds\",\"observed\":\"READ_ONLY_QUERY_OK\"}\n",
+  "stderr": ""
+}

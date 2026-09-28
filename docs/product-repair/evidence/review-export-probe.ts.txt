@@ -1,0 +1,20 @@
+// Original diagnostic file lived at packet/.review-evidence/export-probe.ts. Relative imports refer to that location.
+import { Database } from "bun:sqlite";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fixture, batch } from "../09-review/bridge/src/tests/storage/fixture.ts";
+import { exportInstance } from "../09-review/bridge/src/export-instance.ts";
+if(process.env.PHOTON_TEST_MODE!=="1"||!process.env.PHOTON_INSTANCE_DIR) throw new Error("ISOLATED_REVIEW_REQUIRED");
+const f=fixture();
+try {
+ batch(f.store);
+ const preview=exportInstance(f.paths,f.store);
+ const result=exportInstance(f.paths,f.store,{apply:true,planId:preview.planId});
+ const directory=join(f.paths.backupsDir,`export-${result.exportId}`), path=join(directory,"bridge.sqlite");
+ const before=readdirSync(directory).sort(); let database:Database|undefined;
+ const facts:any={sha:"1e565a42396564959bb7461be7d82b40a10a7ef9",exportApplied:result.applied,sidecarsBefore:before.filter(name=>name.endsWith("-wal")||name.endsWith("-shm")).length,headerReadVersion:readFileSync(path)[19],expected:"first read-only SELECT on standalone exported snapshot succeeds",observed:""};
+ try { database=new Database(path,{readonly:true}); database.query("SELECT COUNT(*) AS count FROM sqlite_master").get(); facts.observed="READ_ONLY_QUERY_OK"; }
+ catch(error:any) {facts.observed=error.code??"UNKNOWN_ERROR";}
+ finally {database?.close();}
+ console.log(JSON.stringify(facts));
+} finally {f.cleanup();}

@@ -1,0 +1,50 @@
+{
+  "sha": "c550d051453db80c3f338dbee19e5f9674b46782",
+  "scope": "Independent targeted post-review fixes; original full suite evidence preserved",
+  "results": [
+    {
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/tests/acceptance/recovery-runbook.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "exit": 0,
+      "elapsed_seconds": 0.47,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/tests/acceptance/recovery-runbook.test.ts:\n(pass) T01 protected maintenance examples invoke source entrypoints without losing the lock descriptor [8.01ms]\n(pass) T01/P08 runbook CLI reconciles original unknown operations and exports an independently readable snapshot [371.34ms]\n\n 2 pass\n 0 fail\n 53 expect() calls\nRan 2 tests across 1 file. [461.00ms]\n"
+    },
+    {
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/tests/storage/storage.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "exit": 0,
+      "elapsed_seconds": 0.344,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/tests/storage/storage.test.ts:\n(pass) transactional store > ordinary open cannot create storage; identity is immutable [9.79ms]\n(pass) transactional store > patched SQLite floor and FULL/local WAL evidence [7.21ms]\n(pass) transactional store > corrupt database is rejected without overwriting [6.22ms]\n(pass) transactional store > input duplicate and first greeting onboarding one atomic intent [8.17ms]\n(pass) transactional store > substantive first input is batched and onboarding commits together [6.01ms]\n(pass) transactional store > failure anywhere during acceptance rolls back input and greeting [5.88ms]\n(pass) transactional store > conversation and line batch boundaries; missing/path traversal rejected [5.52ms]\n(pass) transactional store > wake acknowledgement retains work; active claim prevents additional wakes [6.45ms]\n(pass) transactional store > same bot is never same run; stale owner cannot renew/complete/enqueue [6.73ms]\n(pass) transactional store > same action same payload ids; conflicting payload rejected [6.38ms]\n(pass) transactional store > all child bubbles roll back on injected child insertion failure [6.57ms]\n(pass) transactional store > unknown blocks later conversation content but permits cleanup and other chat [8.35ms]\n(pass) transactional store > sending recovery never fresh sends and old attempt cannot settle [6.69ms]\n(pass) transactional store > provider reference/poll/session/mapping settlement commits atomically [6.90ms]\n(pass) transactional store > unknown native handoff reserves work and cannot create second task [6.94ms]\n(pass) transactional store > media remains same event/batch and stale completion is fenced [7.82ms]\n(pass) transactional store > retention preserves unresolved/active records; prunes resolved bodies only [9.84ms]\n(pass) transactional store > backup opens read-only before any write-open and preserves committed WAL contents [9.39ms]\n(pass) read-only inspection refuses bad modes without repairs or content writes [8.38ms]\n(pass) unused intermediate cleanup survives process loss between redaction and unlink [5.80ms]\n(pass) acknowledged wake can be retried for unclaimed work after the handoff grace period [6.20ms]\n(pass) progress completion preserves typing until final completion or lease expiry [6.62ms]\n(pass) bounded control input rejects oversized stream before EOF [1.74ms]\n(pass) D07 eligible operation reads use indexed outbox after retained history [5.33ms]\n(pass) offline evidence resolution never retries uncertain operation and requires provider reference [7.06ms]\n(pass) expired unknown native task can only resume original binding from explicit receipt [7.11ms]\n(pass) independently due conversations flush only their own exact space and line [6.41ms]\n(pass) destination validation rejects entire flush before pending membership can change [5.18ms]\n(pass) presentation identity is committed with outbox and never changed by idempotent replay [7.60ms]\n(pass) presentation context must match canonical payload and task binding [6.56ms]\n(pass) expired processing lease re-wakes the original batch and fences its abandoned run [6.51ms]\n(pass) expired claim with queued final remains held without re-notification [5.98ms]\n(pass) expired claim with sending final remains held without re-notification [6.62ms]\n(pass) expired claim with retry_wait final remains held without re-notification [6.38ms]\n(pass) expired claim with unknown final remains held without re-notification [6.08ms]\n(pass) expired claim with intent native handoff never creates another wake or task [5.89ms]\n(pass) expired claim with accepted native handoff never creates another wake or task [7.14ms]\n(pass) expired claim with unknown native handoff never creates another wake or task [6.61ms]\n(pass) presentation registration binds exact original task and private full URL idempotently [7.39ms]\n(pass) presentation registration rejects other task, conversation, batch and expired invocation [8.53ms]\n(pass) presentation URL must match configured HTTPS origin, host route and exact card ID [7.11ms]\n(pass) presentation context and URL index roll back together on insertion failure [6.68ms]\n(pass) wake exclusions hold only unresolved HTTP batches while unrelated chats continue [7.38ms]\n(pass) wake exclusion IDs and bounded list validate before any durable claim [6.34ms]\n(pass) metadata pagination advances beyond blocked first page without skipping keys [5.48ms]\n(pass) one registered task card reserves exactly one immutable initial operation [6.70ms]\n(pass) offline accepted-task recovery requires expired claim and fences original worker [6.52ms]\n(pass) ordinary opens avoid full integrity scans; explicit diagnostics traverse and reject retained corruption [8.73ms]\n\n 48 pass\n 0 fail\n 243 expect() calls\nRan 48 tests across 1 file. [337.00ms]\n"
+    },
+    {
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "test",
+        "src/tests/acceptance/review.test.ts"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "exit": 0,
+      "elapsed_seconds": 0.718,
+      "output": "bun test v1.4.2 (744846f84)\n\nsrc/tests/acceptance/review.test.ts:\n(pass) REVIEW U01/U08/X01 same provider ID is independent per conversation and line through the CLI [116.07ms]\n(pass) REVIEW A01/A04/A07/U03 first media uses a bounded stream and preserves later text in its original batch [10.01ms]\n(pass) REVIEW P05/S03 actual control entrypoints fail closed without a synthetic root [138.11ms]\n(pass) REVIEW O02/O04/O07 uncertain provider effect survives restart while another conversation progresses [31.53ms]\n(pass) REVIEW W04/O09 uncertain typing starts disable refresh but retain one cleanup across conversation changes [0.43ms]\n(pass) REVIEW M01-M05 executable migration preserves evidence and never dispatches ambiguous legacy work [121.46ms]\n\n 6 pass\n 0 fail\n 69 expect() calls\nRan 6 tests across 1 file. [712.00ms]\n"
+    },
+    {
+      "command": [
+        "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+        "run",
+        "typecheck"
+      ],
+      "cwd": "/Users/darshan/Downloads/photongrokbot-product-repair/09-review/bridge",
+      "exit": 0,
+      "elapsed_seconds": 1.642,
+      "output": "$ tsc --noEmit\n"
+    }
+  ]
+}

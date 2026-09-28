@@ -1,0 +1,10 @@
+{
+  "command": [
+    "/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun",
+    "run",
+    ".review-evidence/export-probe.ts"
+  ],
+  "exit": 0,
+  "output": "{\"sha\":\"1e565a42396564959bb7461be7d82b40a10a7ef9\",\"exportApplied\":true,\"sidecarsBefore\":0,\"headerReadVersion\":2,\"expected\":\"first read-only SELECT on standalone exported snapshot succeeds\",\"observed\":\"SQLITE_CANTOPEN\"}\n",
+  "stderr": ""
+}
