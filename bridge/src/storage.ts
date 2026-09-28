@@ -18,6 +18,7 @@ import type {
   MediaResult,
   ProviderOutcome,
   ProviderReference,
+  Submission,
   TaskBinding,
   WakeJob,
   OutboundClaim,
@@ -531,6 +532,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       purpose: string;
       claim?: ClaimToken;
       taskId?: string;
+      presentation?: Submission["presentation"];
     },
   ): OutboundItem[] {
     validateDestination(context.destination);
@@ -546,6 +548,23 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
     if (!context.claim) throw new Error("CLAIM_REQUIRED");
     if (context.purpose === "control" && input.kind !== "typing")
       throw new Error("CONTROL_TYPING_ONLY");
+    if (context.presentation) {
+      const presentation = context.presentation;
+      if (
+        Object.keys(presentation).some(
+          (key) => !["cardId", "taskId", "viewUrl", "claimId"].includes(key),
+        ) ||
+        [presentation.cardId, presentation.taskId, presentation.claimId].some(
+          (value) =>
+            typeof value !== "string" || !value.trim() || value.length > 512,
+        ) ||
+        !["app", "app_update"].includes(input.kind ?? "") ||
+        !("url" in input) ||
+        presentation.viewUrl !== input.url ||
+        (context.taskId !== undefined && presentation.taskId !== context.taskId)
+      )
+        throw new Error("PRESENTATION_CONTEXT_INVALID");
+    }
     const prepared = buildOutboundItems(input);
     return this.tx("enqueue", () => {
       this.assertClaim(context.claim!);
@@ -574,10 +593,19 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       purpose: string;
       claim?: ClaimToken;
       taskId?: string;
+      presentation?: Submission["presentation"];
     },
     prepared = buildOutboundItems(input),
   ): OutboundItem[] {
     const digest = hash(input);
+    const presentation = context.presentation
+      ? {
+          ...context.presentation,
+          batchId: context.claim!.batchId,
+          actionKey: context.actionKey,
+          destination: context.destination,
+        }
+      : undefined;
     const prior = this.db
       .query(
         "SELECT id,payload_hash FROM operations WHERE space_id=? AND line_id=? AND purpose=? AND action_key=?",
@@ -591,11 +619,25 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
     if (prior) {
       if (prior.payload_hash !== digest)
         throw new Error("ACTION_PAYLOAD_CONFLICT");
-      return (
+      const items = (
         this.db
           .query("SELECT * FROM outbound WHERE operation_id=? ORDER BY ordinal")
           .all(prior.id) as Row[]
       ).map(payload);
+      for (const item of items) {
+        const existing = this.getMetadata("presentation-submission", item.id);
+        const expected = presentation
+          ? { ...presentation, outboundId: item.id }
+          : undefined;
+        if (
+          existing === undefined
+            ? expected !== undefined
+            : expected === undefined ||
+              canonical(existing) !== canonical(expected)
+        )
+          throw new Error("PRESENTATION_IDENTITY_CONFLICT");
+      }
+      return items;
     }
     const operationId = id("op");
     this.db
@@ -617,6 +659,13 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
           "INSERT INTO outbound(id,operation_id,ordinal,item,state) VALUES(?,?,?,?, 'queued')",
         )
         .run(item.id, operationId, index, canonical(item));
+      if (presentation) {
+        this.db
+          .query(
+            "INSERT INTO metadata(kind,key,value) VALUES('presentation-submission',?,?)",
+          )
+          .run(item.id, canonical({ ...presentation, outboundId: item.id }));
+      }
       this.fault?.("enqueue:child");
     });
     return prepared;

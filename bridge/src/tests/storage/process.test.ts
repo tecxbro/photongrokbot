@@ -306,3 +306,49 @@ test("D08 separate writer lock contention fails within bounded busy timeout", as
   }
   expect(f.store.recentInbound()).toHaveLength(0);
 }, 10000);
+for (const phase of ["before_commit", "after_commit"]) {
+  test(`presentation ledger and outbox share one durable commit across crash ${phase}`, async () => {
+    const f = setup();
+    const ctx = batch(f.store);
+    const input = {
+      kind: "app",
+      spaceId: ctx.destination.spaceId,
+      url: "https://example.test/card",
+      live: true,
+    };
+    const presentation = {
+      cardId: "card",
+      taskId: "live-task",
+      claimId: "host-claim",
+      viewUrl: input.url,
+    };
+    const context = {
+      ...ctx,
+      purpose: "presentation",
+      actionKey: "live-first",
+      presentation,
+    };
+    expect(
+      await child(f.root, "enqueue-presentation", {
+        input,
+        context,
+        crashAt: `enqueue:${phase}`,
+      }).exited,
+    ).not.toBe(0);
+    const rows = f.store.listOutbound();
+    const ledger = f.store.listMetadata<any>("presentation-submission");
+    expect(rows).toHaveLength(phase === "before_commit" ? 0 : 1);
+    expect(ledger).toHaveLength(rows.length);
+    const replay = f.store.enqueue({ ...input, kind: "app" }, context);
+    expect(f.store.listOutbound()).toHaveLength(1);
+    expect(
+      f.store.getMetadata("presentation-submission", replay[0]!.id),
+    ).toMatchObject({
+      ...presentation,
+      batchId: ctx.claim.batchId,
+      actionKey: context.actionKey,
+      destination: ctx.destination,
+      outboundId: replay[0]!.id,
+    });
+  });
+}

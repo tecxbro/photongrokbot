@@ -594,3 +594,115 @@ test("destination validation rejects entire flush before pending membership can 
     .all(destination.spaceId, destination.lineId) as any[];
   expect(plan.some((row) => row.detail.includes("inbox_pending"))).toBe(true);
 });
+test("presentation identity is committed with outbox and never changed by idempotent replay", () => {
+  const f = setup();
+  const ctx = batch(f.store);
+  const input = {
+    kind: "app" as const,
+    spaceId: ctx.destination.spaceId,
+    url: "https://example.test/card",
+    live: true,
+  };
+  const presentation = {
+    cardId: "card-1",
+    taskId: "live-task-1",
+    viewUrl: input.url,
+    claimId: "host-claim-1",
+  };
+  const context = {
+    ...ctx,
+    purpose: "presentation",
+    actionKey: "live-first",
+    presentation,
+  };
+  const first = f.store.enqueue(input, context);
+  const expected = {
+    ...presentation,
+    batchId: ctx.claim.batchId,
+    actionKey: context.actionKey,
+    destination: ctx.destination,
+    outboundId: first[0]!.id,
+  };
+  expect(
+    f.store.getMetadata<typeof expected>(
+      "presentation-submission",
+      first[0]!.id,
+    ),
+  ).toEqual(expected);
+  expect(f.store.enqueue(input, context).map((row) => row.id)).toEqual(
+    first.map((row) => row.id),
+  );
+  for (const patch of [
+    { cardId: "different" },
+    { taskId: "different" },
+    { claimId: "different" },
+    { viewUrl: "https://example.test/changed" },
+  ])
+    expect(() =>
+      f.store.enqueue(input, {
+        ...context,
+        presentation: { ...presentation, ...patch },
+      }),
+    ).toThrow();
+  expect(() =>
+    f.store.enqueue(input, { ...context, presentation: undefined }),
+  ).toThrow("PRESENTATION_IDENTITY_CONFLICT");
+  expect(
+    f.store.getMetadata<typeof expected>(
+      "presentation-submission",
+      first[0]!.id,
+    ),
+  ).toEqual(expected);
+  expect(f.store.listOutbound()).toHaveLength(1);
+  const staticContext = {
+    ...ctx,
+    purpose: "presentation",
+    actionKey: "static-first",
+  };
+  f.store.enqueue(input, staticContext);
+  expect(() =>
+    f.store.enqueue(input, { ...staticContext, presentation }),
+  ).toThrow("PRESENTATION_IDENTITY_CONFLICT");
+  const send = f.store.claimOutbound()!;
+  f.store.settleOutbound(send.item.id, send.attemptId, {
+    state: "unknown",
+    code: "fixture-uncertain",
+  });
+  expect(
+    f.store.getMetadata("presentation-settlement", send.item.id),
+  ).toMatchObject({ ...expected, deliveryState: "unknown", state: "pending" });
+});
+test("presentation context must match canonical payload and task binding", () => {
+  const f = setup();
+  const ctx = batch(f.store);
+  const presentation = {
+    cardId: "card",
+    taskId: "task",
+    claimId: "claim",
+    viewUrl: "https://example.test/card",
+  };
+  expect(() =>
+    f.store.enqueue(
+      { spaceId: ctx.destination.spaceId, text: "unrelated" },
+      { ...ctx, purpose: "presentation", actionKey: "bad-kind", presentation },
+    ),
+  ).toThrow("PRESENTATION_CONTEXT_INVALID");
+  expect(() =>
+    f.store.enqueue(
+      {
+        kind: "app",
+        spaceId: ctx.destination.spaceId,
+        url: presentation.viewUrl,
+      },
+      {
+        ...ctx,
+        purpose: "presentation",
+        actionKey: "bad-task",
+        taskId: "other-task",
+        presentation,
+      },
+    ),
+  ).toThrow("PRESENTATION_CONTEXT_INVALID");
+  expect(f.store.listOutbound()).toHaveLength(0);
+  expect(f.store.listMetadata("presentation-submission")).toHaveLength(0);
+});

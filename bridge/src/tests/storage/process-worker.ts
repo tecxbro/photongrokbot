@@ -40,6 +40,8 @@ else if (mode === "enqueue") {
     ids.push(...items.map((x) => x.id));
   }
   result = ids;
+} else if (mode === "enqueue-presentation") {
+  result = store.enqueue(data.input, data.context);
 } else if (mode === "dispatch") {
   let n = 0;
   const start = Date.now();
