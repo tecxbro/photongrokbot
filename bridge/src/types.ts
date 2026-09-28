@@ -2,8 +2,7 @@ import { resolveInstancePaths } from "../../shared/instance-paths.mjs";
 
 export const PREFIX = "photon";
 export const DEBOUNCE_MS = 2000;
-/** Best-effort typing indicator timeout after unread flush. */
-/** Keep showing typing until first text/reply, refreshing periodically. */
+/** Finite best-effort typing lifetime while a verified claim remains active. */
 export const TYPING_TIMEOUT_MS = 120_000;
 /** Re-send startTyping so iMessage indicator does not die mid-wait. */
 export const TYPING_HEARTBEAT_MS = 20_000;
@@ -107,6 +106,7 @@ export type UnreadBatch = {
   flushedAt: string;
   destination?: import("./contracts.ts").Destination;
   media?: import("./contracts.ts").MediaJob[];
+  tasks?: import("./contracts.ts").TaskBinding[];
   messages: InboundRecord[];
   /** Set when runtime already answered (skip Front Door / Chatty). */
   handledBy?: "runtime-greeting";
