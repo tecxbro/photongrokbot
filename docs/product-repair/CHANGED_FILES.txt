@@ -1,7 +1,7 @@
 Exact changed files relative to audit base 8c710413c99a6fd8022727326ca682d267393953
 Branch: repair/product-integrated
 Format: Git status, tab, repository-relative path
-Count: 244
+Count: 246
 
 A	.github/workflows/product-repair.yml
 M	.gitignore
@@ -173,6 +173,8 @@ A	docs/product-repair/VERIFIED_CONTRACTS.md
 A	docs/product-repair/evidence/f1-tests.txt
 A	docs/product-repair/evidence/f2-tests.json
 A	docs/product-repair/evidence/f3-tests.json
+A	docs/product-repair/evidence/final-checks.json
+A	docs/product-repair/evidence/final-integrated-tests.json
 A	docs/product-repair/evidence/lane04-tests.txt
 A	docs/product-repair/evidence/pre-f3-tests.json
 A	docs/product-repair/evidence/review-command-ledger.json

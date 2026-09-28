@@ -1,8 +1,18 @@
-# Independent product repair review
+# Product repair results
+
+## Final integrated verification
+
+The integrated branch `repair/product-integrated` passed its fresh full run at **`abb12a85283e327d64bcb2dc1d89b79b7b9c989d`**: **47 commands, zero failures; 265 named Bun tests, 132 host tests, seven embedded-skill tests, and 23 Node helper tests**. Frozen installs, TypeScript typecheck, host check/build, instruction consistency, source manifests and the 110-file host handoff check all passed. The preserved script-style validators also ran. [Full outputs](evidence/final-integrated-tests.json) and the [exact command/result ledger](evidence/final-checks.json) record this coordinator run separately from the independent runs below.
+
+The final disposition is **24 locally fixed findings, two explicit deferrals; 92 PASS_LOCAL acceptance rows and M06 PARTIAL**. The per-finding table and independent reasoning below remain the review record. M06 did not execute a historical runtime rollback; after new external activity, recovery keeps old writers stopped and requires reconciliation or a forward fix. Provider, target VM, native provisioning, real Moonshine inference and device checks remain [unverified](UNVERIFIED.md).
+
+[CHANGED_FILES.txt](CHANGED_FILES.txt) is the exact file inventory against audit base `8c710413c99a6fd8022727326ca682d267393953`. The [deployment/rollback runbook](DEPLOYMENT_ROLLBACK.md) includes executable locked recovery, export and migration procedures. The commit after this tested candidate only finalizes evidence, reports, the checkpoint and manifests; it changes no implementation or test content. The integrated checkout is the reviewable deliverable; no remote push/merge or deployment was performed.
+
+## Independent review record
 
 The independent frozen-install suite passed **46 commands with zero failures** at `1e565a42396564959bb7461be7d82b40a10a7ef9`: **263 named Bun tests, 132 host tests, seven embedded-skill tests, and 23 Node helper tests**, plus typecheck, host check and build. Repeated deterministic process/crash suites and helper recovery tests also passed. The review then reproduced and closed a standalone-export defect and a runbook execution gap with separate targeted checks at `c550d051453db80c3f338dbee19e5f9674b46782`: 56 tests and typecheck passed; the independent export reproduction now succeeds.
 
-After the targeted fixes, the independent disposition is **24 FIXED locally and two DEFERRED** across all 26 original findings, with no known open implementation finding in this reviewed scope. The 93-row matrix is **92 PASS_LOCAL and one PARTIAL (M06)**. The original full-suite run preceded the export/runbook fixes; its historical boundary was 90 local passes and three partial rows (P08, M06, T01). The later targeted evidence closes P08 and T01 without relabeling that earlier run. This is not a 93/93 acceptance claim or deployment approval; final integrated full-suite verification belongs to the coordinator.
+After the targeted fixes, the independent disposition is **24 FIXED locally and two DEFERRED** across all 26 original findings, with no known open implementation finding in this reviewed scope. The 93-row matrix is **92 PASS_LOCAL and one PARTIAL (M06)**. The original full-suite run preceded the export/runbook fixes; its historical boundary was 90 local passes and three partial rows (P08, M06, T01). The later targeted evidence closes P08 and T01 without relabeling that earlier run. This is not a 93/93 acceptance claim or deployment approval; the final integrated verification above supplies the coordinator full-suite result.
 
 ## Identity and scope
 
@@ -10,7 +20,7 @@ After the targeted fixes, the independent disposition is **24 FIXED locally and 
 - Integrated F3 supplied for independent review: `2f8d0f733076ea4229cd34dd98f62ce9235479d6`.
 - Independent acceptance tests and generated manifest committed before the full run: `1e565a42396564959bb7461be7d82b40a10a7ef9`, branch `repair/product-09`, isolated `09-review` worktree.
 - Supplemental fixes: coordinator `02efdf7`/`e2b8f47`, storage `f720356`, and independent test-order correction `c550d05`; independently targeted-tested SHA `c550d051453db80c3f338dbee19e5f9674b46782`. Corresponding review-branch picks are `d5bda9d`, `917fb9b`, `879e63d`.
-- This report and evidence are a later documentation delta. Lane 09 authored acceptance tests/reporting only; implementation fixes were cherry-picked from their owning lanes. The coordinator owns final integration, exact changed-file listing, and the subsequent integrated verification.
+- This report and evidence are a later documentation delta. Lane 09 authored acceptance tests/reporting only; implementation fixes were cherry-picked from their owning lanes. The coordinator completed final integration, exact changed-file listing and the subsequent integrated verification recorded above.
 - Tests used `PHOTON_TEST_MODE=1`, `NODE_ENV=test`, and a distinct canonical temporary `PHOTON_INSTANCE_DIR` per bridge test process. Fixtures were synthetic and removed afterward. Loopback test servers were local doubles. No default instance, live VM, real secret, provider send, iMessage, deployment or account/resource mutation was used.
 
 The full executed-name mapping is [REVIEW_MATRIX.md](REVIEW_MATRIX.md), with structured requirements, exact test names, command labels and exits in [REVIEW_MATRIX.json](REVIEW_MATRIX.json). Every named test was matched against captured execution output, not inferred from its source or a lane handoff.

@@ -1,0 +1,53 @@
+{
+  "testedSha": "abb12a85283e327d64bcb2dc1d89b79b7b9c989d",
+  "branch": "repair/product-integrated",
+  "workingDirectory": "/Users/darshan/Downloads/photongrokbot-product-repair/00-integration",
+  "fullSuite": {
+    "command": "PATH=/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin:$PATH PHOTON_TEST_BUN=/Users/darshan/Downloads/photongrokbot-product-repair/.repair-tools/node_modules/.bin/bun PHOTON_TEST_REPORT=/Users/darshan/Downloads/photongrokbot-product-repair/final-integrated-tests.json node scripts/test-product.mjs all",
+    "exit": 0,
+    "commands": 47,
+    "failedCommands": 0,
+    "namedBunTests": 265,
+    "hostTests": 132,
+    "embeddedSkillTests": 7,
+    "nodeHelperTests": 23
+  },
+  "supplementary": [
+    {
+      "cwd": "bridge",
+      "command": "bun run check:instructions",
+      "exit": 0,
+      "output": "INSTRUCTIONS_OK"
+    },
+    {
+      "cwd": "bridge",
+      "command": "bun run scripts/refresh-manifests.ts --check",
+      "exit": 0,
+      "output": "368 files checked at tested candidate"
+    },
+    {
+      "cwd": "live-mini/live-task-cards",
+      "command": "npm run verify:handoff",
+      "exit": 0,
+      "output": "Verified 110 handoff source files."
+    },
+    {
+      "cwd": ".",
+      "command": "git diff --check",
+      "exit": 0,
+      "output": ""
+    },
+    {
+      "cwd": ".",
+      "command": "git status --short",
+      "exit": 0,
+      "output": "Clean after full suite/build at tested candidate"
+    }
+  ],
+  "laterDelta": "Only reports, checkpoint, changed-file ledger and manifests are finalized after this run. Implementation and regression-test content is unchanged.",
+  "boundaries": [
+    "92 PASS_LOCAL matrix rows; M06 remains partial because historical runtime rollback was not executed.",
+    "No provider/VM/device/deployment/remote mutation performed.",
+    "Marketplace packaging and role/lazy-setup redesign explicitly deferred."
+  ]
+}

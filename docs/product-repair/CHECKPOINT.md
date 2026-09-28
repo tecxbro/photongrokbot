@@ -16,4 +16,4 @@ Preserved: shared VM, one Spectrum connection, six roles, mandatory first-setup 
 
 Pinned tools: Bun 1.4.2, Node 22.23.3, Python 3.12.6, FFmpeg 7.1.1. Local SQLite 3.54.0/source ID is recorded in VERIFIED_CONTRACTS.md; actual VM behavior remains unverified.
 
-Next exact action: run the full integrated root harness at this committed candidate, record the tested SHA/exits and final artifact checks, then finalize the evidence-only report delta. See RESULTS.md, REVIEW_MATRIX.md, UNVERIFIED.md and DEPLOYMENT_ROLLBACK.md.
+Final integrated validation passed at `abb12a85283e327d64bcb2dc1d89b79b7b9c989d`: 47 commands, zero failures; 265 Bun, 132 host, seven embedded-skill and 23 helper tests. Frozen installs/typecheck/check/build, instruction and manifest checks, and 110-file host handoff verification passed. Source and test work is complete; the later commit only finalizes reports, evidence, this checkpoint and manifests. No worker remains active. See RESULTS.md, CHANGED_FILES.txt, REVIEW_MATRIX.md, UNVERIFIED.md and DEPLOYMENT_ROLLBACK.md.
