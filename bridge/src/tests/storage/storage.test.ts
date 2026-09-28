@@ -528,3 +528,69 @@ test("expired unknown native task can only resume original binding from explicit
       }),
     ).toThrow("HANDOFF_ALREADY_RESERVED");
 });
+test("independently due conversations flush only their own exact space and line", () => {
+  const f = setup();
+  const first = { spaceId: "first-space", lineId: "line-1" };
+  const second = { spaceId: "second-space", lineId: "line-1" };
+  const otherLine = { spaceId: "first-space", lineId: "line-2" };
+  for (const [i, destination] of [first, second, otherLine].entries())
+    f.store.accept({
+      eventKey: `due-${i}`,
+      record: record(`due-message-${i}`, destination.spaceId),
+      destination,
+    });
+  const firstDeadline = Date.now();
+  const secondDeadline = firstDeadline + 2000;
+  const flushed = f.store.formBatches(firstDeadline, [first, first]);
+  expect(flushed).toHaveLength(1);
+  expect(flushed[0]?.messages.map((message) => message.id)).toEqual([
+    "due-message-0",
+  ]);
+  expect(flushed[0]?.flushedAt).toBe(new Date(firstDeadline).toISOString());
+  expect(
+    f.store.db.query("SELECT count(*) n FROM inbox WHERE pending=1").get(),
+  ).toEqual({ n: 2 });
+  expect(f.store.formBatches(firstDeadline, [])).toHaveLength(0);
+  expect(
+    f.store.formBatches(firstDeadline, [
+      first,
+      { spaceId: "absent", lineId: "line-1" },
+    ]),
+  ).toHaveLength(0);
+  expect(f.store.db.query("SELECT count(*) n FROM batches").get()).toEqual({
+    n: 1,
+  });
+  const later = f.store.formBatches(secondDeadline, [second]);
+  expect(later).toHaveLength(1);
+  expect(later[0]?.messages[0]?.id).toBe("due-message-1");
+  expect(later[0]?.flushedAt).toBe(new Date(secondDeadline).toISOString());
+  const recovered = f.store.formBatches();
+  expect(recovered).toHaveLength(1);
+  expect(f.store.batchDestination(recovered[0]!.batchId)).toEqual(otherLine);
+});
+test("destination validation rejects entire flush before pending membership can change", () => {
+  const f = setup();
+  const destination = { spaceId: "space-1", lineId: "line-1" };
+  f.store.accept({ eventKey: "validation", record: record(), destination });
+  expect(() =>
+    f.store.formBatches(Date.now(), [
+      destination,
+      { spaceId: "", lineId: "line-1" },
+    ]),
+  ).toThrow("DESTINATION_INVALID");
+  expect(() => f.store.formBatches(Number.NaN, [destination])).toThrow(
+    "BATCH_TIME_INVALID",
+  );
+  expect(
+    f.store.db.query("SELECT count(*) n FROM inbox WHERE pending=1").get(),
+  ).toEqual({ n: 1 });
+  expect(f.store.db.query("SELECT count(*) n FROM batches").get()).toEqual({
+    n: 0,
+  });
+  const plan = f.store.db
+    .query(
+      "EXPLAIN QUERY PLAN SELECT id FROM inbox WHERE pending=1 AND space_id=? AND line_id=? ORDER BY seq LIMIT 250",
+    )
+    .all(destination.spaceId, destination.lineId) as any[];
+  expect(plan.some((row) => row.detail.includes("inbox_pending"))).toBe(true);
+});

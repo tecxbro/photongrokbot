@@ -283,13 +283,34 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       return { eventId, duplicate: false, onboardingCreated };
     });
   }
-  formBatches(at = now()): UnreadBatch[] {
+  formBatches(at = now(), destinations?: Destination[]): UnreadBatch[] {
+    if (!Number.isFinite(new Date(at).getTime()))
+      throw new Error("BATCH_TIME_INVALID");
+    if (destinations !== undefined) {
+      if (!Array.isArray(destinations)) throw new Error("DESTINATIONS_INVALID");
+      destinations.forEach(validateDestination);
+    }
     return this.tx("form_batches", () => {
-      const groups = this.db
-        .query(
-          "SELECT space_id,line_id FROM inbox WHERE pending=1 GROUP BY space_id,line_id",
-        )
-        .all() as Row[];
+      // Explicit pairs come from independently due inbound debounce windows.
+      // Undefined preserves startup recovery's sweep of all pending input.
+      const groups =
+        destinations === undefined
+          ? (this.db
+              .query(
+                "SELECT space_id,line_id FROM inbox WHERE pending=1 GROUP BY space_id,line_id",
+              )
+              .all() as Row[])
+          : [
+              ...new Map(
+                destinations.map((destination) => [
+                  canonical(destination),
+                  {
+                    space_id: destination.spaceId,
+                    line_id: destination.lineId,
+                  },
+                ]),
+              ).values(),
+            ];
       const result: UnreadBatch[] = [];
       for (const group of groups) {
         const events = this.db
@@ -297,6 +318,7 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
             "SELECT id FROM inbox WHERE pending=1 AND space_id=? AND line_id=? ORDER BY seq LIMIT 250",
           )
           .all(group.space_id, group.line_id) as Row[];
+        if (!events.length) continue;
         const batchId = id("b");
         this.db
           .query(
