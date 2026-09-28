@@ -86,9 +86,11 @@ export class WakeDispatcher {
       } catch { /* No raw error, URL, headers or remote body enters diagnostics. */ }
       finally { if (timeout) clearTimeout(timeout); this.controller = undefined; }
       if (!response) { this.retry(job, this.stopped ? 'WAKE_SHUTDOWN' : code); continue; }
-      if (response.status >= 200 && response.status < 300) {
+      // GROK-ROUTINES documents exactly 200 as a started run, not arbitrary 2xx.
+      if (response.status === 200) {
         this.options.store.settleWake(job, { state: 'acknowledged', retryAfterMs: this.grace }); this.report('WAKE_ACKNOWLEDGED', job.attempts);
-      } else if ([408, 425, 429].includes(response.status) || response.status >= 500) this.retry(job, 'WAKE_TRANSIENT_HTTP');
+      } else if (response.status >= 200 && response.status < 300) this.retry(job, 'WAKE_UNEXPECTED_HTTP');
+      else if ([408, 425, 429].includes(response.status) || response.status >= 500) this.retry(job, 'WAKE_TRANSIENT_HTTP');
       else { this.options.store.settleWake(job, { state: 'failed', code: 'WAKE_PERMANENT_HTTP' }); this.report('WAKE_PERMANENT_HTTP', job.attempts); }
     }
   }

@@ -11,15 +11,24 @@ function dispatcher(store: WakeDispatcherOptions['store'], fetcher: typeof fetch
 describe('bounded durable native wake dispatch', () => {
   test('W01 body is batchId only; diagnostics exclude credentials, URL and remote body', async () => {
     const { store, batch } = setup(); const requests: RequestInit[] = [], logs: unknown[] = [];
-    const wake = dispatcher(store, fakeFetch(async (_input, init) => { requests.push(init!); return new Response('synthetic private remote body', { status: 202 }); }), { onStatus: item => logs.push(item) });
+    const wake = dispatcher(store, fakeFetch(async (_input, init) => { requests.push(init!); return new Response('synthetic private remote body', { status: 200 }); }), { onStatus: item => logs.push(item) });
     await wake.drain(); expect(requests).toHaveLength(1); expect(JSON.parse(requests[0]!.body as string)).toEqual({ batchId: batch.batchId }); expect(new Headers(requests[0]!.headers).get('authorization')).toBe(`Bearer ${key}`); expect(requests[0]!.redirect).toBe('error');
     const output = JSON.stringify(logs); for (const value of [key, url, 'synthetic-capability', 'synthetic private remote body']) expect(output).not.toContain(value); expect(output).toContain('WAKE_ACKNOWLEDGED');
   });
   test('W02 ack is distinct from claim/completion; unclaimed original batch is recoverable after grace', async () => {
     const { store, batch } = setup(); let calls = 0;
-    const wake = dispatcher(store, fakeFetch(async () => { calls++; return new Response(null, { status: 204 }); }));
+    const wake = dispatcher(store, fakeFetch(async () => { calls++; return new Response(null, { status: 200 }); }));
     await wake.drain(); expect(store.claimSnapshot(batch.batchId).state).toBe('pending'); expect(store.claimWake(Date.now())).toBeUndefined();
     const retry = store.claimWake(Date.now() + 60001)!; expect(retry.batchId).toBe(batch.batchId); expect(retry.attempts).toBe(2); expect(calls).toBe(1);
+  });
+  test('W02 only documented HTTP 200 is acknowledgement; other 2xx keep bounded recovery', async () => {
+    for (const status of [201, 202, 204]) {
+      const { store, batch } = setup(); let calls = 0;
+      const wake = dispatcher(store, fakeFetch(async () => { calls++; return new Response(null, { status }); }));
+      await wake.drain(); expect(calls).toBe(1);
+      expect(store.db.query('SELECT state,code FROM wakes WHERE batch_id=?').get(batch.batchId)).toEqual({ state: 'retry_wait', code: 'WAKE_UNEXPECTED_HTTP' });
+      expect(store.claimSnapshot(batch.batchId).state).toBe('pending');
+    }
   });
   test('W02 active/delegated unknown handoffs are not re-notified', async () => {
     const { store, batch } = setup(); let calls = 0;
@@ -35,7 +44,7 @@ describe('bounded durable native wake dispatch', () => {
     const entered = new Promise<void>(resolve => { observed = resolve; });
     const wake = dispatcher(store, fakeFetch(async () => { calls++; observed(); return new Promise(resolve => { finish = resolve; }); }));
     const first = wake.drain(), second = wake.drain(); expect(first).toBe(second); wake.notify(); await entered; expect(calls).toBe(1);
-    finish(new Response(null, { status: 202 })); await first; await wake.drain(); expect(calls).toBe(1);
+    finish(new Response(null, { status: 200 })); await first; await wake.drain(); expect(calls).toBe(1);
   });
   test('W03 timeout after possible remote acceptance aborts and retains bounded same-batch recovery', async () => {
     const { store, batch } = setup(); let accepted = 0, aborted = 0;
@@ -49,7 +58,7 @@ describe('bounded durable native wake dispatch', () => {
     const wake = dispatcher(store, fakeFetch(async (_input, init) => {
       const { batchId } = JSON.parse(init!.body as string); calls.push(batchId);
       if (batchId === batch.batchId) return new Promise(resolve => { resolveLate = resolve; });
-      return new Response(null, { status: 202 });
+      return new Response(null, { status: 200 });
     }), { timeoutMs: 5, clock: () => clock });
     await wake.drain(); clock += 10000;
     for (let i = 0; i < 10; i++) { wake.notify(); await wake.drain(); }
@@ -58,7 +67,7 @@ describe('bounded durable native wake dispatch', () => {
     const other = store.formBatches()[0]!; await wake.drain(); expect(calls).toEqual([batch.batchId, other.batchId]);
     const before = store.db.query('SELECT state,code,attempts FROM wakes WHERE batch_id=?').get(batch.batchId);
     expect(before).toEqual({ state: 'retry_wait', code: 'WAKE_TIMEOUT', attempts: 1 });
-    resolveLate(new Response(new ReadableStream({ cancel() { cancelled++; } }), { status: 202 }));
+    resolveLate(new Response(new ReadableStream({ cancel() { cancelled++; } }), { status: 200 }));
     await new Promise(resolve => setTimeout(resolve, 0));
     expect(cancelled).toBe(1); expect(store.db.query('SELECT state,code,attempts FROM wakes WHERE batch_id=?').get(batch.batchId)).toEqual(before);
     await wake.stop();
@@ -71,7 +80,7 @@ describe('bounded durable native wake dispatch', () => {
     await wake.drain(); expect(calls).toBe(4); clock += 10000;
     for (let i = 0; i < 10; i++) { wake.notify(); await wake.drain(); }
     expect(calls).toBe(4); expect(store.db.query("SELECT COUNT(*) AS n FROM wakes WHERE state='pending'").get()).toEqual({ n: 2 });
-    await wake.stop(); for (const release of releases) release(new Response(null, { status: 202 }));
+    await wake.stop(); for (const release of releases) release(new Response(null, { status: 200 }));
   });
   test('W03 permanent rejection never retries and transient attempts exhaust', async () => {
     const first = setup(); let permanentCalls = 0;
@@ -92,11 +101,11 @@ describe('bounded durable native wake dispatch', () => {
     const running = wake.drain(); await barrier;
     await Promise.race([wake.stop(), new Promise((_, reject) => setTimeout(() => reject(new Error('STOP_DID_NOT_FINISH')), 250))]);
     await running; expect(store.db.query('SELECT state,code FROM wakes WHERE batch_id=?').get(batch.batchId)).toEqual({ state: 'retry_wait', code: 'WAKE_SHUTDOWN' });
-    finish(new Response(null, { status: 202 }));
+    finish(new Response(null, { status: 200 }));
   });
   test('W02 local settlement failure after HTTP response preserves sending until startup recovery', async () => {
     const { store, batch } = setup(); let requests = 0;
-    const wake = dispatcher({ claimWake: store.claimWake.bind(store), settleWake: () => { throw new Error('SYNTHETIC_STORAGE_FAILURE'); } }, fakeFetch(async () => { requests++; return new Response(null, { status: 202 }); }));
+    const wake = dispatcher({ claimWake: store.claimWake.bind(store), settleWake: () => { throw new Error('SYNTHETIC_STORAGE_FAILURE'); } }, fakeFetch(async () => { requests++; return new Response(null, { status: 200 }); }));
     await expect(wake.drain()).rejects.toThrow('SYNTHETIC_STORAGE_FAILURE'); expect(requests).toBe(1); expect((store.db.query('SELECT state FROM wakes WHERE batch_id=?').get(batch.batchId) as any).state).toBe('sending');
     expect(store.recoverWork().wakes).toBe(1); expect(store.claimWake()?.batchId).toBe(batch.batchId);
   });
