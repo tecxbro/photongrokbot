@@ -43,7 +43,7 @@ if(mode!=='bridge'){
  const host=join(root,'live-mini/live-task-cards');
  for(const [label,args]of [['host frozen install',['ci']],['host tests',['test']],['host skill tests',['run','test:skill']],['host check',['run','check']],['host build',['run','build']]])await run(label,'npm',args,host);
  const helper=join(root,'live-mini/runtime/live-card-milestones.test.mjs');
- try{await run('Live Mini helper',process.execPath,['--test',helper],root,{PHOTON_TEST_MODE:'1',NODE_ENV:'test'});}catch{throw new Error('LIVE_HELPER_TEST_REQUIRED');}
+ try{await run('Live Mini helper',process.execPath,['--test',helper],root,{PHOTON_TEST_MODE:'1',NODE_ENV:'test',PHOTON_BUN_BIN:bun});}catch{throw new Error('LIVE_HELPER_TEST_REQUIRED');}
 }
 if(process.env.PHOTON_TEST_REPORT){const sha=await execute('git',['rev-parse','HEAD'],root);await writeFile(process.env.PHOTON_TEST_REPORT,JSON.stringify({sha:sha.output.trim(),node:process.version,results},null,2));}
 process.exitCode=results.some(r=>r.exit!==0)?1:0;
