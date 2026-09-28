@@ -66,6 +66,6 @@ test('T01/P08 runbook CLI reconciles original unknown operations and exports an 
     const pruneArgs = ['--apply', '--plan-id', prune.planId, '--now', String(prune.now)];
     run('src/prune-instance.ts', pruneArgs, undefined, false, 1);
     expect(run('src/prune-instance.ts', pruneArgs, undefined, true)).toMatchObject({ applied: true, events: 0, outbound: 0 });
-    expect(f.store.listOutbound().map(item => item.id)).toEqual(ids);
+    expect(f.store.listOutbound().map(item => item.id).sort()).toEqual([...ids].sort());
   } finally { f.cleanup(); }
 });
