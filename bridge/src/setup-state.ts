@@ -3,14 +3,14 @@ import { join } from 'node:path';
 import { hostname } from 'node:os';
 import { assertPrivateFile, atomicPrivateWrite, ensureInstancePaths, resolveInstancePaths } from '../../shared/instance-paths.mjs';
 import { BRIDGE_FIELDS, parseBridgeEnv } from './config.ts';
-import { liveEnvironmentRevision, preserveLiveMiniCredentials, verifyMoonshineInstallation } from './setup-verification.ts';
+import { liveEnvironmentRevision, preserveLiveMiniCredentials, parseLiveMiniEnv, verifyMoonshineInstallation } from './setup-verification.ts';
 
 type Paths = ReturnType<typeof resolveInstancePaths>;
 export const CORE_ROLES = ['front-door', 'orchestrator', 'creator', 'feature-add', 'image-cards', 'app-sheet'] as const;
 export const SETUP_RESOURCES = ['spectrum-project', ...CORE_ROLES, 'owner-binding', 'wake-routine', 'bridge-config', 'moonshine', 'live-project', 'live-env', 'live-deployment'] as const;
 export type SetupResource = typeof SETUP_RESOURCES[number];
 export type SetupRecord = { operationId: string; status: 'intent' | 'unknown' | 'verified' | 'failed'; resourceId?: string; verifiedAt?: number; code?: string; environmentRevision?: string; evidence?: { modelRevision: string; manifestSha256: string; packages: Record<string, string> } };
-export type SetupState = { version: 1; authorizedAt?: number; liveMiniAuthorizedAt?: number; textEverReady?: boolean; fullEverReady?: boolean; resources: Partial<Record<SetupResource, SetupRecord>> };
+export type SetupState = { version: 1; authorizedAt?: number; liveMiniAuthorizedAt?: number; textEverReady?: boolean; fullEverReady?: boolean; liveMiniOrigin?: string; resources: Partial<Record<SetupResource, SetupRecord>> };
 export type InstanceDocument = { version: 1; installationId: string; setup: SetupState; [key: string]: unknown };
 type SetupStore = { installationId: string; getMetadata<T>(kind: string, key: string): T | undefined; setMetadata(kind: string, key: string, value: unknown): void };
 const idPattern = /^[A-Za-z0-9][A-Za-z0-9_.:@/-]{0,191}$/;
@@ -145,7 +145,13 @@ export class SetupSession {
   }
   writeLiveEnvironment(text: string) {
     invariant(this.document.setup.liveMiniAuthorizedAt, 'LIVE_MINI_AUTHORIZATION_REQUIRED');
+    const origin = new URL(parseLiveMiniEnv(text).PUBLIC_BASE_URL).origin;
+    const prior = this.store?.getMetadata<{ origin: string }>('live-mini-host', 'configured')?.origin ?? this.document.setup.liveMiniOrigin;
+    invariant(!prior || prior === origin, 'LIVE_ENV_CONFLICT_REDEPLOY_REVIEW_REQUIRED');
     const result = preserveLiveMiniCredentials(this.paths, text);
+    this.document.setup.liveMiniOrigin = origin;
+    if (this.store) this.store.setMetadata('live-mini-host', 'configured', { origin });
+    this.save();
     return result;
   }
   mediaFailed() {
@@ -221,6 +227,7 @@ export async function initializeStorage(paths: Paths) {
     try {
       invariant(store.installationId === document.installationId, 'INSTANCE_IDENTITY_CONFLICT');
       if (!store.getMetadata('setup', 'checkpoint')) store.setMetadata('setup', 'checkpoint', document.setup);
+      if (document.setup.liveMiniOrigin && !store.getMetadata('live-mini-host', 'configured')) store.setMetadata('live-mini-host', 'configured', { origin: document.setup.liveMiniOrigin });
       document.database = { status: 'ready' }; atomicPrivateWrite(paths.configPath, JSON.stringify(document, null, 2) + '\n');
       return { initialized: true };
     } finally { store.close(); }
