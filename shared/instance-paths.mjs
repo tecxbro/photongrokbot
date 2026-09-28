@@ -62,6 +62,11 @@ export function assertPrivateFile(path, allowedRoot) {
   const stat = lstatSync(full);
   if (!stat.isFile()) fail('PRIVATE_FILE_REQUIRED');
   if ((stat.mode & 0o077) !== 0) fail('PRIVATE_FILE_PERMISSIONS');
+  for (let parent = dirname(full); within(parent, root); parent = dirname(parent)) {
+    const directory = lstatSync(parent);
+    if (!directory.isDirectory() || (directory.mode & 0o077) !== 0) fail('PRIVATE_DIRECTORY_PERMISSIONS');
+    if (parent === root) break;
+  }
   return realpathSync(full);
 }
 
