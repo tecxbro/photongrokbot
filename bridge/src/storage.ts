@@ -1170,6 +1170,9 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
         throw new Error("MEDIA_JOB_NOT_PROCESSING");
       if (!["ready", "failed", "unavailable"].includes(result.state))
         throw new Error("MEDIA_RESULT_INVALID");
+      const reference = this.mediaRow(row).reference;
+      const original = parseRecord(row.record);
+      const patch = result.patch ?? {};
       if (result.patch) {
         const allowed = new Set([
           "text",
@@ -1182,17 +1185,46 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
           "attachmentOriginalMimeType",
           "attachmentDuration",
           "transcript",
+          "kind",
           "mediaState",
-          "mediaCode",
+          "mediaJobId",
+          "mediaError",
         ]);
         if (Object.keys(result.patch).some((key) => !allowed.has(key)))
           throw new Error("MEDIA_IDENTITY_PATCH_FORBIDDEN");
-        const updated = { ...parseRecord(row.record), ...result.patch };
-        validateRecord(updated);
-        this.db
-          .query("UPDATE inbox SET record=? WHERE id=?")
-          .run(canonical(updated), row.event_id);
+        if (
+          (patch.kind !== undefined && patch.kind !== reference.kind) ||
+          (patch.mediaJobId !== undefined && patch.mediaJobId !== row.id) ||
+          (patch.mediaState !== undefined && patch.mediaState !== result.state)
+        )
+          throw new Error("MEDIA_IDENTITY_PATCH_FORBIDDEN");
       }
+      const mediaError =
+        result.state === "ready" ? patch.mediaError : result.code;
+      if (
+        mediaError !== undefined &&
+        (typeof mediaError !== "string" ||
+          !/^[A-Za-z0-9_.:-]{1,128}$/.test(mediaError))
+      )
+        throw new Error("MEDIA_ERROR_INVALID");
+      const updated: InboundRecord = {
+        ...original,
+        ...patch,
+        kind: reference.kind,
+        mediaJobId: row.id,
+        mediaState: result.state,
+        mediaError,
+      };
+      if (result.state !== "ready" && patch.text === undefined) {
+        const explanation = `[${reference.kind} ${result.state}; ask for a resend or text]`;
+        updated.text = original.text.startsWith(`[${reference.kind} pending]`)
+          ? explanation
+          : `${original.text}\n${explanation}`.trim();
+      }
+      validateRecord(updated);
+      this.db
+        .query("UPDATE inbox SET record=? WHERE id=?")
+        .run(canonical(updated), row.event_id);
       this.db
         .query("UPDATE media_jobs SET state=?,code=? WHERE id=?")
         .run(result.state, "code" in result ? result.code : null, jobId);
