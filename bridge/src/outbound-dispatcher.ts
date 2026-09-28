@@ -50,7 +50,12 @@ export function createOutboundDispatcher(opts: DispatcherOptions) {
         if (!session || ![session.chatGuid,session.messageGuid,session.sessionId,session.targetMessageGuid].every((v) => typeof v === "string" && v) || session.chatGuid !== destination.spaceId) return { state: "failed", code: "app_session_missing_or_mismatched" };
         target.miniAppCardSession = session;
         const result = await space.send(edit(app(item.url, { live: item.live === true }), target as Message));
-        if (result === undefined) return { state: "unknown", code: "edit_resolved_without_distinguishable_receipt", reference: { messageId: item.targetMessageId, miniAppCardSession: session } };
+        if (result === undefined) {
+          // Locked imessage handleEdit(app) has one skip guard: absent session.
+          // With a complete same-chat session it awaits the actual update RPC.
+          const updated = target.miniAppCardSession ?? session;
+          return { state: "accepted", evidence: "spectrum_app_edit_resolved_prevalidated", reference: { messageId: item.targetMessageId, miniAppCardSession: updated } };
+        }
         return contentOutcome(result);
       }
       let payload: ContentInput;

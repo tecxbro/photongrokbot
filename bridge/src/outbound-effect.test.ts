@@ -1,6 +1,12 @@
 import { OutboundEffectError, prepareOutboundEffect, MESSAGE_EFFECT_NAMES } from "./outbound-effect.ts";
-import { enqueueOutbound, updateOutbound } from "./storage.ts";
-import { ensureDataDir } from "./storage.ts";
+import { deliveryFixture } from "./delivery-fixture.ts";
+import { batch } from "./tests/storage/fixture.ts";
+import type { EnqueueOutboundInput } from "./types.ts";
+const fixture = deliveryFixture();
+async function enqueueOutbound(input: EnqueueOutboundInput) {
+  const context = batch(fixture.store,input.spaceId);
+  return fixture.store.enqueue(input,{claim:context.claim,destination:context.destination,actionKey:crypto.randomUUID(),purpose:"final"});
+}
 
 function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
@@ -51,7 +57,7 @@ assert(
 );
 
 // --- enqueue shape ---
-await ensureDataDir();
+
 const spaceId = `test-effect-${Date.now()}`;
 const items = await enqueueOutbound({
   kind: "text",
@@ -67,7 +73,7 @@ assertEqual(
   "queued item carries effect",
 );
 assertEqual(items[0]!.text, "effects are live", "text preserved");
-await updateOutbound(items[0]!.id, { status: "failed", lastError: "test-cleanup" });
+
 
 // multi-bubble: effect only on first
 const multi = await enqueueOutbound({
@@ -79,9 +85,7 @@ const multi = await enqueueOutbound({
 assert(multi.length === 2, `expected 2 bubbles, got ${multi.length}`);
 assertEqual((multi[0] as { effect?: string }).effect, "slam", "first has effect");
 assertEqual((multi[1] as { effect?: string }).effect, undefined, "second has no effect");
-for (const m of multi) {
-  await updateOutbound(m.id, { status: "failed", lastError: "test-cleanup" });
-}
+
 
 // unknown effect rejected at enqueue
 let rejected = false;
@@ -101,4 +105,5 @@ try {
 }
 assert(rejected, "enqueue should reject unknown effect");
 
+fixture.cleanup();
 console.log("ALL_OUTBOUND_EFFECT_TESTS_PASSED");
