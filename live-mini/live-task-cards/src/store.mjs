@@ -104,131 +104,71 @@ export class RedisStore {
   }
 }
 
-/**
- * Durable single-document CAS on private Vercel Blob.
- * Uses get/put (protocol-compatible with @vercel/blob >=2.3) with useCache:false and ifMatch ETags.
- * Inject getImpl/putImpl/isPreconditionFailed for unit tests.
- */
+/** Official SDK conditional registry writes. Pure mutations may be re-evaluated. */
 export class BlobStore {
-  constructor({
-    token,
-    pathname,
-    maxRetries = 12,
-    getImpl,
-    putImpl,
-    isPreconditionFailed,
-  } = {}) {
-    this.token = token;
-    this.pathname = String(pathname || '').replace(/^\/+/, '');
-    this.maxRetries = maxRetries;
-    this.getImpl = getImpl;
-    this.putImpl = putImpl;
-    this.isPreconditionFailed = isPreconditionFailed || ((err) => {
-      const name = err?.name || err?.constructor?.name || '';
-      return name === 'BlobPreconditionFailedError' || err?.code === 'precondition_failed' || err?.status === 412;
-    });
-    assert(this.pathname, 'CONFIG_ERROR', 'BLOB_PATHNAME is missing.', 503);
-    assert(this.token || getImpl, 'CONFIG_ERROR', 'BLOB_READ_WRITE_TOKEN is missing.', 503);
+  constructor({token,pathname,maxRetries=12,getImpl,putImpl,isPreconditionFailed,timeoutMs=10_000}={}) {
+    this.token=token;this.pathname=String(pathname||'').replace(/^\/+/, '');
+    this.maxRetries=maxRetries;this.getImpl=getImpl;this.putImpl=putImpl;
+    this.isPreconditionFailed=isPreconditionFailed;this.timeoutMs=timeoutMs;
+    assert(this.pathname,'CONFIG_ERROR','BLOB_PATHNAME is missing.',503);
+    assert(this.token||getImpl,'CONFIG_ERROR','Blob credentials are missing.',503);
+    assert(Number.isInteger(maxRetries)&&maxRetries>0&&maxRetries<=20,'CONFIG_ERROR','Invalid CAS budget.',503);
   }
-
-  async streamToText(stream) {
-    if (stream == null) return null;
-    if (typeof stream === 'string') return stream;
-    if (Buffer.isBuffer(stream)) return stream.toString('utf8');
-    if (typeof stream.getReader === 'function') {
-      const reader = stream.getReader();
-      const chunks = [];
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(typeof value === 'string' ? Buffer.from(value) : Buffer.from(value));
-      }
-      return Buffer.concat(chunks).toString('utf8');
-    }
-    // Node.js Readable / async iterable
-    if (typeof stream[Symbol.asyncIterator] === 'function') {
-      const chunks = [];
-      for await (const chunk of stream) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-      return Buffer.concat(chunks).toString('utf8');
-    }
-    throw new CardError('STORE_UNAVAILABLE', 'Storage response unavailable; reconcile before issuing different work.', 503);
-  }
-
-  async sdk() {
-    if (!this._sdk) this._sdk = await import('./vercel-blob-lite.mjs');
-    return this._sdk;
-  }
-
-  async readRaw() {
+  async sdk(){return this._sdk??=await import('./blob-sdk.mjs');}
+  async streamToText(stream,signal=AbortSignal.timeout(this.timeoutMs)) {
+    const bounded=bytes=>{assert(bytes<=3_000_000,'STORE_FULL','Registry exceeds the read bound.',503);};
+    if(typeof stream==='string'||Buffer.isBuffer(stream)){bounded(Buffer.byteLength(stream));return stream.toString();}
+    assert(stream&&typeof stream.getReader==='function','STORE_UNAVAILABLE','Storage body is unavailable.',503);
+    const reader=stream.getReader(),chunks=[];let bytes=0,abort;
+    const cancelled=new Promise((_,reject)=>{abort=()=>{void reader.cancel().catch(()=>{});reject(new CardError('STORE_UNAVAILABLE','Storage read timed out.',503));};signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();});
     try {
-      let result;
-      if (this.getImpl) {
-        result = await this.getImpl(this.pathname, { access: 'private', useCache: false, token: this.token });
-      } else {
-        const { get } = await this.sdk();
-        result = await get(this.pathname, { access: 'private', useCache: false, token: this.token });
-      }
-      if (!result || result.statusCode === 404) return null;
-      if (result.statusCode === 304) {
-        // Unexpected without ifNoneMatch; treat as miss rather than empty registry.
-        throw new CardError('STORE_UNAVAILABLE', 'Storage returned not-modified without a conditional request.', 503);
-      }
-      assert(result.statusCode === 200, 'STORE_UNAVAILABLE', 'Storage rejected the request.', 503);
-      const raw = await this.streamToText(result.stream ?? result.body ?? result);
-      const etag = result.blob?.etag || result.etag || null;
-      return { raw, etag };
-    } catch (e) {
-      if (e instanceof CardError) throw e;
-      throw new CardError('STORE_UNAVAILABLE', 'Storage response unavailable; reconcile before issuing different work.', 503);
+      for(;;){const {done,value}=await Promise.race([reader.read(),cancelled]);if(done)break;const chunk=Buffer.from(value);bytes+=chunk.length;bounded(bytes);chunks.push(chunk);}
+      return Buffer.concat(chunks).toString('utf8');
+    } catch(e){void reader.cancel().catch(()=>{});throw e;}
+    finally{signal.removeEventListener('abort',abort);reader.releaseLock();}
+  }
+  async readRaw(){
+    try{
+      const get=this.getImpl??(await this.sdk()).get;
+      const signal=AbortSignal.timeout(this.timeoutMs);
+      const result=await get(this.pathname,{access:'private',useCache:false,token:this.token,abortSignal:signal});
+      // The pinned official SDK returns null only for an actual 404.
+      if(result===null)return null;
+      assert(result?.statusCode===200,'STORE_UNAVAILABLE','Storage returned an unexpected response.',503);
+      assert(!(result.blob?.size>3_000_000),'STORE_FULL','Registry exceeds the read bound.',503);
+      const raw=await this.streamToText(result.stream,signal);
+      assert(raw.length>0,'STORE_CORRUPT','Existing registry is empty.',503);
+      return {raw,etag:result.blob?.etag};
+    }catch(e){if(e instanceof CardError)throw e;throw new CardError('STORE_UNAVAILABLE','Storage response unavailable; reconcile the original request identity.',503);}
+  }
+  async read(){const got=await this.readRaw();return decode(got?got.raw:null);}
+  async put(raw, previous=null){
+    assert(Buffer.byteLength(raw)<=3_000_000,'STORE_FULL','Registry exceeds the write bound.',503);
+    const options={access:'private',allowOverwrite:previous!==null,addRandomSuffix:false,contentType:'application/json',cacheControlMaxAge:60,token:this.token,abortSignal:AbortSignal.timeout(this.timeoutMs)};
+    if(previous!==null){
+      assert(typeof previous.etag==='string'&&/^"[^"\x00-\x20\x7f]+"$/.test(previous.etag),'STORE_VALIDATOR_REQUIRED','Existing registry needs its original strong validator.',503);
+      options.ifMatch=previous.etag;
+    }
+    try{await (this.putImpl??(await this.sdk()).put)(this.pathname,raw,options);return true;}
+    catch(e){
+      const conflict=this.isPreconditionFailed?this.isPreconditionFailed(e):e instanceof (await this.sdk()).BlobPreconditionFailedError;
+      if(conflict)return false;
+      // SDK 2.8.0 has no typed AlreadyExists error. Do not guess a code/message.
+      // A create-only failure (including lost response) may be reconciled by an
+      // uncached read. The next pure mutation retains its original request ID.
+      if(previous===null){const observed=await this.readRaw();if(observed){decode(observed.raw);return false;}}
+      throw new CardError('STORE_UNAVAILABLE','Storage response unavailable; reconcile the original request identity.',503);
     }
   }
-
-  async read() {
-    const got = await this.readRaw();
-    return decode(got ? got.raw : null);
-  }
-
-  async put(raw, { etag } = {}) {
-    const options = {
-      access: 'private',
-      allowOverwrite: true,
-      contentType: 'application/json',
-      cacheControlMaxAge: 60,
-      token: this.token,
-      addRandomSuffix: false,
-    };
-    if (etag) options.ifMatch = etag;
-    // First create (no blob yet): omit ifMatch so put can succeed without a prior ETag.
-    try {
-      if (this.putImpl) {
-        await this.putImpl(this.pathname, raw, options);
-      } else {
-        const { put } = await this.sdk();
-        await put(this.pathname, raw, options);
-      }
-      return true;
-    } catch (e) {
-      if (this.isPreconditionFailed(e)) return false;
-      if (e instanceof CardError) throw e;
-      throw new CardError('STORE_UNAVAILABLE', 'Storage response unavailable; reconcile before issuing different work.', 503);
-    }
-  }
-
-  async transaction(change) {
-    for (let attempt = 0; attempt < this.maxRetries; attempt++) {
-      const got = await this.readRaw();
-      const old = got ? got.raw : null;
-      const state = decode(old);
-      const result = change(state);
-      assert(!(result instanceof Promise), 'INVALID_TRANSACTION', 'Transactions must be synchronous and side-effect free.', 500);
+  async transaction(change){
+    for(let attempt=0;attempt<this.maxRetries;attempt++){
+      const got=await this.readRaw(),state=decode(got?got.raw:null),result=change(state);
+      assert(!(result instanceof Promise),'INVALID_TRANSACTION','Transactions must be synchronous and side-effect free.',500);
       state.version++;
-      const changed = encode(state);
-      // Creating the first object: no etag. Overwrites: require ifMatch.
-      const ok = await this.put(changed, { etag: got?.etag || undefined });
-      if (ok) return result;
-      await sleep(Math.min(200, 10 * 2 ** attempt) + Math.random() * 15);
+      if(await this.put(encode(state),got))return result;
+      await sleep(Math.min(200,10*2**attempt));
     }
-    throw new CardError('STORE_BUSY', 'Concurrent writes exhausted the retry budget. Read current state before retrying.', 503);
+    throw new CardError('STORE_BUSY','Concurrent writes exhausted the CAS budget; reconcile the original request.',503);
   }
 }
 
