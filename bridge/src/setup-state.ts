@@ -163,6 +163,12 @@ export class SetupSession {
     const textReady = ['spectrum-project', ...CORE_ROLES, 'owner-binding', 'wake-routine', 'bridge-config'].every(key => resources[key as SetupResource]?.status === 'verified');
     return { fullEverReady: !!this.document.setup.fullEverReady, textReady, textEverReady: !!this.document.setup.textEverReady, fullSetupComplete: textReady && resources.moonshine?.status === 'verified', moonshineRequired: true, liveMiniEnabled: !!this.document.setup.liveMiniAuthorizedAt, resources: Object.fromEntries(Object.entries(resources).map(([key, value]) => [key, value!.status])) };
   }
+  registry() {
+    return { roles: Object.fromEntries(CORE_ROLES.flatMap(role => {
+      const record = this.document.setup.resources[role];
+      return record?.status === 'verified' && record.resourceId ? [[role, record.resourceId]] : [];
+    })) };
+  }
 }
 
 /** Runtime reads durable setup evidence only; never provisions or downloads on boot. */
@@ -255,9 +261,14 @@ export async function setupMain(args = process.argv.slice(2)) {
     try { payload = JSON.parse(text); } catch { throw new Error('SETUP_INPUT_INVALID'); }
     invariant(payload && !Array.isArray(payload) && typeof payload === 'object', 'SETUP_INPUT_INVALID');
   } else if (command === 'authorize-live-mini') invariant(rest.length === 1 && rest[0] === '--authorized', 'LIVE_MINI_AUTHORIZATION_REQUIRED');
-  else invariant((command === 'status' || command === 'verify-moonshine') && rest.length === 0, 'SETUP_ARGUMENT_INVALID');
-  const store = existsSync(paths.databasePath) ? (await import('./storage.ts')).openStore({ paths, readOnly: command === 'status' }) : undefined;
+  else invariant(['status', 'registry', 'verify-moonshine'].includes(command ?? '') && rest.length === 0, 'SETUP_ARGUMENT_INVALID');
+  const readOnly = command === 'status' || command === 'registry';
+  const store = existsSync(paths.databasePath) ? (await import('./storage.ts')).openStore({ paths, readOnly }) : undefined;
   try {
+    if (readOnly) {
+      const session = new SetupSession(paths, store);
+      return command === 'registry' ? session.registry() : session.status();
+    }
     return await withSetupSession(paths, session => {
       if (command === 'status') return session.status();
       if (command === 'verify-moonshine') return session.verifyMoonshine();

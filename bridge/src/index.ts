@@ -1,13 +1,18 @@
 import { loadConfig } from "./config.ts";
 import { GpProofRuntime } from "./runtime.ts";
 
-async function main(): Promise<void> {
-  const config = loadConfig();
-  const runtime = new GpProofRuntime(config);
+export async function main(): Promise<void> {
+  const runtime = new GpProofRuntime(loadConfig());
   await runtime.start();
 }
 
-main().catch((err) => {
-  console.error("[{{DEPLOY_ID_PREFIX}}] fatal", err);
-  process.exit(1);
-});
+if (import.meta.main) {
+  try { await main(); }
+  catch {
+    console.error("[photon] RUNTIME_FAILED");
+    process.exitCode = 1;
+  }
+  // All durable workers have settled or recorded uncertainty before start returns.
+  // Bound process termination even if an optional provider control leaves a socket.
+  process.exit(process.exitCode ?? 0);
+}
