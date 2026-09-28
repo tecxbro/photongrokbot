@@ -4,6 +4,7 @@ CREATE TABLE inbox (seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL UNIQ
 CREATE INDEX inbox_pending ON inbox(pending,space_id,line_id,seq);
 CREATE INDEX inbox_target ON inbox(space_id,line_id,provider_id);
 CREATE TABLE batches (id TEXT PRIMARY KEY, space_id TEXT NOT NULL, line_id TEXT NOT NULL, formed_at INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','claimed','delegated','completed','review')), run_id TEXT, generation INTEGER NOT NULL DEFAULT 0, lease_until INTEGER, completed_at INTEGER);
+CREATE INDEX batches_recovery ON batches(state,lease_until);
 CREATE TABLE batch_events (batch_id TEXT NOT NULL REFERENCES batches(id), event_id TEXT NOT NULL UNIQUE REFERENCES inbox(id), ordinal INTEGER NOT NULL, PRIMARY KEY(batch_id,ordinal));
 CREATE TABLE wakes (batch_id TEXT PRIMARY KEY REFERENCES batches(id), state TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0, attempt_id TEXT, next_at INTEGER NOT NULL DEFAULT 0, lease_until INTEGER, code TEXT);
 CREATE INDEX wakes_eligible ON wakes(state,next_at);
@@ -13,6 +14,7 @@ CREATE TABLE operations (id TEXT PRIMARY KEY, space_id TEXT NOT NULL, line_id TE
 CREATE TABLE outbound (seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL UNIQUE, operation_id TEXT NOT NULL REFERENCES operations(id), ordinal INTEGER NOT NULL, item TEXT NOT NULL CHECK(json_valid(item)), state TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, attempt_id TEXT, next_at INTEGER NOT NULL DEFAULT 0, reference TEXT CHECK(reference IS NULL OR json_valid(reference)), code TEXT, settled_at INTEGER, redacted INTEGER NOT NULL DEFAULT 0, UNIQUE(operation_id,ordinal));
 CREATE INDEX outbound_eligible ON outbound(state,next_at,seq);
 CREATE INDEX operations_conversation ON operations(space_id,line_id,purpose);
+CREATE INDEX operations_batch ON operations(batch_id,purpose);
 CREATE TABLE attempts (id TEXT PRIMARY KEY, outbound_id TEXT NOT NULL REFERENCES outbound(id), started_at INTEGER NOT NULL, settled_at INTEGER, outcome TEXT CHECK(outcome IS NULL OR json_valid(outcome)));
 CREATE TABLE targets (space_id TEXT NOT NULL,line_id TEXT NOT NULL,message_id TEXT NOT NULL, PRIMARY KEY(space_id,line_id,message_id));
 CREATE TABLE media_jobs (id TEXT PRIMARY KEY,event_id TEXT NOT NULL UNIQUE REFERENCES inbox(id), reference TEXT NOT NULL CHECK(json_valid(reference)), state TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0, code TEXT);

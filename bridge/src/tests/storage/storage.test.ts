@@ -706,3 +706,120 @@ test("presentation context must match canonical payload and task binding", () =>
   expect(f.store.listOutbound()).toHaveLength(0);
   expect(f.store.listMetadata("presentation-submission")).toHaveLength(0);
 });
+test("expired processing lease re-wakes the original batch and fences its abandoned run", () => {
+  const f = setup();
+  const ctx = batch(f.store);
+  const deadline = f.store.claimSnapshot(ctx.batch.batchId).leaseUntil!;
+  expect(f.store.claimWake(deadline - 1)).toBeUndefined();
+  expect(f.store.claimSnapshot(ctx.batch.batchId).state).toBe("claimed");
+  const wake = f.store.claimWake(deadline)!;
+  expect(wake.batchId).toBe(ctx.batch.batchId);
+  expect(f.store.readBatch(wake.batchId).messages[0]?.id).toBe(
+    ctx.batch.messages[0]?.id,
+  );
+  expect(f.store.claimSnapshot(wake.batchId)).toMatchObject({
+    state: "pending",
+    runId: null,
+    generation: ctx.claim.generation + 1,
+  });
+  expect(() => f.store.renewClaim(ctx.claim)).toThrow("STALE_CLAIM");
+  expect(() => f.store.completeClaim(ctx.claim)).toThrow("STALE_CLAIM");
+  expect(() =>
+    f.store.enqueue(
+      { spaceId: ctx.destination.spaceId, text: "abandoned result" },
+      { ...ctx, purpose: "final", actionKey: "abandoned" },
+    ),
+  ).toThrow("STALE_CLAIM");
+  const acquired = f.store.claimBatch(wake.batchId, 3_600_000);
+  expect(acquired.status).toBe("acquired");
+  if (acquired.status === "acquired")
+    expect(acquired.token.generation).toBeGreaterThan(ctx.claim.generation);
+  expect(f.store.db.query("SELECT count(*) n FROM batches").get()).toEqual({
+    n: 1,
+  });
+  expect(f.store.claimWake(deadline)).toBeUndefined();
+});
+for (const state of ["queued", "sending", "retry_wait", "unknown"] as const) {
+  test(`expired claim with ${state} final remains held without re-notification`, () => {
+    const f = setup();
+    const ctx = batch(f.store);
+    f.store.enqueue(
+      { spaceId: ctx.destination.spaceId, text: "final" },
+      { ...ctx, purpose: "final", actionKey: "final" },
+    );
+    if (state !== "queued") {
+      const sent = f.store.claimOutbound()!;
+      if (state === "retry_wait")
+        f.store.settleOutbound(sent.item.id, sent.attemptId, {
+          state: "retry_wait",
+          code: "explicitly-not-applied",
+          retryAfterMs: 1000,
+        });
+      else if (state === "unknown")
+        f.store.settleOutbound(sent.item.id, sent.attemptId, {
+          state: "unknown",
+          code: "uncertain",
+        });
+    }
+    expect(
+      f.store.claimWake(
+        f.store.claimSnapshot(ctx.batch.batchId).leaseUntil! + 1,
+      ),
+    ).toBeUndefined();
+    expect(f.store.claimSnapshot(ctx.batch.batchId).state).toBe("claimed");
+    expect(f.store.tasksForBatch(ctx.batch.batchId)).toHaveLength(0);
+  });
+}
+for (const state of ["intent", "accepted", "unknown"] as const) {
+  test(`expired claim with ${state} native handoff never creates another wake or task`, () => {
+    const f = setup();
+    const ctx = batch(f.store);
+    const binding = {
+      taskId: `task-${state}`,
+      batchId: ctx.batch.batchId,
+      destination: ctx.destination,
+      owner: "worker",
+      finalOwner: "front-door",
+      state: "intent" as const,
+    };
+    f.store.bindTask(ctx.claim, binding);
+    if (state !== "intent")
+      f.store.bindTask(ctx.claim, {
+        ...binding,
+        state,
+        receipt: "native exact receipt",
+      });
+    if (state === "accepted") {
+      f.store.bindTask(ctx.claim, {
+        ...binding,
+        state: "completed",
+        receipt: "native completion",
+      });
+    }
+    // Reconciliation can legitimately return accepted work to a claimed batch.
+    if (state === "accepted") {
+      const second = {
+        ...binding,
+        taskId: "task-reconciled",
+        state: "intent" as const,
+      };
+      f.store.bindTask(ctx.claim, second);
+      f.store.bindTask(ctx.claim, { ...second, state: "unknown" });
+      f.store.reconcileTask(second.taskId, {
+        state: "accepted",
+        receipt: "native exact recovered receipt",
+      });
+      expect(f.store.claimBatch(ctx.batch.batchId).status).toBe("acquired");
+    }
+    const before = f.store.tasksForBatch(ctx.batch.batchId);
+    expect(
+      f.store.claimWake(
+        f.store.claimSnapshot(ctx.batch.batchId).leaseUntil! + 1,
+      ),
+    ).toBeUndefined();
+    expect(f.store.tasksForBatch(ctx.batch.batchId)).toEqual(before);
+    expect(f.store.claimSnapshot(ctx.batch.batchId).state).toBe(
+      state === "accepted" ? "claimed" : "delegated",
+    );
+  });
+}

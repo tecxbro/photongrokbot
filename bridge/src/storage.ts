@@ -951,7 +951,40 @@ export class SqliteBridgeStore implements ExtendedBridgeStore {
       : undefined;
   }
   claimWake(at = now()): WakeJob | undefined {
+    if (!Number.isFinite(at)) throw new Error("WAKE_TIME_INVALID");
     return this.tx("claim_wake", () => {
+      // A dead processing invocation may be re-notified, but recovering a
+      // lease must never authorize a second native handoff or final send.
+      const expired = this.db
+        .query(
+          `
+        SELECT b.id FROM batches b
+        WHERE b.state='claimed' AND b.lease_until<=?
+          AND NOT EXISTS (
+            SELECT 1 FROM tasks t WHERE t.batch_id=b.id
+              AND t.state IN ('intent','accepted','unknown')
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM operations op JOIN outbound o ON o.operation_id=op.id
+            WHERE op.batch_id=b.id AND op.purpose='final'
+              AND o.state IN (${unresolved})
+          )
+        ORDER BY b.lease_until,b.id LIMIT 100
+      `,
+        )
+        .all(at) as Row[];
+      for (const batch of expired) {
+        this.db
+          .query(
+            "UPDATE batches SET state='pending',run_id=NULL,lease_until=NULL,generation=generation+1 WHERE id=?",
+          )
+          .run(batch.id);
+        this.db
+          .query(
+            "UPDATE wakes SET state='pending',next_at=?,attempt_id=NULL,lease_until=NULL,code='PROCESSING_LEASE_EXPIRED' WHERE batch_id=?",
+          )
+          .run(at, batch.id);
+      }
       const row = this.db
         .query(
           "SELECT w.* FROM wakes w JOIN batches b ON b.id=w.batch_id WHERE w.state IN ('pending','retry_wait','acknowledged') AND w.next_at<=? AND b.state='pending' ORDER BY b.formed_at LIMIT 1",
